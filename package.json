@@ -2,7 +2,7 @@
   "name": "lumen",
   "version": "0.9.0",
   "private": true,
-  "description": "Lumen — Ship a website from a sentence.",
+  "description": "Lumen \u2014 Ship a website from a sentence.",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "next dev",
@@ -14,11 +14,11 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.47.10",
-    "next": "15.1.6",
+    "next": "15.5.24",
     "openai": "^4.80.0",
     "razorpay": "^2.9.5",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -27,9 +27,14 @@
     "@types/react-dom": "^19.0.3",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",
-    "eslint-config-next": "15.1.6",
+    "eslint-config-next": "15.5.24",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "^8.5.26"
+    }
   }
 }
