@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Lumen brand tokens — Section 1 of the product spec.
+ * One accent color only. Do not introduce a second.
+ */
+:root {
+  --bg-base: #0a0a08;
+  --bg-base-deep: #0b0c09;
+  --surface-raised: #141410;
+  --accent: #d7ff3e;
+  --accent-soft: rgba(215, 255, 62, 0.12);
+  --accent-ink: #0a0a08;
+  --text-primary: #f5f3ec;
+  --text-secondary: #9c9c93;
+  --text-muted: #6b6b63;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  --glow-cool: rgba(168, 205, 60, 0.15);
+  --glow-warm: rgba(196, 96, 38, 0.12);
+
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--border-subtle);
+}
+
+html,
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The ambient two-glow field behind dark hero sections. */
+.lumen-glow-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lumen-glow-field::before,
+.lumen-glow-field::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(120px);
+}
+
+.lumen-glow-field::before {
+  width: 780px;
+  height: 780px;
+  top: -320px;
+  left: -220px;
+  background: radial-gradient(circle, var(--glow-cool) 0%, transparent 68%);
+}
+
+.lumen-glow-field::after {
+  width: 720px;
+  height: 720px;
+  bottom: -340px;
+  right: -180px;
+  background: radial-gradient(circle, var(--glow-warm) 0%, transparent 68%);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Scrollbars, kept in-palette so panes don't break the dark system. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
