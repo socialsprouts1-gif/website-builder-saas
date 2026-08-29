@@ -45,26 +45,28 @@ export default async function HomePage() {
       </div>
 
       <section className="border-t border-hairline">
-        <div className="mx-auto grid max-w-shell gap-px overflow-hidden bg-hairline px-6 py-0 sm:grid-cols-3">
-          {[
-            {
-              title: 'One prompt in',
-              body: 'Describe the business. Lumen writes the brief, the design system, the copy and the code.',
-            },
-            {
-              title: 'Iterate in chat',
-              body: '“Make the hero darker.” “Add a menu page.” Every edit is a diff — your changes survive.',
-            },
-            {
-              title: 'Ship anywhere',
-              body: 'Deploy to Vercel, push to GitHub, or export the whole site as a zip. It is your code.',
-            },
-          ].map((item) => (
-            <div key={item.title} className="bg-base px-6 py-10 sm:px-8">
-              <h2 className="font-display text-xl text-ink-primary">{item.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{item.body}</p>
-            </div>
-          ))}
+        <div className="mx-auto max-w-shell px-6">
+          <div className="grid gap-px overflow-hidden bg-hairline sm:grid-cols-3">
+            {[
+              {
+                title: 'One prompt in',
+                body: 'Describe the business. Lumen writes the brief, the design system, the copy and the code.',
+              },
+              {
+                title: 'Iterate in chat',
+                body: '“Make the hero darker.” “Add a menu page.” Every edit is a diff — your changes survive.',
+              },
+              {
+                title: 'Ship anywhere',
+                body: 'Deploy to Vercel, push to GitHub, or export the whole site as a zip. It is your code.',
+              },
+            ].map((item) => (
+              <div key={item.title} className="bg-base px-6 py-10 sm:px-8">
+                <h2 className="font-display text-xl text-ink-primary">{item.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{item.body}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
