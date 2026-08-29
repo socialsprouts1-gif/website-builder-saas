@@ -6,6 +6,7 @@ import { handleRouteError, jsonError } from '@/lib/api';
 import { RATE_LIMITS, rateLimit } from '@/lib/rate-limit';
 import { uploadAsset } from '@/lib/generation/storage';
 import { categoryBySlug } from '@/lib/categories';
+import { requireEntitlement } from '@/lib/billing';
 
 export const runtime = 'nodejs';
 
@@ -27,6 +28,9 @@ export async function POST(request: NextRequest) {
     if (!user.email_confirmed_at) {
       return jsonError('Confirm your email address before generating your first site.', 403);
     }
+
+    const entitlement = await requireEntitlement(user.id);
+    if (!entitlement.ok) return jsonError(entitlement.reason, 402);
 
     const limit = await rateLimit(
       `generation:${user.id}`,

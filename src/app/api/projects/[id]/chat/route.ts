@@ -5,6 +5,7 @@ import { runChatEdit } from '@/lib/generation/pipeline';
 import { chatEditSchema } from '@/lib/validation';
 import { jsonError, sseEncode, sseHeaders } from '@/lib/api';
 import { RATE_LIMITS, rateLimit } from '@/lib/rate-limit';
+import { requireEntitlement } from '@/lib/billing';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -25,6 +26,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     .eq('id', projectId)
     .maybeSingle();
   if (!project) return jsonError('Project not found', 404);
+
+  const entitlement = await requireEntitlement(user.id);
+  if (!entitlement.ok) return jsonError(entitlement.reason, 402);
 
   const limit = await rateLimit(
     `chat:${user.id}`,
