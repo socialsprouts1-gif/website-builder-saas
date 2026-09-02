@@ -9,6 +9,7 @@ export interface BillingState {
   entitled: boolean;
   onTrial: boolean;
   daysLeft: number | null;
+  hoursLeft: number | null;
   billingConfigured: boolean;
 }
 
@@ -44,15 +45,16 @@ export async function getBillingState(userId: string): Promise<BillingState> {
 
   const entitled = isEntitled(subscription?.status, subscription?.current_period_end);
   const periodEnd = subscription?.current_period_end ? new Date(subscription.current_period_end) : null;
-  const daysLeft = periodEnd
-    ? Math.max(0, Math.ceil((periodEnd.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
-    : null;
+  const msLeft = periodEnd ? Math.max(0, periodEnd.getTime() - Date.now()) : null;
+  const daysLeft = msLeft === null ? null : Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+  const hoursLeft = msLeft === null ? null : Math.ceil(msLeft / (60 * 60 * 1000));
 
   return {
     subscription,
     entitled,
     onTrial: subscription?.status === 'trialing',
     daysLeft,
+    hoursLeft,
     billingConfigured: isBillingConfigured,
   };
 }

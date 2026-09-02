@@ -91,7 +91,7 @@ export default function PricingPage() {
               Start building →
             </ButtonLink>
             <p className="mt-3 text-center text-[12px] text-ink-muted">
-              Build your first site before you pay a rupee.
+              One day free to build your first site. No card required to start.
             </p>
           </div>
         </div>

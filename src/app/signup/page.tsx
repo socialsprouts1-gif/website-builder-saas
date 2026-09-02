@@ -11,7 +11,7 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Ship your first site today"
-      subtitle="Free to build. Pay ₹500/month when you are ready to keep it."
+      subtitle="One day free, 10 credits a day. ₹500/month when you want to keep going."
     >
       {isSupabaseConfigured ? (
         <Suspense fallback={<div className="h-72" />}>

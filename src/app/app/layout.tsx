@@ -1,5 +1,5 @@
 import { AppNav } from '@/components/app/AppNav';
-import { requireUser } from '@/lib/auth';
+import { isBootstrapAdmin, requireUser } from '@/lib/auth';
 import { getKeyStatus } from '@/lib/openai/client';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen flex-col lg:flex-row">
       <AppNav
         email={user.email}
-        isAdmin={Boolean(user.profile?.is_admin)}
+        isAdmin={Boolean(user.profile?.is_admin) || isBootstrapAdmin(user.email)}
         credits={
           keyStatus
             ? {

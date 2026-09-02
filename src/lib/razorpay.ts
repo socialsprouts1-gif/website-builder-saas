@@ -11,7 +11,11 @@ import { env, PLAN_PRICE_PAISE } from '@/lib/env';
  * founder has added keys.
  */
 
-export const TRIAL_DAYS = 14;
+/**
+ * One day free, which pairs with the daily credit allowance: a new account gets
+ * a full day and 10 credits — enough to build a site and decide.
+ */
+export const TRIAL_DAYS = 1;
 
 export class BillingNotConfiguredError extends Error {
   constructor() {

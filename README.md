@@ -191,8 +191,10 @@ These were unspecified. Each is reversible and isolated.
 - **Generated code lives in `project_versions.files` (jsonb)**, not Storage, so
   a version is written as one transactional row. Storage holds the genuinely
   blob-shaped things: uploaded screenshots and images.
-- **Every account starts on a 14-day trial row**, so `entitled` is a single
-  check everywhere and a new user can build their first site before paying.
+- **Every account starts on a 1-day trial row** (`TRIAL_DAYS`), so `entitled`
+  is a single check everywhere and a new user can build their first site before
+  paying. One day pairs with the daily credit allowance: a full day and 10
+  credits is enough to build a site and decide.
 - **Zip export uses a small store-only ZIP writer** (`src/lib/zip.ts`) rather
   than a dependency — generated sites are small text files.
 
@@ -204,8 +206,11 @@ These were unspecified. Each is reversible and isolated.
   generator, which is the honest fallback.
 - **The showcase needs moderation before it is public.** `flagged_content` and
   the admin queue exist; nothing writes to them yet.
-- **Admin access** is the `is_admin` flag on `public.users`. Set it by hand for
-  your own account.
+- **Admin access**: set `LUMEN_ADMIN_EMAILS` to a comma-separated list and
+  those addresses get in on first sign-in, with the `is_admin` flag written to
+  their row. `/admin/users` then manages everyone else — grant or revoke admin,
+  extend free access, or end it. Migration `0003` also grants the founding
+  account directly.
 - **Model names.** Check `platform.openai.com/docs/models` before you ship and
   update `SEED_MODELS` if the fallback matters to you.
 

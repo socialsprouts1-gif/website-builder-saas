@@ -52,6 +52,18 @@ export const env = {
 
   encryptionKey: read('LUMEN_ENCRYPTION_KEY'),
 
+  /**
+   * Bootstrap admins, comma-separated. Anyone signing in with one of these
+   * addresses is treated as an admin and has the flag written back to their
+   * row, so a fresh deployment has an owner without anyone running SQL by hand.
+   * Removing an address here does not revoke the stored flag — do that from
+   * the users panel.
+   */
+  adminEmails: (read('LUMEN_ADMIN_EMAILS') ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean),
+
   connectors: {
     github: { id: read('GITHUB_CLIENT_ID'), secret: read('GITHUB_CLIENT_SECRET') },
     google: { id: read('GOOGLE_CLIENT_ID'), secret: read('GOOGLE_CLIENT_SECRET') },

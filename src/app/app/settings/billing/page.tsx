@@ -46,7 +46,7 @@ export default async function BillingPage() {
           {state.subscription?.cancelled_at
             ? `Cancelled. Access runs until ${formatDate(state.subscription.current_period_end)}.`
             : state.onTrial
-              ? `Trial — ${state.daysLeft ?? 0} day${state.daysLeft === 1 ? '' : 's'} left. Subscribe any time to keep building.`
+              ? `Free trial — ${formatRemaining(state.hoursLeft)} left. Subscribe any time to keep building.`
               : state.entitled
                 ? `Next charge on ${formatDate(state.subscription?.current_period_end)}.`
                 : 'No active subscription.'}
@@ -100,6 +100,14 @@ export default async function BillingPage() {
       )}
     </div>
   );
+}
+
+/** Hours until the trial ends; days only once it is worth saying in days. */
+function formatRemaining(hoursLeft: number | null): string {
+  if (hoursLeft === null || hoursLeft <= 0) return 'no time';
+  if (hoursLeft < 48) return `${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}`;
+  const days = Math.ceil(hoursLeft / 24);
+  return `${days} day${days === 1 ? '' : 's'}`;
 }
 
 function formatDate(value: string | null | undefined): string {

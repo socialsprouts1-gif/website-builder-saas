@@ -1,7 +1,8 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { isSupabaseConfigured } from '@/lib/env';
+import { env, isSupabaseConfigured } from '@/lib/env';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { UserRow } from '@/lib/database.types';
 
 export async function getSessionUser() {
@@ -38,10 +39,28 @@ export async function requireUser() {
   return user;
 }
 
+/** True when the address is on the deployment's bootstrap allowlist. */
+export function isBootstrapAdmin(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return env.adminEmails.includes(email.toLowerCase());
+}
+
 export async function requireAdmin() {
   const user = await requireUser();
-  if (!user.profile?.is_admin) redirect('/app');
-  return user;
+  if (user.profile?.is_admin) return user;
+
+  // First run: the allowlist grants access and the flag is written back, so
+  // the database becomes the source of truth from the second visit onward.
+  if (isBootstrapAdmin(user.email)) {
+    try {
+      await createAdminClient().from('users').update({ is_admin: true }).eq('id', user.id);
+    } catch {
+      // Service role unavailable — access is still correct for this request.
+    }
+    return { ...user, profile: user.profile ? { ...user.profile, is_admin: true } : null };
+  }
+
+  redirect('/app');
 }
 
 /** Email verification gate — enforced before the first generation (Section 13). */
