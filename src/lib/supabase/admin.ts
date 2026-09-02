@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { env } from '@/lib/env';
+import { SupabaseNotConfiguredError } from './errors';
 import type { Database } from '@/lib/database.types';
 
 /**
@@ -9,7 +10,7 @@ import type { Database } from '@/lib/database.types';
  */
 export function createAdminClient() {
   if (!env.supabase.url || !env.supabase.serviceRoleKey) {
-    throw new Error('Supabase service role is not configured');
+    throw new SupabaseNotConfiguredError();
   }
   return createClient<Database>(env.supabase.url, env.supabase.serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },

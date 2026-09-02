@@ -1,10 +1,13 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { env } from '@/lib/env';
+import { env, isSupabaseConfigured } from '@/lib/env';
+import { SupabaseNotConfiguredError } from './errors';
 import type { Database } from '@/lib/database.types';
 
 /** Request-scoped client that respects RLS as the signed-in user. */
 export async function createClient() {
+  if (!isSupabaseConfigured) throw new SupabaseNotConfiguredError();
+
   const cookieStore = await cookies();
 
   return createServerClient<Database>(env.supabase.url!, env.supabase.anonKey!, {

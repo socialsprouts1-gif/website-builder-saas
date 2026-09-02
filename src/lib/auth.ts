@@ -1,9 +1,12 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { isSupabaseConfigured } from '@/lib/env';
 import type { UserRow } from '@/lib/database.types';
 
 export async function getSessionUser() {
+  if (!isSupabaseConfigured) return null;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -13,6 +16,8 @@ export async function getSessionUser() {
 
 /** Returns the auth user plus the mirrored public.users profile row. */
 export async function getCurrentUser(): Promise<{ id: string; email: string; profile: UserRow | null } | null> {
+  if (!isSupabaseConfigured) return null;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -24,6 +29,10 @@ export async function getCurrentUser(): Promise<{ id: string; email: string; pro
 }
 
 export async function requireUser() {
+  // A deployment with no database cannot sign anyone in, so say that plainly
+  // rather than bouncing to a login form that could never work.
+  if (!isSupabaseConfigured) redirect('/setup');
+
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   return user;

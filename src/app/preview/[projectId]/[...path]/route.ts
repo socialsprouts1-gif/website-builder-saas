@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentFiles, getVersionFiles } from '@/lib/generation/storage';
 import { normalizePath } from '@/lib/generation/parser';
 import { EDITOR_BRIDGE } from '@/lib/generation/editor-bridge';
+import { isSupabaseConfigured } from '@/lib/env';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,6 +44,8 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ projectId: string; path: string[] }> },
 ) {
+  if (!isSupabaseConfigured) return new Response('Not found', { status: 404 });
+
   const { projectId, path } = await context.params;
   const requested = normalizePath(path.join('/')) ?? 'index.html';
 
