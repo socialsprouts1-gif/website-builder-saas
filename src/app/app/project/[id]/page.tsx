@@ -3,7 +3,7 @@ import { Workspace } from '@/components/app/Workspace';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentFiles } from '@/lib/generation/storage';
-import { resolveApiKey } from '@/lib/openai/client';
+import { resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
 
 export const dynamic = 'force-dynamic';
@@ -48,8 +48,8 @@ export default async function ProjectWorkspacePage({
 
   let catalog = fallbackCatalog(true);
   try {
-    const { apiKey } = await resolveApiKey(user.id);
-    catalog = await getModelCatalog(apiKey);
+    const resolved = await resolveApiKeyForMetadata(user.id);
+    if (resolved) catalog = await getModelCatalog(resolved.apiKey);
   } catch {
     // Falls back to the seed catalog; generation itself surfaces the real error.
   }

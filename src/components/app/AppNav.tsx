@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
+import { CreditMeter } from '@/components/app/CreditMeter';
 import { cn } from '@/components/ui/cn';
 
 /**
@@ -29,7 +30,23 @@ const GROUPS: { title: string; items: { href: string; label: string }[] }[] = [
   },
 ];
 
-export function AppNav({ email, isAdmin }: { email: string; isAdmin: boolean }) {
+export interface CreditSummary {
+  used: number;
+  limit: number;
+  resetsAt: string;
+  hasOwnKey: boolean;
+  platformConfigured: boolean;
+}
+
+export function AppNav({
+  email,
+  isAdmin,
+  credits,
+}: {
+  email: string;
+  isAdmin: boolean;
+  credits: CreditSummary | null;
+}) {
   const pathname = usePathname();
 
   return (
@@ -70,6 +87,12 @@ export function AppNav({ email, isAdmin }: { email: string; isAdmin: boolean }) 
           </div>
         ) : null}
       </nav>
+
+      {credits ? (
+        <div className="pt-1">
+          <CreditMeter {...credits} variant="nav" />
+        </div>
+      ) : null}
 
       <div className="space-y-2 border-t border-hairline pt-4">
         <p className="truncate px-3 text-[12px] text-ink-muted" title={email}>

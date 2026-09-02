@@ -46,8 +46,32 @@ export const isSupabaseConfigured = Boolean(env.supabase.url && env.supabase.ano
 export const isBillingConfigured = Boolean(env.razorpay.keyId && env.razorpay.keySecret);
 export const isPlatformKeyConfigured = Boolean(env.openai.platformKey);
 
-/** Free generations per calendar month on Lumen's pooled platform key. */
-export const FREE_PLATFORM_GENERATIONS_PER_MONTH = 10;
+/**
+ * Free credits per day on Lumen's pooled platform key. Ten is enough to build
+ * one site and iterate on it: a generation costs 3, each edit costs 1.
+ * Bring-your-own-key has no ceiling — it bills to the user's own account.
+ */
+export const DAILY_PLATFORM_CREDITS = 10;
+
+/**
+ * What each kind of model call costs against the daily allowance.
+ *
+ * Every entry that spends real money is priced. Previously only the initial
+ * generation was counted, which left chat edits, screenshot analysis, embedding
+ * and chatbot replies drawing on the platform key without limit.
+ */
+export const CREDIT_COST = {
+  generation: 3,
+  vision: 1,
+  chat_edit: 1,
+  image: 1,
+  embedding: 1,
+  chatbot_reply: 1,
+  // Transcription is a fraction of a cent and already capped at 60/hour.
+  transcription: 0,
+} as const;
+
+export type CreditedEvent = keyof typeof CREDIT_COST;
 
 /** ₹500/month, expressed in paise the way Razorpay wants it. */
 export const PLAN_PRICE_PAISE = 50_000;

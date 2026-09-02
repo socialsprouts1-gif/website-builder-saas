@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (audio.size === 0) return jsonError('That recording was empty', 422);
     if (audio.size > MAX_AUDIO_BYTES) return jsonError('That recording is too long', 413);
 
-    const { apiKey, source } = await resolveApiKey(user.id);
+    const { apiKey, source } = await resolveApiKey(user.id, 'transcription');
     const catalog = await getModelCatalog(apiKey);
     const client = openaiFor(apiKey);
 

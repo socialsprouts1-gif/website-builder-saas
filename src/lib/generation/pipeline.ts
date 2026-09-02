@@ -70,7 +70,11 @@ export interface GenerationInput {
  * original input mode was.
  */
 export async function runGeneration(input: GenerationInput, emit: Emit): Promise<void> {
-  const { apiKey, source } = await resolveApiKey(input.userId);
+  // Screenshot mode runs an extra vision pass, so it reserves that credit too.
+  const { apiKey, source } = await resolveApiKey(
+    input.userId,
+    input.screenshotDataUrl ? 'vision' : 'generation',
+  );
   const catalog = await getModelCatalog(apiKey);
   const { model, substituted } = resolveModel(catalog, input.requestedModel);
   const client = openaiFor(apiKey);
@@ -269,7 +273,7 @@ export async function runChatEdit(params: {
   source?: 'chat' | 'voice';
   onDelta?: (delta: string) => void;
 }): Promise<EditResult> {
-  const { apiKey, source: keySource } = await resolveApiKey(params.userId);
+  const { apiKey, source: keySource } = await resolveApiKey(params.userId, 'chat_edit');
   const catalog = await getModelCatalog(apiKey);
   const { model } = resolveModel(catalog, params.requestedModel);
   const client = openaiFor(apiKey);

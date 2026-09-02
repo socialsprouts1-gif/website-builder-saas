@@ -9,14 +9,16 @@ import { Badge } from '@/components/ui/Badge';
 export function ApiKeyManager({
   hasOwnKey,
   last4,
-  freeUsed,
-  freeLimit,
+  creditsUsed,
+  creditsLimit,
+  resetsAt,
   platformConfigured,
 }: {
   hasOwnKey: boolean;
   last4: string | null;
-  freeUsed: number;
-  freeLimit: number;
+  creditsUsed: number;
+  creditsLimit: number;
+  resetsAt: string;
   platformConfigured: boolean;
 }) {
   const router = useRouter();
@@ -78,13 +80,13 @@ export function ApiKeyManager({
         <div className="rounded-[10px] border border-hairline bg-raised px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[13px] text-ink-primary">Using Lumen&apos;s shared key</p>
-            <Badge tone={freeUsed >= freeLimit ? 'warning' : 'accent'}>
-              {Math.max(0, freeLimit - freeUsed)} / {freeLimit} left
+            <Badge tone={creditsUsed >= creditsLimit ? 'warning' : 'accent'}>
+              {Math.max(0, creditsLimit - creditsUsed)} / {creditsLimit} credits today
             </Badge>
           </div>
           <p className="mt-1 text-[12px] text-ink-muted">
             {platformConfigured
-              ? 'Resets on the first of each month. Add your own key below for unlimited generations.'
+              ? `A new site costs 3 credits, each edit 1. Resets ${new Date(resetsAt).toUTCString().slice(17, 22)} UTC. Add your own key below for no limit.`
               : 'No platform key is configured, so you need your own key to generate.'}
           </p>
         </div>

@@ -2,8 +2,9 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { NewSiteForm } from '@/components/app/NewSiteForm';
 import { Badge } from '@/components/ui/Badge';
+import { CreditMeter } from '@/components/app/CreditMeter';
 import { requireUser } from '@/lib/auth';
-import { getKeyStatus, resolveApiKey } from '@/lib/openai/client';
+import { getKeyStatus, resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
 
 export const metadata = { title: 'New site' };
@@ -16,14 +17,14 @@ export default async function NewSitePage() {
   // from the fallback catalog otherwise — never a hardcoded dropdown.
   let catalog = fallbackCatalog(true);
   try {
-    const { apiKey } = await resolveApiKey(user.id);
-    catalog = await getModelCatalog(apiKey);
+    const resolved = await resolveApiKeyForMetadata(user.id);
+    if (resolved) catalog = await getModelCatalog(resolved.apiKey);
   } catch {
     // No key yet, or free quota spent — the notice below explains it.
   }
 
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
-  const outOfQuota = keyStatus ? !keyStatus.hasOwnKey && keyStatus.freeRemaining === 0 : false;
+  const outOfQuota = keyStatus ? !keyStatus.hasOwnKey && keyStatus.creditsRemaining < 3 : false;
   const noKeyAtAll = keyStatus ? !keyStatus.hasOwnKey && !keyStatus.platformConfigured : false;
 
   return (
@@ -50,7 +51,7 @@ export default async function NewSitePage() {
             </>
           ) : (
             <>
-              You have used all {keyStatus?.freeLimit} free generations this month.{' '}
+              You do not have enough credits left today for a new site (a build costs 3).{' '}
               <Link href="/app/settings/api-keys" className="text-accent hover:underline">
                 Add your own OpenAI key
               </Link>{' '}
@@ -58,10 +59,17 @@ export default async function NewSitePage() {
             </>
           )}
         </div>
-      ) : keyStatus && !keyStatus.hasOwnKey ? (
-        <p className="mb-6 text-center text-[12.5px] text-ink-muted">
-          {keyStatus.freeRemaining} of {keyStatus.freeLimit} free generations left this month.
-        </p>
+      ) : keyStatus ? (
+        <div className="mb-6">
+          <CreditMeter
+            used={keyStatus.creditsUsed}
+            limit={keyStatus.creditsLimit}
+            resetsAt={keyStatus.resetsAt}
+            hasOwnKey={keyStatus.hasOwnKey}
+            platformConfigured={keyStatus.platformConfigured}
+            variant="panel"
+          />
+        </div>
       ) : null}
 
       <Suspense fallback={<div className="h-72" />}>

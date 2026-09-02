@@ -72,7 +72,7 @@ export async function reindexChatbot(params: {
   faq?: string | null;
 }): Promise<{ documents: number; chunks: number }> {
   const admin = createAdminClient();
-  const { apiKey, source } = await resolveApiKey(params.userId);
+  const { apiKey, source } = await resolveApiKey(params.userId, 'embedding');
   const catalog = await getModelCatalog(apiKey);
   const client = openaiFor(apiKey);
 
@@ -161,7 +161,9 @@ export async function answerVisitorQuestion(params: {
   history: { role: 'user' | 'assistant'; content: string }[];
 }): Promise<ChatbotAnswer> {
   const admin = createAdminClient();
-  const { apiKey, source } = await resolveApiKey(params.ownerId);
+  // Visitor traffic spends the site owner's credits, so it is priced too —
+  // otherwise a public widget is an uncapped drain on the platform key.
+  const { apiKey, source } = await resolveApiKey(params.ownerId, 'chatbot_reply');
   const catalog = await getModelCatalog(apiKey);
   const client = openaiFor(apiKey);
 

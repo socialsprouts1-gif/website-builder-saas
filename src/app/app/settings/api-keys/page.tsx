@@ -2,7 +2,7 @@ import { Card, SectionHeader } from '@/components/ui/Card';
 import { ApiKeyManager } from '@/components/app/ApiKeyManager';
 import { DefaultModelPicker } from '@/components/app/DefaultModelPicker';
 import { requireUser } from '@/lib/auth';
-import { getKeyStatus, resolveApiKey } from '@/lib/openai/client';
+import { getKeyStatus, resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
 
 export const metadata = { title: 'API keys' };
@@ -14,8 +14,8 @@ export default async function ApiKeysPage() {
 
   let catalog = fallbackCatalog(true);
   try {
-    const { apiKey } = await resolveApiKey(user.id);
-    catalog = await getModelCatalog(apiKey);
+    const resolved = await resolveApiKeyForMetadata(user.id);
+    if (resolved) catalog = await getModelCatalog(resolved.apiKey);
   } catch {
     // Falls back to the seed list — the page says so below.
   }
@@ -31,8 +31,9 @@ export default async function ApiKeysPage() {
         <ApiKeyManager
           hasOwnKey={status.hasOwnKey}
           last4={status.last4}
-          freeUsed={status.freeUsed}
-          freeLimit={status.freeLimit}
+          creditsUsed={status.creditsUsed}
+          creditsLimit={status.creditsLimit}
+          resetsAt={status.resetsAt}
           platformConfigured={status.platformConfigured}
         />
       </Card>

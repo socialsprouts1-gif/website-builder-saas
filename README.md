@@ -63,12 +63,22 @@ connected" rather than throwing, so a rotation degrades instead of breaking.
 
 ### 3. OpenAI
 
-`OPENAI_API_KEY` is Lumen's pooled key. Each account gets
-`FREE_PLATFORM_GENERATIONS_PER_MONTH` (10 by default, in `src/lib/env.ts`)
-generations on it; past that they add their own key in Settings → API keys and
-are billed by OpenAI directly.
+`OPENAI_API_KEY` is Lumen's pooled key, and it is metered: each account gets
+`DAILY_PLATFORM_CREDITS` (10 by default, in `src/lib/env.ts`) credits per UTC
+day. Every call that costs money is priced in `CREDIT_COST` — building a site
+is 3, an edit is 1, a screenshot pass adds 1, indexing a chatbot is 1, and a
+chatbot reply to a visitor is 1. Transcription is free but rate limited.
+
+Ten credits is deliberately "one site plus a few rounds of changes". Past that
+a user adds their own key in Settings → API keys, which removes the ceiling and
+bills OpenAI directly.
 
 Leave it blank to make bring-your-own-key mandatory.
+
+Note that a published chatbot answers *visitor* traffic on the owner's credits.
+On the shared key a busy site will exhaust a day's balance quickly, which is
+intended — it caps your exposure — but it means the chatbot really wants BYOK
+before it goes live.
 
 ### 4. Razorpay
 

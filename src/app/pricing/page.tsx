@@ -3,7 +3,7 @@ import { TopNav } from '@/components/marketing/TopNav';
 import { Footer } from '@/components/marketing/Footer';
 import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { FREE_PLATFORM_GENERATIONS_PER_MONTH, PLAN_PRICE_LABEL } from '@/lib/env';
+import { DAILY_PLATFORM_CREDITS, PLAN_PRICE_LABEL } from '@/lib/env';
 
 export const metadata: Metadata = {
   title: 'Pricing',
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 const INCLUDED = [
-  `${FREE_PLATFORM_GENERATIONS_PER_MONTH} generations a month on Lumen's OpenAI key`,
+  `${DAILY_PLATFORM_CREDITS} credits a day on Lumen's OpenAI key — enough to build and refine a site`,
   'Unlimited generations when you bring your own OpenAI key',
   'Unlimited projects, pages and chat iterations',
   'Screenshot-to-site and voice input',
@@ -28,8 +28,8 @@ const FAQ = [
     a: 'Yes. There is one plan. Voice, screenshot import, the chatbot builder and every connector are included — nothing is held back for a higher tier.',
   },
   {
-    q: 'What happens when I use up my free generations?',
-    a: `You get ${FREE_PLATFORM_GENERATIONS_PER_MONTH} generations a month on Lumen's own OpenAI key. After that, add your own OpenAI API key in Settings and generations become unlimited, billed by OpenAI directly to you at their rates.`,
+    q: 'What happens when I use up my daily credits?',
+    a: `You get ${DAILY_PLATFORM_CREDITS} credits a day on Lumen's own OpenAI key. Building a site costs 3 and each edit costs 1, so a day's allowance covers one site and several rounds of changes. The balance resets at midnight UTC. Add your own OpenAI API key in Settings and there is no limit at all — those calls bill to your OpenAI account at their rates.`,
   },
   {
     q: 'How do I cancel?',
