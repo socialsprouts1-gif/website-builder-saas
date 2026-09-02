@@ -10,12 +10,32 @@ function read(name: string): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
+function clean(value: string | undefined): string | undefined {
+  return value && value.length > 0 ? value : undefined;
+}
+
+/**
+ * NEXT_PUBLIC_* values MUST be read as literal `process.env.NAME` expressions.
+ *
+ * Next.js substitutes them into the browser bundle at build time by matching
+ * that exact static form — a computed lookup like `process.env[name]` is left
+ * untouched and evaluates to undefined in the browser. Reading these through
+ * the generic `read()` helper meant the server saw them and the client did not,
+ * so pages server-rendered fine and then threw the moment client code ran.
+ */
+const PUBLIC = {
+  siteUrl: clean(process.env.NEXT_PUBLIC_SITE_URL),
+  supabaseUrl: clean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  supabaseAnonKey: clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+} as const;
+
 export const env = {
-  siteUrl: read('NEXT_PUBLIC_SITE_URL') ?? 'http://localhost:3000',
+  siteUrl: PUBLIC.siteUrl ?? 'http://localhost:3000',
 
   supabase: {
-    url: read('NEXT_PUBLIC_SUPABASE_URL'),
-    anonKey: read('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    url: PUBLIC.supabaseUrl,
+    anonKey: PUBLIC.supabaseAnonKey,
+    // Server-only, so a runtime lookup is correct and keeps it out of the bundle.
     serviceRoleKey: read('SUPABASE_SERVICE_ROLE_KEY'),
   },
 
