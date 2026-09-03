@@ -25,15 +25,25 @@ billing and connectors each need their own setup.
 
 ### 1. Supabase
 
-Create a project, then run the migrations in order:
+Create a project, then install the schema. The fastest route is to open
+**`supabase/setup.sql`**, copy the whole file, paste it into the Supabase SQL
+editor and press Run — it is the four migrations concatenated in order with
+idempotency guards added, so re-running it is safe.
+
+With the CLI instead:
 
 ```bash
-supabase db push               # or paste supabase/migrations/*.sql into the SQL editor
+supabase db push               # applies supabase/migrations/* in order
 ```
 
 `0001_init.sql` creates the schema and enables row-level security on every
 user-owned table in the same migration. `0002_storage.sql` creates the
-`project-assets` bucket for uploaded screenshots and images.
+`project-assets` bucket. `0003` grants the founding admin, `0004` puts every
+account on the free tier.
+
+Note that the SQL editor is required for one statement regardless of route:
+the trigger on `auth.users` needs owner rights the client libraries do not
+have.
 
 Two extensions are required and are enabled by the migration: `pgcrypto` and
 `vector` (the chatbot's embeddings).
