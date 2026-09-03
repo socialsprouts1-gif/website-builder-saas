@@ -5,6 +5,7 @@ import { requireUser } from '@/lib/auth';
 import { getBillingState } from '@/lib/billing';
 import { createClient } from '@/lib/supabase/server';
 import { formatInr, PLAN_LABEL } from '@/lib/razorpay';
+import { DAILY_PLATFORM_CREDITS, PRO_DAILY_PLATFORM_CREDITS } from '@/lib/env';
 
 export const metadata = { title: 'Billing' };
 export const dynamic = 'force-dynamic';
@@ -32,28 +33,24 @@ export default async function BillingPage() {
             <p className="font-display text-2xl text-ink-primary">{PLAN_LABEL}</p>
             <p className="mt-1 text-[13px] text-ink-secondary">Lumen · billed monthly in INR</p>
           </div>
-          <Badge tone={state.entitled ? 'accent' : 'warning'}>
-            {state.subscription?.cancelled_at
-              ? 'Cancelling'
-              : state.onTrial
-                ? 'Trial'
-                : (state.subscription?.status ?? 'inactive')}
+          <Badge tone={state.entitled ? 'accent' : 'neutral'}>
+            {state.subscription?.cancelled_at ? 'Cancelling' : state.entitled ? 'Pro' : 'Free'}
           </Badge>
         </div>
 
         {/* Honest, always-visible renewal state — no hidden charge dates. */}
         <p className="text-[13px] text-ink-secondary">
           {state.subscription?.cancelled_at
-            ? `Cancelled. Access runs until ${formatDate(state.subscription.current_period_end)}.`
-            : state.onTrial
-              ? `Free trial — ${formatRemaining(state.hoursLeft)} left. Subscribe any time to keep building.`
-              : state.entitled
-                ? `Next charge on ${formatDate(state.subscription?.current_period_end)}.`
-                : 'No active subscription.'}
+            ? `Cancelled. Pro runs until ${formatDate(
+                state.subscription.current_period_end,
+              )}, then your account returns to the free tier — you keep every site.`
+            : state.entitled
+              ? `Next charge on ${formatDate(state.subscription?.current_period_end)}.`
+              : `You are on the free tier: ${DAILY_PLATFORM_CREDITS} credits a day, forever. Upgrade for ${PRO_DAILY_PLATFORM_CREDITS} a day.`}
         </p>
 
         <BillingActions
-          entitled={state.entitled && !state.onTrial}
+          entitled={state.entitled}
           hasSubscription={Boolean(state.subscription?.razorpay_subscription_id)}
           email={user.email}
           existingGstin={state.subscription?.gstin ?? null}
@@ -100,14 +97,6 @@ export default async function BillingPage() {
       )}
     </div>
   );
-}
-
-/** Hours until the trial ends; days only once it is worth saying in days. */
-function formatRemaining(hoursLeft: number | null): string {
-  if (hoursLeft === null || hoursLeft <= 0) return 'no time';
-  if (hoursLeft < 48) return `${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}`;
-  const days = Math.ceil(hoursLeft / 24);
-  return `${days} day${days === 1 ? '' : 's'}`;
 }
 
 function formatDate(value: string | null | undefined): string {

@@ -11,6 +11,8 @@ export function CreditMeter({
   resetsAt,
   hasOwnKey,
   platformConfigured,
+  tier = 'free',
+  unlimited = false,
   variant = 'nav',
 }: {
   used: number;
@@ -18,8 +20,24 @@ export function CreditMeter({
   resetsAt: string;
   hasOwnKey: boolean;
   platformConfigured: boolean;
+  tier?: 'admin' | 'pro' | 'free';
+  unlimited?: boolean;
   variant?: 'nav' | 'panel';
 }) {
+  if (unlimited) {
+    return (
+      <div className={wrapper(variant)}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Credits</span>
+          <span className="text-[12px] text-accent">Unlimited</span>
+        </div>
+        <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-muted">
+          Admin account — nothing is metered.
+        </p>
+      </div>
+    );
+  }
+
   if (hasOwnKey) {
     return (
       <div className={wrapper(variant)}>
@@ -56,7 +74,9 @@ export function CreditMeter({
   return (
     <div className={wrapper(variant)}>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Credits today</span>
+        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+          {tier === 'pro' ? 'Pro credits' : 'Free credits'}
+        </span>
         <span className={cn('text-[12.5px]', empty ? 'text-[#e5735a]' : 'text-ink-primary')}>
           {remaining} / {limit}
         </span>
@@ -72,11 +92,19 @@ export function CreditMeter({
       <p className="mt-2 text-[11.5px] leading-relaxed text-ink-muted">
         {empty ? (
           <>
-            Used up.{' '}
+            Used up — resets {formatReset(resetsAt)}. Your sites stay live.{' '}
+            {tier === 'free' ? (
+              <>
+                <Link href="/app/settings/billing" className="text-accent hover:underline">
+                  Upgrade
+                </Link>{' '}
+                for more, or{' '}
+              </>
+            ) : null}
             <Link href="/app/settings/api-keys" className="text-accent hover:underline">
-              Add your own key
+              add your own key
             </Link>{' '}
-            for no limit, or come back after {formatReset(resetsAt)}.
+            for no limit.
           </>
         ) : (
           <>A new site costs 3, each edit costs 1. Resets {formatReset(resetsAt)}.</>

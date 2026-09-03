@@ -1,22 +1,24 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isEntitled, TRIAL_DAYS } from '@/lib/razorpay';
+import { isEntitled } from '@/lib/razorpay';
 import { isBillingConfigured } from '@/lib/env';
 import type { SubscriptionRow } from '@/lib/database.types';
 
 export interface BillingState {
   subscription: SubscriptionRow | null;
+  /** On a paid plan. Raises the daily ceiling — it never gates access. */
   entitled: boolean;
-  onTrial: boolean;
   daysLeft: number | null;
   hoursLeft: number | null;
   billingConfigured: boolean;
 }
 
 /**
- * Every account starts on a trial row so a new user can build their first site
- * before paying — the gate is then a single `entitled` check everywhere, rather
- * than a special case scattered through the app.
+ * Every account gets a row on the free tier.
+ *
+ * Free is permanent, not a countdown: nothing here expires and nothing here
+ * blocks the product. Subscribing swaps the row to an active plan, which only
+ * raises the daily credit ceiling (see getAllowance).
  */
 export async function ensureSubscriptionRow(userId: string): Promise<SubscriptionRow> {
   const supabase = createAdminClient();
@@ -29,14 +31,13 @@ export async function ensureSubscriptionRow(userId: string): Promise<Subscriptio
 
   if (existing) return existing;
 
-  const trialEnd = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data: created, error } = await supabase
     .from('subscriptions')
-    .insert({ user_id: userId, status: 'trialing', current_period_end: trialEnd })
+    .insert({ user_id: userId, status: 'free', current_period_end: null })
     .select('*')
     .single();
 
-  if (error || !created) throw new Error(error?.message ?? 'Could not start your trial');
+  if (error || !created) throw new Error(error?.message ?? 'Could not set up your account');
   return created;
 }
 
@@ -52,21 +53,8 @@ export async function getBillingState(userId: string): Promise<BillingState> {
   return {
     subscription,
     entitled,
-    onTrial: subscription?.status === 'trialing',
     daysLeft,
     hoursLeft,
     billingConfigured: isBillingConfigured,
-  };
-}
-
-/** Used by the generation endpoints to refuse work on a lapsed account. */
-export async function requireEntitlement(userId: string): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const state = await getBillingState(userId);
-  if (state.entitled) return { ok: true };
-  return {
-    ok: false,
-    reason: state.onTrial
-      ? 'Your trial has ended. Subscribe in Settings → Billing to keep building.'
-      : 'Your subscription is not active. Update it in Settings → Billing to keep building.',
   };
 }

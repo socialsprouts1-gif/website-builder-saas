@@ -1,6 +1,7 @@
 import 'server-only';
 import OpenAI from 'openai';
-import { env, CREDIT_COST, DAILY_PLATFORM_CREDITS, type CreditedEvent } from '@/lib/env';
+import { env, CREDIT_COST, type CreditedEvent } from '@/lib/env';
+import { getAllowance } from '@/lib/allowance';
 import { decryptSecret } from '@/lib/crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -17,7 +18,7 @@ export class NoKeyAvailableError extends Error {
   constructor(public readonly reason: 'not_configured' | 'quota_exhausted') {
     super(
       reason === 'quota_exhausted'
-        ? "You have used today's free credits. They reset at midnight UTC — or add your own OpenAI key in Settings → API keys for no limit at all."
+        ? "You have used today's credits. They reset at midnight UTC — upgrade for a much larger daily allowance, or add your own OpenAI key for no limit at all."
         : 'No OpenAI key is configured. Add your own key in Settings → API keys to start generating.',
     );
     this.name = 'NoKeyAvailableError';
@@ -92,8 +93,15 @@ export async function resolveApiKey(
 
   if (!env.openai.platformKey) throw new NoKeyAvailableError('not_configured');
 
+  const allowance = await getAllowance(userId);
+
+  // Admins are never metered.
+  if (allowance.unlimited) {
+    return { apiKey: env.openai.platformKey, source: 'platform', creditsRemaining: Infinity };
+  }
+
   const used = await platformCreditsUsedToday(userId);
-  const remaining = Math.max(0, DAILY_PLATFORM_CREDITS - used);
+  const remaining = Math.max(0, allowance.dailyCredits - used);
 
   // Refuse when the call would overdraw, not merely when the balance is zero.
   if (remaining < CREDIT_COST[intent]) throw new NoKeyAvailableError('quota_exhausted');
@@ -124,16 +132,21 @@ export async function getKeyStatus(userId: string) {
     .eq('is_active', true)
     .maybeSingle();
 
-  const used = await platformCreditsUsedToday(userId);
+  const [used, allowance] = await Promise.all([
+    platformCreditsUsedToday(userId),
+    getAllowance(userId),
+  ]);
 
   return {
     hasOwnKey: Boolean(keyRow),
     last4: keyRow?.last4 ?? null,
     validatedAt: keyRow?.validated_at ?? null,
     platformConfigured: Boolean(env.openai.platformKey),
+    tier: allowance.tier,
+    unlimited: allowance.unlimited,
     creditsUsed: used,
-    creditsLimit: DAILY_PLATFORM_CREDITS,
-    creditsRemaining: Math.max(0, DAILY_PLATFORM_CREDITS - used),
+    creditsLimit: allowance.dailyCredits,
+    creditsRemaining: Math.max(0, allowance.dailyCredits - used),
     resetsAt: creditsResetAt().toISOString(),
   };
 }

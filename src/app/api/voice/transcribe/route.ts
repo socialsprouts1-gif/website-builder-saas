@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { openaiFor, resolveApiKey } from '@/lib/openai/client';
 import { getModelCatalog } from '@/lib/openai/models';
 import { recordUsage } from '@/lib/usage';
-import { RATE_LIMITS, rateLimit } from '@/lib/rate-limit';
+import { RATE_LIMITS, rateLimitUser } from '@/lib/rate-limit';
 import { handleRouteError, jsonError } from '@/lib/api';
 
 export const runtime = 'nodejs';
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) return jsonError('Sign in first', 401);
 
-    const limit = await rateLimit(
+    const limit = await rateLimitUser(
+      user.id,
       `transcribe:${user.id}`,
       RATE_LIMITS.transcription.limit,
       RATE_LIMITS.transcription.windowSeconds,

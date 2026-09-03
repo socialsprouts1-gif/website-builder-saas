@@ -24,7 +24,9 @@ export default async function NewSitePage() {
   }
 
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
-  const outOfQuota = keyStatus ? !keyStatus.hasOwnKey && keyStatus.creditsRemaining < 3 : false;
+  const outOfQuota = keyStatus
+    ? !keyStatus.hasOwnKey && !keyStatus.unlimited && keyStatus.creditsRemaining < 3
+    : false;
   const noKeyAtAll = keyStatus ? !keyStatus.hasOwnKey && !keyStatus.platformConfigured : false;
 
   return (
@@ -67,6 +69,8 @@ export default async function NewSitePage() {
             resetsAt={keyStatus.resetsAt}
             hasOwnKey={keyStatus.hasOwnKey}
             platformConfigured={keyStatus.platformConfigured}
+            tier={keyStatus.tier}
+            unlimited={keyStatus.unlimited}
             variant="panel"
           />
         </div>

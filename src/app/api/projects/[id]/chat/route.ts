@@ -4,8 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { runChatEdit } from '@/lib/generation/pipeline';
 import { chatEditSchema } from '@/lib/validation';
 import { jsonError, sseEncode, sseHeaders } from '@/lib/api';
-import { RATE_LIMITS, rateLimit } from '@/lib/rate-limit';
-import { requireEntitlement } from '@/lib/billing';
+import { RATE_LIMITS, rateLimitUser } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -27,10 +26,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     .maybeSingle();
   if (!project) return jsonError('Project not found', 404);
 
-  const entitlement = await requireEntitlement(user.id);
-  if (!entitlement.ok) return jsonError(entitlement.reason, 402);
 
-  const limit = await rateLimit(
+  const limit = await rateLimitUser(
+    user.id,
     `chat:${user.id}`,
     RATE_LIMITS.chatEdit.limit,
     RATE_LIMITS.chatEdit.windowSeconds,

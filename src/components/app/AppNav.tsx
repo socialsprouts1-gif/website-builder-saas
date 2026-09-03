@@ -36,6 +36,8 @@ export interface CreditSummary {
   resetsAt: string;
   hasOwnKey: boolean;
   platformConfigured: boolean;
+  tier: 'admin' | 'pro' | 'free';
+  unlimited: boolean;
 }
 
 export function AppNav({

@@ -86,6 +86,13 @@ export const isPlatformKeyConfigured = Boolean(env.openai.platformKey);
 export const DAILY_PLATFORM_CREDITS = 10;
 
 /**
+ * The paid tier's daily ceiling. High enough that a small business never feels
+ * it, finite so one runaway account cannot outspend a ₹500 subscription on the
+ * shared key. Users who genuinely want no ceiling add their own OpenAI key.
+ */
+export const PRO_DAILY_PLATFORM_CREDITS = 200;
+
+/**
  * What each kind of model call costs against the daily allowance.
  *
  * Every entry that spends real money is priced. Previously only the initial

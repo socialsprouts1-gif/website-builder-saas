@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createVersion, getCurrentFiles } from '@/lib/generation/storage';
-import { requireEntitlement } from '@/lib/billing';
 import { handleRouteError, jsonError } from '@/lib/api';
 
 export const runtime = 'nodejs';
@@ -22,8 +21,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     } = await supabase.auth.getUser();
     if (!user) return jsonError('Sign in first', 401);
 
-    const entitlement = await requireEntitlement(user.id);
-    if (!entitlement.ok) return jsonError(entitlement.reason, 402);
 
     const admin = createAdminClient();
     const { data: template } = await admin

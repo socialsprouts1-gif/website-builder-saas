@@ -19,6 +19,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 resetsAt: keyStatus.resetsAt,
                 hasOwnKey: keyStatus.hasOwnKey,
                 platformConfigured: keyStatus.platformConfigured,
+                tier: keyStatus.tier,
+                unlimited: keyStatus.unlimited,
               }
             : null
         }

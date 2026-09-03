@@ -3,10 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createProjectSchema } from '@/lib/validation';
 import { handleRouteError, jsonError } from '@/lib/api';
-import { RATE_LIMITS, rateLimit } from '@/lib/rate-limit';
+import { RATE_LIMITS, rateLimitUser } from '@/lib/rate-limit';
 import { uploadAsset } from '@/lib/generation/storage';
 import { categoryBySlug } from '@/lib/categories';
-import { requireEntitlement } from '@/lib/billing';
+import { getAllowance } from '@/lib/allowance';
 
 export const runtime = 'nodejs';
 
@@ -24,15 +24,15 @@ export async function POST(request: NextRequest) {
     if (!user) return jsonError('Sign in first', 401);
 
     // Email verification gates the first generation — it is what stops throwaway
-    // accounts from draining the free platform-key quota (spec Section 13).
-    if (!user.email_confirmed_at) {
+    // accounts from draining the shared key. Admins are exempt.
+    const allowance = await getAllowance(user.id);
+    if (!user.email_confirmed_at && !allowance.unlimited) {
       return jsonError('Confirm your email address before generating your first site.', 403);
     }
 
-    const entitlement = await requireEntitlement(user.id);
-    if (!entitlement.ok) return jsonError(entitlement.reason, 402);
 
-    const limit = await rateLimit(
+    const limit = await rateLimitUser(
+      user.id,
       `generation:${user.id}`,
       RATE_LIMITS.generation.limit,
       RATE_LIMITS.generation.windowSeconds,

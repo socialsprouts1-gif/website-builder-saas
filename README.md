@@ -191,10 +191,18 @@ These were unspecified. Each is reversible and isolated.
 - **Generated code lives in `project_versions.files` (jsonb)**, not Storage, so
   a version is written as one transactional row. Storage holds the genuinely
   blob-shaped things: uploaded screenshots and images.
-- **Every account starts on a 1-day trial row** (`TRIAL_DAYS`), so `entitled`
-  is a single check everywhere and a new user can build their first site before
-  paying. One day pairs with the daily credit allowance: a full day and 10
-  credits is enough to build a site and decide.
+- **Freemium, not a trial.** The free tier is permanent: `DAILY_PLATFORM_CREDITS`
+  (10) a day, forever, with every feature included. Subscribing raises the
+  ceiling to `PRO_DAILY_PLATFORM_CREDITS` (200) — it buys throughput, not
+  features, and nothing about billing gates access to the product. Running out
+  of credits for the day is the only limit a free user meets, and their sites
+  stay live and exportable throughout. `src/lib/allowance.ts` is the one place
+  that decides what an account is allowed.
+- **Admins are exempt from everything** — credits, rate limits and the
+  email-verification gate. `getAllowance` returns `unlimited` for them.
+- The pro ceiling is finite on purpose: unlimited generation on the shared key
+  would let one runaway account outspend a ₹500 subscription many times over.
+  Users who want no ceiling add their own OpenAI key.
 - **Zip export uses a small store-only ZIP writer** (`src/lib/zip.ts`) rather
   than a dependency — generated sites are small text files.
 

@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getAllowance } from '@/lib/allowance';
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -46,6 +47,24 @@ export async function pruneRateLimitEvents(olderThanSeconds = 86_400) {
   const supabase = createAdminClient();
   const cutoff = new Date(Date.now() - olderThanSeconds * 1000).toISOString();
   await supabase.from('rate_limit_events').delete().lt('created_at', cutoff);
+}
+
+/**
+ * Same window, but admins are waved through. Used on the per-user limits;
+ * the public chatbot endpoint stays limited for everyone because that traffic
+ * is anonymous visitors, not the account holder.
+ */
+export async function rateLimitUser(
+  userId: string,
+  bucket: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<RateLimitResult> {
+  const allowance = await getAllowance(userId).catch(() => null);
+  if (allowance?.unlimited) {
+    return { allowed: true, remaining: Number.MAX_SAFE_INTEGER, retryAfterSeconds: 0 };
+  }
+  return rateLimit(bucket, limit, windowSeconds);
 }
 
 export const RATE_LIMITS = {
