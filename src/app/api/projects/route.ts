@@ -6,6 +6,7 @@ import { handleRouteError, jsonError } from '@/lib/api';
 import { RATE_LIMITS, rateLimitUser } from '@/lib/rate-limit';
 import { uploadAsset } from '@/lib/generation/storage';
 import { categoryBySlug } from '@/lib/categories';
+import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/errors';
 import { getAllowance } from '@/lib/allowance';
 
 export const runtime = 'nodejs';
@@ -58,7 +59,10 @@ export async function POST(request: NextRequest) {
       .select('id')
       .single();
 
-    if (projectError || !project) return jsonError(projectError?.message ?? 'Could not create project', 500);
+    if (projectError || !project) {
+      if (isMissingTableError(projectError)) throw new SchemaNotInstalledError();
+      return jsonError(projectError?.message ?? 'Could not create project', 500);
+    }
 
     let screenshotUrl: string | null = null;
     if (body.screenshotDataUrl) {

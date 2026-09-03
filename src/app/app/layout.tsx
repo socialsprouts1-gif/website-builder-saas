@@ -1,9 +1,16 @@
 import { AppNav } from '@/components/app/AppNav';
 import { isBootstrapAdmin, requireUser } from '@/lib/auth';
 import { getKeyStatus } from '@/lib/openai/client';
+import { isSchemaInstalled } from '@/lib/supabase/errors';
+import { redirect } from 'next/navigation';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+
+  // Without the tables nothing can be read or written; /setup says which
+  // migrations are outstanding instead of letting every page fail oddly.
+  if (!(await isSchemaInstalled())) redirect('/setup');
+
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
 
   return (

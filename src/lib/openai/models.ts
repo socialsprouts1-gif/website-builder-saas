@@ -58,7 +58,11 @@ function overrides(): Partial<Record<'quality' | 'fast' | 'vision' | 'image' | '
   }
 }
 
-const SMALL_HINTS = ['-mini', '-nano', '-small', '-lite', '-flash', '-turbo'];
+// Ordered smallest-first. Splitting the tiers keeps the "Fast & cheap" pick
+// deterministic: a nano is cheaper but weaker than a mini, and site generation
+// wants the stronger of the small models.
+const TINY_HINTS = ['-nano', '-lite', '-flash'];
+const SMALL_HINTS = ['-mini', '-small', '-turbo', ...TINY_HINTS];
 const NON_CHAT_HINTS = [
   'embedding', 'whisper', 'tts', 'dall-e', 'image', 'transcribe', 'realtime',
   'moderation', 'audio', 'search', 'computer-use', 'sora', 'live-transcribe',
@@ -80,10 +84,17 @@ function scoreModel(id: string): number {
   const version = /(\d+)(?:\.(\d+))?/.exec(id.replace(/^[a-z-]*/, ''));
   const major = version ? Number(version[1]) : 0;
   const minor = version?.[2] ? Number(version[2]) : 0;
-  let score = major * 100 + minor;
-  if (id.startsWith('gpt-')) score += 500;
-  if (id.includes('codex')) score += 20;
-  if (isSmall(id)) score -= 400;
+
+  // Bands are spaced so a lower band can never be climbed into by a higher
+  // one: family beats size, size beats major version, major beats minor.
+  let score = major * 10_000 + minor * 100;
+  if (id.startsWith('gpt-')) score += 1_000_000;
+  if (isSmall(id)) score -= 5_000_000;
+  if (TINY_HINTS.some((hint) => id.includes(hint))) score -= 1_000_000;
+
+  // Deliberately no bonus for specialist models. Naming a code-specific model
+  // "Best quality" for general site generation is a judgement the heuristic
+  // should not be making — it stays available under Custom.
   return score;
 }
 

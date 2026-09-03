@@ -5,6 +5,7 @@ import { Logo } from '@/components/ui/Logo';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { isSupabaseConfigured, isBillingConfigured, isPlatformKeyConfigured } from '@/lib/env';
+import { isSchemaInstalled } from '@/lib/supabase/errors';
 
 export const metadata: Metadata = { title: 'Finish setting up Lumen' };
 export const dynamic = 'force-dynamic';
@@ -15,9 +16,10 @@ export const dynamic = 'force-dynamic';
  * else degrades on its own — so this page says exactly which variables are
  * absent and what each one unlocks.
  */
-export default function SetupPage() {
-  // Once Supabase is wired up there is nothing here worth showing.
-  if (isSupabaseConfigured) redirect('/app');
+export default async function SetupPage() {
+  // Once Supabase is wired up AND the tables exist there is nothing to show.
+  const schemaInstalled = isSupabaseConfigured ? await isSchemaInstalled() : false;
+  if (isSupabaseConfigured && schemaInstalled) redirect('/app');
 
   const groups = [
     {
@@ -69,11 +71,16 @@ export default function SetupPage() {
 
         <Badge tone="warning" className="mb-5">Setup required</Badge>
         <h1 className="font-display text-[34px] leading-tight text-ink-primary">
-          Almost there — <em className="italic text-accent">connect the database.</em>
+          {isSupabaseConfigured ? (
+            <>Almost there — <em className="italic text-accent">run the migrations.</em></>
+          ) : (
+            <>Almost there — <em className="italic text-accent">connect the database.</em></>
+          )}
         </h1>
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-ink-secondary">
-          The public pages work, but signing in and building sites need Supabase. Add the variables below to
-          this deployment&apos;s environment, redeploy, and the app comes alive.
+          {isSupabaseConfigured
+            ? 'Supabase is connected but Lumen\u2019s tables do not exist yet, so nothing can be saved. Run the migration files below and this page will let you through.'
+            : 'The public pages work, but signing in and building sites need Supabase. Add the variables below to this deployment\u2019s environment, redeploy, and the app comes alive.'}
         </p>
 
         <div className="mt-9 space-y-4">
@@ -104,14 +111,23 @@ export default function SetupPage() {
           })}
         </div>
 
-        <div className="mt-9 rounded-card border border-hairline bg-raised p-5">
-          <h2 className="font-display text-lg text-ink-primary">Then run the migrations</h2>
+        <div
+          className={`mt-9 rounded-card border p-5 ${
+            schemaInstalled ? 'border-hairline bg-raised' : 'border-accent/40 bg-accent-soft'
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-lg text-ink-primary">Run the migrations</h2>
+            <Badge tone={schemaInstalled ? 'accent' : 'warning'}>
+              {schemaInstalled ? 'Tables installed' : 'Not run yet'}
+            </Badge>
+          </div>
           <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
             Paste <span className="font-mono text-[12px] text-ink-primary">supabase/migrations/0001_init.sql</span>{' '}
-            and{' '}
-            <span className="font-mono text-[12px] text-ink-primary">0002_storage.sql</span> into your project&apos;s
-            SQL editor, in that order. They create the schema, enable row-level security on every table, and
-            add the storage bucket.
+            through{' '}
+            <span className="font-mono text-[12px] text-ink-primary">0004_freemium.sql</span> into your
+            project&apos;s SQL editor, in order. They create the schema, enable row-level security on every
+            table, add the storage bucket, grant the first admin and set up the free tier.
           </p>
         </div>
 

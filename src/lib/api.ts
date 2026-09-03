@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
-import { SupabaseNotConfiguredError } from '@/lib/supabase/errors';
+import { SchemaNotInstalledError, SupabaseNotConfiguredError } from '@/lib/supabase/errors';
 
 export function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -15,6 +15,7 @@ export function handleRouteError(cause: unknown) {
   if (cause instanceof ZodError) return fromZodError(cause);
   // Unconfigured deployment, not a bug: 503 says "come back once it is set up".
   if (cause instanceof SupabaseNotConfiguredError) return jsonError(cause.message, 503);
+  if (cause instanceof SchemaNotInstalledError) return jsonError(cause.message, 503);
   const message = cause instanceof Error ? cause.message : 'Something went wrong';
   // Never leak stack traces or provider internals to the client.
   return jsonError(message.slice(0, 400), 500);
