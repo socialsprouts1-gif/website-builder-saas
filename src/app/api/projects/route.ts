@@ -8,6 +8,7 @@ import { uploadAsset } from '@/lib/generation/storage';
 import { categoryBySlug } from '@/lib/categories';
 import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/errors';
 import { getAllowance } from '@/lib/allowance';
+import { ensureUserProfile } from '@/lib/profile';
 
 export const runtime = 'nodejs';
 
@@ -44,6 +45,14 @@ export async function POST(request: NextRequest) {
 
     const body = createProjectSchema.parse(await request.json());
     const category = categoryBySlug(body.category);
+
+    // projects.user_id references public.users; make sure that row exists
+    // before inserting, rather than failing on the constraint.
+    await ensureUserProfile({
+      id: user.id,
+      email: user.email ?? '',
+      fullName: (user.user_metadata?.full_name as string | undefined) ?? null,
+    });
 
     const admin = createAdminClient();
     const { data: project, error: projectError } = await admin

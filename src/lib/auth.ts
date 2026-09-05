@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { env, isSupabaseConfigured } from '@/lib/env';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { ensureUserProfile } from '@/lib/profile';
 import type { UserRow } from '@/lib/database.types';
 
 export async function getSessionUser() {
@@ -26,7 +27,19 @@ export async function getCurrentUser(): Promise<{ id: string; email: string; pro
   if (!user) return null;
 
   const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
-  return { id: user.id, email: user.email ?? '', profile: profile ?? null };
+
+  // A missing profile is already detected here, so healing it costs no extra
+  // read and one write that happens at most once per account.
+  const resolved =
+    profile ??
+    (await ensureUserProfile({
+      id: user.id,
+      email: user.email ?? '',
+      fullName: (user.user_metadata?.full_name as string | undefined) ?? null,
+      avatarUrl: (user.user_metadata?.avatar_url as string | undefined) ?? null,
+    }).catch(() => null));
+
+  return { id: user.id, email: user.email ?? '', profile: resolved ?? null };
 }
 
 export async function requireUser() {
