@@ -181,6 +181,35 @@ A grey box is stated as a failure condition.
 If you would rather have real photography, the image model is already priced in
 `CREDIT_COST` — generating a hero per site is a small change to the pipeline.
 
+### The editor
+
+`/app/project/[id]/editor` is a three-pane builder: blocks on the left,
+the live page in the middle, an inspector on the right. Text, font size and
+weight, colour, alignment, images, reordering, duplication, deletion and
+adding blocks — all of it writes back into the project's real HTML and stores
+a new version, so switching to chat afterwards operates on the true state.
+
+Two things are worth knowing about how it holds together.
+
+`src/lib/generation/html-tree.ts` is a tag-stack parser. The previous engine
+located elements by pattern, which is enough to change text but cannot answer
+"what is this block's previous sibling" — and without that there is no
+reordering. It walks the tags once, keeps raw-text elements (`script`,
+`style`) out of the markup scan, and yields parent and sibling links.
+
+The preview iframe is sandboxed without `allow-same-origin`, so the editor
+cannot touch its DOM; everything crosses by `postMessage`. The page reports
+its own outline and design tokens, which is why the colour swatches show the
+site's real palette rather than a guess. The parent asks for that state
+repeatedly until it answers: a single push is lost if the frame loads before
+the listener attaches, and in development StrictMode tears the listener down
+and re-attaches it.
+
+Inserted blocks are named by id, never sent as markup — anything a browser
+could put in an edit request would end up in a published site, so the HTML
+originates in `src/lib/generation/blocks.ts`. Style values are screened for
+quotes, `<`, `>` and `url()` before they reach an inline `style` attribute.
+
 ### Custom domains
 
 `src/lib/vercel.ts` wraps the deploy and domain endpoints. Deploying records

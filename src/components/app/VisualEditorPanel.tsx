@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Textarea } from '@/components/ui/Field';
-import type { VisualEdit } from '@/lib/generation/html-edit';
+import { describeEdit, type VisualEdit } from '@/lib/generation/html-edit';
 
 interface Selection {
   lumenId: string;
@@ -168,9 +168,7 @@ export function VisualEditorPanel({
             <ul className="space-y-1 text-[12.5px] text-ink-secondary">
               {pending.map((edit, index) => (
                 <li key={index} className="truncate">
-                  {edit.kind === 'token'
-                    ? `token --${edit.name} → ${edit.value}`
-                    : `${edit.kind} · ${edit.lumenId}`}
+                  {describeEdit(edit)}
                 </li>
               ))}
             </ul>

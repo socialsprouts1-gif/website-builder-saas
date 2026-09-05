@@ -11,6 +11,7 @@ export function ProjectTabs({ projectId, name }: { projectId: string; name: stri
 
   const tabs = [
     { href: base, label: 'Workspace' },
+    { href: `${base}/editor`, label: 'Editor' },
     { href: `${base}/chatbot`, label: 'Chatbot' },
     { href: `${base}/connectors`, label: 'Connectors' },
     { href: `${base}/deploy`, label: 'Deploy' },

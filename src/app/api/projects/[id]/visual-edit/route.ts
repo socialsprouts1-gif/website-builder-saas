@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentFiles, createVersion } from '@/lib/generation/storage';
 import { applyTokenEditsToCss, applyVisualEdits, type VisualEdit } from '@/lib/generation/html-edit';
+import { renderBlock } from '@/lib/generation/blocks';
 import { visualEditSchema } from '@/lib/validation';
 import { handleRouteError, jsonError } from '@/lib/api';
 
@@ -26,7 +27,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!project) return jsonError('Project not found', 404);
 
     const body = visualEditSchema.parse(await request.json());
-    const edits = body.edits as VisualEdit[];
+
+    // Block markup is resolved server-side from an id. The client never sends
+    // HTML, because whatever it sent would end up inside the published site.
+    const edits: VisualEdit[] = [];
+    for (const edit of body.edits) {
+      if (edit.kind !== 'insert') {
+        edits.push(edit as VisualEdit);
+        continue;
+      }
+      const html = renderBlock(edit.blockId);
+      if (!html) return jsonError(`Unknown block: ${edit.blockId}`, 422);
+      edits.push({ kind: 'insert', afterLumenId: edit.afterLumenId, html });
+    }
 
     const files = await getCurrentFiles(projectId);
     if (files.length === 0) return jsonError('This project has no files yet', 409);

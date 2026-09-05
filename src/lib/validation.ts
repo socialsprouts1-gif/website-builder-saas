@@ -22,14 +22,56 @@ export const chatEditSchema = z.object({
   source: z.enum(['chat', 'voice']).default('chat'),
 });
 
+const lumenId = z.string().min(1).max(200);
+
+/**
+ * Style values are capped and screened: they are written into an inline style
+ * attribute, so a value containing a quote or a url() would escape the
+ * attribute or fetch something. Only plain declarations get through.
+ */
+const styleValue = z
+  .string()
+  .max(120)
+  .regex(/^[^"'<>;{}()]*$/, 'That style value is not allowed.');
+
+const STYLE_PROPERTIES = [
+  'font-size',
+  'font-weight',
+  'color',
+  'background-color',
+  'text-align',
+  'letter-spacing',
+  'line-height',
+  'padding',
+  'margin',
+  'border-radius',
+] as const;
+
 export const visualEditSchema = z.object({
   edits: z
     .array(
       z.discriminatedUnion('kind', [
-        z.object({ kind: z.literal('text'), lumenId: z.string().min(1).max(200), value: z.string().max(5000) }),
-        z.object({ kind: z.literal('image'), lumenId: z.string().min(1).max(200), src: z.string().url().max(2000), alt: z.string().max(300).optional() }),
-        z.object({ kind: z.literal('remove'), lumenId: z.string().min(1).max(200) }),
-        z.object({ kind: z.literal('token'), name: z.string().min(1).max(80), value: z.string().min(1).max(80) }),
+        z.object({ kind: z.literal('text'), lumenId, value: z.string().max(5000) }),
+        z.object({
+          kind: z.literal('image'),
+          lumenId,
+          src: z.string().url().max(2000),
+          alt: z.string().max(300).optional(),
+        }),
+        z.object({ kind: z.literal('remove'), lumenId }),
+        z.object({
+          kind: z.literal('style'),
+          lumenId,
+          styles: z.record(z.enum(STYLE_PROPERTIES), styleValue),
+        }),
+        z.object({ kind: z.literal('move'), lumenId, direction: z.enum(['up', 'down']) }),
+        z.object({ kind: z.literal('duplicate'), lumenId }),
+        z.object({
+          kind: z.literal('insert'),
+          afterLumenId: lumenId.nullable(),
+          blockId: z.string().min(1).max(60),
+        }),
+        z.object({ kind: z.literal('token'), name: z.string().min(1).max(80), value: styleValue.min(1) }),
       ]),
     )
     .min(1)
