@@ -20,7 +20,7 @@ export default async function ProjectConnectorsPage({ params }: { params: Promis
   const cards = await buildConnectorCards({ userId: user.id, scope: 'project', projectId: id });
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-6 py-10">
       <SectionHeader
         title="Connectors for this site"
         description={`What ${project.name} is wired into. Account-wide credentials live in Settings.`}

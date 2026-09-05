@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Field, Input } from '@/components/ui/Field';
 import { cn } from '@/components/ui/cn';
+import { ConnectorMark } from '@/components/app/ConnectorMark';
 import type { ConnectorCard } from '@/lib/connectors/registry';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -15,42 +15,159 @@ const CATEGORY_LABELS: Record<string, string> = {
   commerce: 'Commerce & bookings',
 };
 
-/** A flat card grid with one obvious state per card — never nested toggles. */
-export function ConnectorGrid({
-  cards,
-  projectId,
-}: {
-  cards: ConnectorCard[];
-  projectId?: string;
-}) {
+type Filter = { kind: 'all' } | { kind: 'enabled' } | { kind: 'category'; value: string };
+
+/**
+ * Browse-and-connect layout: search, a filter rail with live counts, and a
+ * two-column grid. One screen, one job — connecting a tool — with the detail
+ * form opening in place rather than on another page.
+ */
+export function ConnectorGrid({ cards, projectId }: { cards: ConnectorCard[]; projectId?: string }) {
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<Filter>({ kind: 'all' });
   const [openProvider, setOpenProvider] = useState<string | null>(null);
 
-  const categories = [...new Set(cards.map((card) => card.category))];
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const card of cards) counts.set(card.category, (counts.get(card.category) ?? 0) + 1);
+    return [...counts.entries()];
+  }, [cards]);
+
+  const enabledCount = cards.filter((card) => card.status.connected).length;
+
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return cards
+      .filter((card) => {
+        if (filter.kind === 'enabled' && !card.status.connected) return false;
+        if (filter.kind === 'category' && card.category !== filter.value) return false;
+        if (!needle) return true;
+        return (
+          card.name.toLowerCase().includes(needle) || card.summary.toLowerCase().includes(needle)
+        );
+      })
+      // Connected first, then alphabetical, so the ones in use stay findable.
+      .sort((a, b) => {
+        if (a.status.connected !== b.status.connected) return a.status.connected ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+  }, [cards, filter, query]);
 
   return (
-    <div className="space-y-10">
-      {categories.map((category) => (
-        <section key={category}>
-          <h2 className="mb-3 text-[11px] uppercase tracking-[0.16em] text-ink-muted">
-            {CATEGORY_LABELS[category] ?? category}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {cards
-              .filter((card) => card.category === category)
-              .map((card) => (
-                <ConnectorTile
-                  key={card.provider}
-                  card={card}
-                  projectId={projectId}
-                  open={openProvider === card.provider}
-                  onToggle={() =>
-                    setOpenProvider((current) => (current === card.provider ? null : card.provider))
-                  }
-                />
-              ))}
+    <div className="grid gap-6 lg:grid-cols-[190px_minmax(0,1fr)]">
+      <aside className="space-y-5">
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search"
+          aria-label="Search connectors"
+        />
+
+        <div className="space-y-0.5">
+          <RailRow
+            label="Enabled"
+            count={enabledCount}
+            active={filter.kind === 'enabled'}
+            onClick={() => setFilter({ kind: 'enabled' })}
+          />
+          <RailRow
+            label="All"
+            count={cards.length}
+            active={filter.kind === 'all'}
+            onClick={() => setFilter({ kind: 'all' })}
+          />
+        </div>
+
+        <div className="space-y-0.5">
+          <p className="px-3 pb-1.5 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+            Categories
+          </p>
+          {categories.map(([category, count]) => (
+            <RailRow
+              key={category}
+              label={CATEGORY_LABELS[category] ?? category}
+              count={count}
+              active={filter.kind === 'category' && filter.value === category}
+              onClick={() => setFilter({ kind: 'category', value: category })}
+            />
+          ))}
+        </div>
+
+        <RequestConnector />
+      </aside>
+
+      <div>
+        {visible.length === 0 ? (
+          <p className="rounded-card border border-dashed border-hairline px-4 py-12 text-center text-[13px] text-ink-muted">
+            {query.trim() ? `Nothing matches “${query.trim()}”.` : 'Nothing here yet.'}
+          </p>
+        ) : (
+          <div className="grid auto-rows-fr gap-3 sm:grid-cols-2">
+            {visible.map((card) => (
+              <ConnectorTile
+                key={card.provider}
+                card={card}
+                projectId={projectId}
+                open={openProvider === card.provider}
+                onToggle={() =>
+                  setOpenProvider((current) => (current === card.provider ? null : card.provider))
+                }
+              />
+            ))}
           </div>
-        </section>
-      ))}
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RailRow({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex w-full items-center justify-between gap-2 rounded-[9px] px-3 py-2 text-left text-[13px] transition',
+        active ? 'bg-accent-soft text-accent' : 'text-ink-secondary hover:bg-white/5 hover:text-ink-primary',
+      )}
+    >
+      <span className="truncate">{label}</span>
+      <span className={cn('shrink-0 text-[12px]', active ? 'text-accent' : 'text-ink-muted')}>{count}</span>
+    </button>
+  );
+}
+
+function RequestConnector() {
+  const [sent, setSent] = useState(false);
+
+  return (
+    <div className="rounded-card border border-hairline bg-raised p-4">
+      <p className="text-[13px] text-ink-primary">Missing a connector?</p>
+      <p className="mt-1 text-[11.5px] leading-relaxed text-ink-muted">
+        Adding one is a registry entry, not a rebuild — tell us which and it can ship quickly.
+      </p>
+      <Button
+        size="sm"
+        variant="secondary"
+        className="mt-3 w-full"
+        onClick={() => {
+          window.location.href =
+            'mailto:socialsprouts1@gmail.com?subject=Lumen%20connector%20request&body=Which%20tool%20would%20you%20like%20to%20connect%3F';
+          setSent(true);
+        }}
+      >
+        {sent ? 'Opening mail…' : 'Request'}
+      </Button>
     </div>
   );
 }
@@ -104,26 +221,25 @@ function ConnectorTile({
   return (
     <div
       className={cn(
-        'rounded-card border bg-raised p-4 transition',
-        connected ? 'border-accent/30' : 'border-hairline',
+        'flex h-full flex-col rounded-card border bg-raised p-4 transition',
+        connected ? 'border-accent/25' : 'border-hairline hover:border-white/15',
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-ink-primary">{card.name}</p>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">{card.summary}</p>
+      <div className="flex items-start gap-3">
+        <ConnectorMark provider={card.provider} name={card.name} connected={connected} />
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13.5px] text-ink-primary">{card.name}</p>
+          <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-ink-muted">{card.summary}</p>
         </div>
-        <Badge tone={connected ? 'accent' : 'neutral'} className="shrink-0 px-2.5 py-1 text-[10px]">
-          {connected ? 'Connected' : 'Not connected'}
-        </Badge>
       </div>
 
       {!card.configured && card.authKind === 'oauth' ? (
-        <p className="mt-3 text-[12px] text-ink-muted">
-          Add this provider&apos;s client ID and secret to the environment to enable it.
+        <p className="mt-auto pt-3 text-[11.5px] text-ink-muted">
+          Not configured on this deployment — add its client ID and secret.
         </p>
       ) : (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-auto flex flex-wrap gap-2 pt-3">
           {connected ? (
             <>
               {card.canSync ? (
@@ -169,7 +285,7 @@ function ConnectorTile({
       ) : null}
 
       {message ? (
-        <p className={cn('mt-3 text-[12.5px]', failed ? 'text-[#e5735a]' : 'text-accent')}>{message}</p>
+        <p className={cn('mt-3 text-[12px]', failed ? 'text-[#e5735a]' : 'text-accent')}>{message}</p>
       ) : null}
     </div>
   );
