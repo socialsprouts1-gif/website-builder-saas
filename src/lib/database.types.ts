@@ -35,6 +35,10 @@ export type ProjectRow = {
   design_system: Json | null;
   current_version_id: string | null;
   is_template: boolean;
+  vercel_project_id: string | null;
+  vercel_project_name: string | null;
+  deploy_url: string | null;
+  custom_domain: string | null;
   created_at: string;
   updated_at: string;
 }

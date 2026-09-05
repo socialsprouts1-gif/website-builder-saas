@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { SectionHeader } from '@/components/ui/Card';
 import { DeployPanel } from '@/components/app/DeployPanel';
+import { DomainPanel } from '@/components/app/DomainPanel';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { loadAccountContext } from '@/lib/connectors/registry';
@@ -15,7 +16,7 @@ export default async function DeployPage({ params }: { params: Promise<{ id: str
   const supabase = await createClient();
   const { data: project } = await supabase
     .from('projects')
-    .select('id, name, slug, status')
+    .select('id, name, slug, status, vercel_project_id, custom_domain, deploy_url')
     .eq('id', id)
     .maybeSingle();
   if (!project) notFound();
@@ -37,12 +38,21 @@ export default async function DeployPage({ params }: { params: Promise<{ id: str
           Nothing to deploy yet — generate the site first.
         </p>
       ) : (
-        <DeployPanel
-          projectId={project.id}
-          defaultName={project.slug}
-          vercelConnected={Boolean(vercel.credentials?.access_token)}
-          githubConnected={Boolean(github.credentials?.access_token)}
-        />
+        <>
+          <DeployPanel
+            projectId={project.id}
+            defaultName={project.slug}
+            vercelConnected={Boolean(vercel.credentials?.access_token)}
+            githubConnected={Boolean(github.credentials?.access_token)}
+          />
+
+          <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">Your own domain</h2>
+          <DomainPanel
+            projectId={project.id}
+            deployed={Boolean(project.vercel_project_id)}
+            initialDomain={project.custom_domain}
+          />
+        </>
       )}
     </div>
   );

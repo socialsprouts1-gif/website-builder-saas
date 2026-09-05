@@ -165,6 +165,35 @@ drives the page over `postMessage` via a bridge script injected only in editor
 mode, and edits are applied server-side back into the real generated HTML
 (`src/lib/generation/html-edit.ts`), not into an overlay layer.
 
+### Design ambition
+
+The generator's weakest point was imagery. It had permission to fall back to
+"an inline SVG placeholder" when unsure of a photo URL — and since it is always
+unsure of a photo URL, it always fell back, producing pages of grey boxes.
+
+Lumen now refuses external images entirely and requires the visuals to be
+*built*: layered gradients, inline SVG, decorative shapes drawn in the language
+the design system names in its `decor` field. The design step produces gradient,
+shadow and type-scale tokens rather than a flat seven-colour palette, and the
+code step demands at least six sections with no two consecutive layouts alike.
+A grey box is stated as a failure condition.
+
+If you would rather have real photography, the image model is already priced in
+`CREDIT_COST` — generating a hero per site is a small change to the pipeline.
+
+### Custom domains
+
+`src/lib/vercel.ts` wraps the deploy and domain endpoints. Deploying records
+the Vercel project id on the row, which is what lets a domain be attached
+later. `/app/project/[id]/deploy` then walks three steps: name the domain, copy
+the DNS records, press check.
+
+The DNS values come back from Vercel rather than being guessed, apart from the
+routing record, which is Vercel's documented A (`76.76.21.21`) for an apex and
+CNAME (`cname.vercel-dns.com`) for a subdomain. Where Vercel reports an
+`apexName`, that decides which of the two applies — which is what makes
+multi-part suffixes like `.co.uk` behave.
+
 ### Models
 
 Nothing hardcodes a permanent model dropdown. `src/lib/openai/models.ts` fetches

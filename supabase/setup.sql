@@ -3,8 +3,6 @@
 -- Paste this whole file into the Supabase SQL editor and press Run. It is every
 -- migration in supabase/migrations/ concatenated in order, with idempotency
 -- guards added, so running it twice is safe.
---
--- After it succeeds, reload the app: /setup will show "Tables installed".
 
 -- ==========================================================
 -- 0001_init.sql
@@ -608,3 +606,15 @@ where pu.id is null;
 update public.users
 set is_admin = true
 where lower(email) = 'socialsprouts1@gmail.com';
+
+-- ==========================================================
+-- 0006_deploy_targets.sql
+-- ==========================================================
+
+-- Remember where a project was deployed, so a domain can be attached to it
+-- later without asking the user to find the Vercel project by hand.
+
+alter table public.projects add column if not exists vercel_project_id text;
+alter table public.projects add column if not exists vercel_project_name text;
+alter table public.projects add column if not exists deploy_url text;
+alter table public.projects add column if not exists custom_domain text;

@@ -4,6 +4,8 @@ import { getCurrentFiles } from '@/lib/generation/storage';
 import { loadAccountContext } from '@/lib/connectors/registry';
 import { deploySchema } from '@/lib/validation';
 import { createZip } from '@/lib/zip';
+import { deployFiles } from '@/lib/vercel';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { handleRouteError, jsonError } from '@/lib/api';
 
 export const runtime = 'nodejs';
@@ -54,25 +56,23 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         return jsonError('Connect Vercel in Settings → Connectors first.', 409);
       }
 
-      const response = await fetch('https://api.vercel.com/v13/deployments', {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${credentials.access_token}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: repoName,
-          target: 'production',
-          files: files.map((file) => ({ file: file.path, data: file.content })),
-          projectSettings: { framework: null, buildCommand: null, outputDirectory: null },
-        }),
+      const result = await deployFiles({
+        token: credentials.access_token,
+        name: repoName,
+        files,
       });
+      if (!result.ok) return jsonError(result.error, 422);
 
-      const payload = (await response.json()) as { url?: string; error?: { message?: string } };
-      if (!response.ok) {
-        return jsonError(payload.error?.message ?? 'Vercel refused the deployment.', 422);
-      }
-      return NextResponse.json({ url: payload.url ? `https://${payload.url}` : null });
+      await createAdminClient()
+        .from('projects')
+        .update({
+          vercel_project_id: result.data.projectId,
+          vercel_project_name: result.data.projectName,
+          deploy_url: result.data.url,
+        })
+        .eq('id', projectId);
+
+      return NextResponse.json({ url: result.data.url, canAddDomain: Boolean(result.data.projectId) });
     }
 
     // GitHub: create the repo if needed, then write every file into it.

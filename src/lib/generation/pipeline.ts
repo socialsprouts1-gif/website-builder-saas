@@ -172,7 +172,11 @@ export async function runGeneration(input: GenerationInput, emit: Emit): Promise
       stream: true,
       stream_options: { include_usage: true },
       messages: [
-        { role: 'system', content: 'You are Lumen, a senior front-end engineer who ships complete, production-grade static websites.' },
+        {
+          role: 'system',
+          content:
+            'You are Lumen: a senior front-end engineer and a designer with taste, building the finished website a small business will actually put its name on. You write the whole thing by hand in HTML and CSS, and you care as much about how it looks as whether it works. Wireframes, placeholder boxes and flat centred text are failures.',
+        },
         { role: 'user', content: buildCodePrompt(brief, design) },
       ],
     });
