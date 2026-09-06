@@ -8,6 +8,7 @@ import {
   loadProjectContext,
 } from '@/lib/connectors/registry';
 import { handleRouteError, jsonError } from '@/lib/api';
+import { isEncryptionConfigured } from '@/lib/crypto';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -71,6 +72,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pr
     }
 
     // connect
+    if (!isEncryptionConfigured()) {
+      return jsonError(
+        'This deployment cannot store credentials yet — set LUMEN_ENCRYPTION_KEY to a 32-byte base64 value and redeploy.',
+        503,
+      );
+    }
+
     const credentials = { ...(connectorContext.credentials ?? {}), ...(body.credentials ?? {}) };
     const result = await connector.connect({ ...connectorContext, credentials });
     if (!result.ok) return NextResponse.json(result, { status: 422 });

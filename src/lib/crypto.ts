@@ -23,6 +23,20 @@ function keyBytes(): Buffer {
   return decoded;
 }
 
+/**
+ * Whether credentials can be stored at all. Worth asking before a user pastes
+ * a token, so a deployment missing its master key says so plainly instead of
+ * failing at the write.
+ */
+export function isEncryptionConfigured(): boolean {
+  try {
+    keyBytes();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function encryptSecret(plaintext: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', keyBytes(), iv);
