@@ -303,3 +303,97 @@ export async function removeDomain(params: {
   );
   return result.ok ? { ok: true } : { ok: false, error: result.error };
 }
+
+// --------------------------------------------------------- buying a domain --
+
+export interface DomainOffer {
+  domain: string;
+  available: boolean;
+  /** USD for the whole registration period. Absent when Vercel will not quote. */
+  price?: number;
+  /** Years the price covers. */
+  years?: number;
+}
+
+/**
+ * Availability and price for one domain. Vercel answers these separately, and a
+ * taken domain has no price, so a failed price lookup is not an error.
+ */
+export async function checkDomain(params: {
+  token: string;
+  teamId?: string;
+  domain: string;
+}): Promise<DomainOffer> {
+  const status = await call<{ available?: boolean }>(
+    params.token,
+    withTeam(`/v4/domains/status?name=${encodeURIComponent(params.domain)}`, params.teamId),
+  );
+
+  if (!status.ok || !status.data.available) {
+    return { domain: params.domain, available: false };
+  }
+
+  const price = await call<{ price?: number; period?: number }>(
+    params.token,
+    withTeam(`/v4/domains/price?name=${encodeURIComponent(params.domain)}`, params.teamId),
+  );
+
+  return {
+    domain: params.domain,
+    available: true,
+    price: price.ok ? price.data.price : undefined,
+    years: price.ok ? price.data.period : undefined,
+  };
+}
+
+/** The endings worth offering a small business, cheapest intent first. */
+export const SUGGESTED_TLDS = ['com', 'in', 'co', 'co.in', 'shop', 'studio', 'online'] as const;
+
+/** Strips whatever the user typed down to a registrable second-level label. */
+export function toDomainLabel(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .split('.')[0]
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 63);
+}
+
+/**
+ * Buys a domain on the user's own Vercel account.
+ *
+ * expectedPrice is sent so Vercel rejects the purchase if its price moved
+ * between the quote the user agreed to and this call — the user is never
+ * charged an amount they did not see.
+ */
+export async function buyDomain(params: {
+  token: string;
+  teamId?: string;
+  domain: string;
+  expectedPrice: number;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const result = await call<unknown>(params.token, withTeam('/v4/domains/buy', params.teamId), {
+    method: 'POST',
+    body: JSON.stringify({
+      name: params.domain,
+      expectedPrice: params.expectedPrice,
+      renew: true,
+    }),
+  });
+
+  if (result.ok) return { ok: true };
+
+  // 402 is Vercel's "no payment method on this account", which is the one
+  // failure the user can fix in a minute, so it says exactly that.
+  if (result.status === 402) {
+    return {
+      ok: false,
+      error: 'Vercel has no payment method for this account. Add a card in Vercel, then try again.',
+    };
+  }
+  return { ok: false, error: result.error };
+}

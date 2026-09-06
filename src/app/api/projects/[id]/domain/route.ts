@@ -3,7 +3,16 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { loadAccountContext } from '@/lib/connectors/registry';
-import { addDomain, getDomain, removeDomain, verifyDomain } from '@/lib/vercel';
+import {
+  SUGGESTED_TLDS,
+  addDomain,
+  buyDomain,
+  checkDomain,
+  getDomain,
+  removeDomain,
+  toDomainLabel,
+  verifyDomain,
+} from '@/lib/vercel';
 import { handleRouteError, jsonError } from '@/lib/api';
 
 export const runtime = 'nodejs';
@@ -19,6 +28,18 @@ const domainSchema = z.object({
     )
     .max(253),
   action: z.enum(['add', 'verify', 'remove']).default('add'),
+});
+
+/** Buying is its own shape: it carries the price the user agreed to. */
+const buySchema = z.object({
+  action: z.literal('buy'),
+  domain: z.string().trim().toLowerCase().max(253),
+  expectedPrice: z.number().positive().max(10_000),
+});
+
+const searchSchema = z.object({
+  action: z.literal('search'),
+  query: z.string().trim().min(1).max(63),
 });
 
 /** Resolves the project plus the user's Vercel token, or an error response. */
@@ -83,9 +104,76 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const resolved = await resolve(id);
     if ('error' in resolved) return resolved.error;
 
-    const body = domainSchema.parse(await request.json());
+    const raw = await request.json();
     const projectId = resolved.project.vercel_project_id!;
     const admin = createAdminClient();
+
+    // ---- find a domain to buy ------------------------------------------
+    if (raw?.action === 'search') {
+      const { query } = searchSchema.parse(raw);
+      const label = toDomainLabel(query);
+      if (!label) return jsonError('Type a name to search for.', 422);
+
+      // Every ending is checked at once; one slow registrar should not hold
+      // up the rest of the list.
+      const offers = await Promise.all(
+        SUGGESTED_TLDS.map((tld) =>
+          checkDomain({ token: resolved.token, teamId: resolved.teamId, domain: `${label}.${tld}` }),
+        ),
+      );
+
+      return NextResponse.json({ label, offers });
+    }
+
+    // ---- buy one --------------------------------------------------------
+    if (raw?.action === 'buy') {
+      const { domain, expectedPrice } = buySchema.parse(raw);
+
+      // Re-quote immediately before charging. The price the browser sends is
+      // not trusted: if it no longer matches Vercel's, nothing is bought.
+      const offer = await checkDomain({
+        token: resolved.token,
+        teamId: resolved.teamId,
+        domain,
+      });
+      if (!offer.available) return jsonError('That domain is no longer available.', 409);
+      if (offer.price === undefined) return jsonError('Vercel would not quote a price for that domain.', 422);
+      if (Math.abs(offer.price - expectedPrice) > 0.01) {
+        return jsonError(`The price changed to $${offer.price}. Search again to see the new price.`, 409);
+      }
+
+      const bought = await buyDomain({
+        token: resolved.token,
+        teamId: resolved.teamId,
+        domain,
+        expectedPrice: offer.price,
+      });
+      if (!bought.ok) return jsonError(bought.error, 422);
+
+      // A domain bought through Vercel already points at Vercel, so attaching
+      // it is the last step — there are no records for the user to copy.
+      const attached = await addDomain({
+        token: resolved.token,
+        teamId: resolved.teamId,
+        projectId,
+        domain,
+      });
+      if (!attached.ok) {
+        return NextResponse.json(
+          {
+            bought: true,
+            domain,
+            error: `You now own ${domain}, but attaching it failed: ${attached.error}. Enter it above to connect it.`,
+          },
+          { status: 202 },
+        );
+      }
+
+      await admin.from('projects').update({ custom_domain: domain }).eq('id', id);
+      return NextResponse.json({ bought: true, ...attached.data });
+    }
+
+    const body = domainSchema.parse(raw);
 
     if (body.action === 'remove') {
       await removeDomain({

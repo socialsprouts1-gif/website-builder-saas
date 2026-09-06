@@ -6,6 +6,7 @@ import { Field, Input } from '@/components/ui/Field';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/components/ui/cn';
+import { DomainPurchase } from '@/components/app/DomainPurchase';
 
 interface DnsRecord {
   type: 'A' | 'CNAME' | 'TXT';
@@ -42,6 +43,7 @@ export function DomainPanel({
   );
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [tab, setTab] = useState<'own' | 'buy'>('own');
 
   const send = useCallback(
     async (action: 'add' | 'verify' | 'remove', value: string) => {
@@ -106,42 +108,80 @@ export function DomainPanel({
     );
   }
 
+  // Once a domain is attached the tabs are noise: there is one domain and one
+  // set of steps left to finish.
+  if (!status) {
+    return (
+      <Card className="space-y-5">
+        <div className="flex gap-1 rounded-pill border border-hairline p-1">
+          {([
+            ['own', 'I already own one'],
+            ['buy', 'Buy a new one'],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setTab(value)}
+              className={cn(
+                'flex-1 rounded-pill px-3 py-1.5 text-[12.5px] transition',
+                tab === value ? 'bg-accent text-accent-ink' : 'text-ink-secondary hover:text-ink-primary',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'buy' ? (
+          <DomainPurchase
+            projectId={projectId}
+            onBought={(bought) => {
+              setDomain(bought);
+              setTab('own');
+              void send('verify', bought);
+            }}
+          />
+        ) : (
+          <ConnectForm
+            domain={domain}
+            onChange={setDomain}
+            onConnect={() => send('add', domain)}
+            busy={busy !== null}
+            connecting={busy === 'add'}
+          />
+        )}
+
+        {error ? (
+          <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+            {error}
+          </p>
+        ) : null}
+      </Card>
+    );
+  }
+
   return (
     <Card className="space-y-5">
       <Step
         number={1}
         title="Name your domain"
-        done={Boolean(status)}
+        done
         body={
-          <div className="flex flex-wrap items-end gap-2">
-            <Field label="" className="flex-1 min-w-[220px]">
-              <Input
-                value={domain}
-                onChange={(event) => setDomain(event.target.value.trim().toLowerCase())}
-                placeholder="yourbusiness.in"
-                disabled={Boolean(status)}
-              />
-            </Field>
-            {status ? (
-              <Button
-                variant="danger"
-                onClick={() => send('remove', status.domain)}
-                disabled={busy !== null}
-              >
-                {busy === 'remove' ? 'Removing…' : 'Remove'}
-              </Button>
-            ) : (
-              <Button onClick={() => send('add', domain)} disabled={busy !== null || domain.length < 4}>
-                {busy === 'add' ? 'Connecting…' : 'Connect'}
-              </Button>
-            )}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-mono text-[13.5px] text-ink-primary">{status.domain}</span>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => send('remove', status.domain)}
+              disabled={busy !== null}
+            >
+              {busy === 'remove' ? 'Removing…' : 'Remove'}
+            </Button>
           </div>
         }
       />
 
-      {status ? (
-        <>
-          <Step
+      <Step
             number={2}
             title="Add these records at your registrar"
             done={status.verified}
@@ -208,8 +248,6 @@ export function DomainPanel({
               </div>
             }
           />
-        </>
-      ) : null}
 
       {error ? (
         <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
@@ -250,6 +288,45 @@ function Step({
         <p className="mb-2 text-[13.5px] text-ink-primary">{title}</p>
         {body}
       </div>
+    </div>
+  );
+}
+
+function ConnectForm({
+  domain,
+  onChange,
+  onConnect,
+  busy,
+  connecting,
+}: {
+  domain: string;
+  onChange: (value: string) => void;
+  onConnect: () => void;
+  busy: boolean;
+  connecting: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="" className="min-w-[220px] flex-1">
+          <Input
+            value={domain}
+            onChange={(event) => onChange(event.target.value.trim().toLowerCase())}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && domain.length >= 4) onConnect();
+            }}
+            placeholder="yourbusiness.in"
+            aria-label="Domain you already own"
+          />
+        </Field>
+        <Button onClick={onConnect} disabled={busy || domain.length < 4}>
+          {connecting ? 'Connecting…' : 'Connect'}
+        </Button>
+      </div>
+      <p className="text-[12px] text-ink-muted">
+        Enter it exactly as you bought it. Lumen will show you the two DNS records to paste at your
+        registrar.
+      </p>
     </div>
   );
 }
