@@ -33,6 +33,12 @@ export function oauthConnector(spec: {
   envKey: string;
   clientId?: string;
   clientSecret?: string;
+  /**
+   * Fields for pasting a personal access token instead of running the redirect.
+   * One of them must be named `access_token`, because that is the key every
+   * caller reads a credential blob by.
+   */
+  tokenFields?: ConnectorField[];
   verify?: (accessToken: string) => Promise<ConnectorSyncResult>;
   sync?: (context: ConnectorContext) => Promise<ConnectorSyncResult>;
 }): Connector {
@@ -48,11 +54,22 @@ export function oauthConnector(spec: {
       tokenUrl: spec.tokenUrl,
       scopes: spec.scopes,
       envKey: spec.envKey,
+      fields: spec.tokenFields,
     },
-    isConfigured: () => Boolean(spec.clientId && spec.clientSecret),
+    // A connector the user can hand a token to is always usable, whether or not
+    // this deployment registered an OAuth app for it.
+    isConfigured: () => Boolean((spec.clientId && spec.clientSecret) || spec.tokenFields?.length),
+    oauthReady: () => Boolean(spec.clientId && spec.clientSecret),
     async connect(context) {
-      const token = context.credentials?.access_token;
-      if (!token) return { ok: false, message: `Finish the ${spec.name} sign-in first.` };
+      const token = context.credentials?.access_token?.trim();
+      if (!token) {
+        return {
+          ok: false,
+          message: spec.tokenFields?.length
+            ? `Paste a ${spec.name} token, or finish the ${spec.name} sign-in.`
+            : `Finish the ${spec.name} sign-in first.`,
+        };
+      }
       if (spec.verify) return spec.verify(token);
       return { ok: true, message: `${spec.name} connected.` };
     },
@@ -83,9 +100,10 @@ export function apiKeyConnector(spec: {
     // API-key connectors need nothing from the deployment — the user supplies
     // the credential, so they are always available to connect.
     isConfigured: () => true,
+    oauthReady: () => false,
     async connect(context) {
       const credentials = context.credentials ?? {};
-      const missing = spec.fields.filter((field) => !credentials[field.name]?.trim());
+      const missing = spec.fields.filter((field) => !field.optional && !credentials[field.name]?.trim());
       if (missing.length > 0) {
         return { ok: false, message: `Missing: ${missing.map((field) => field.label).join(', ')}` };
       }
@@ -94,7 +112,9 @@ export function apiKeyConnector(spec: {
     },
     sync: spec.sync,
     async status(context) {
-      const hasAll = spec.fields.every((field) => context.credentials?.[field.name]);
+      const hasAll = spec.fields.every(
+        (field) => field.optional || context.credentials?.[field.name],
+      );
       return defaultStatus(hasAll, spec.name);
     },
   };

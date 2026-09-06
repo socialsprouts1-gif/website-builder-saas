@@ -83,8 +83,17 @@ export interface ConnectorCard {
   category: Connector['category'];
   summary: string;
   authKind: Connector['auth']['kind'];
-  fields: { name: string; label: string; placeholder?: string; secret?: boolean; help?: string }[];
+  fields: {
+    name: string;
+    label: string;
+    placeholder?: string;
+    secret?: boolean;
+    help?: string;
+    optional?: boolean;
+  }[];
   configured: boolean;
+  /** True when the redirect flow will work; false means token-only. */
+  oauthReady: boolean;
   status: ConnectorStatus;
   canSync: boolean;
 }
@@ -110,8 +119,9 @@ export async function buildConnectorCards(params: {
         category: connector.category,
         summary: connector.summary,
         authKind: connector.auth.kind,
-        fields: connector.auth.kind === 'api_key' ? connector.auth.fields : [],
+        fields: connector.auth.kind === 'none' ? [] : (connector.auth.fields ?? []),
         configured: connector.isConfigured(),
+        oauthReady: connector.oauthReady(),
         status: await connector.status(context),
         canSync: Boolean(connector.sync),
       };

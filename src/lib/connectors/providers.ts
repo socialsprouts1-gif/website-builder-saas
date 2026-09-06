@@ -37,6 +37,15 @@ const github = oauthConnector({
   envKey: 'GITHUB',
   clientId: env.connectors.github.id,
   clientSecret: env.connectors.github.secret,
+  tokenFields: [
+    {
+      name: 'access_token',
+      label: 'Personal access token',
+      placeholder: 'ghp_…',
+      secret: true,
+      help: 'GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic). Tick the "repo" scope.',
+    },
+  ],
   verify: async (token) =>
     jsonFetch(
       'https://api.github.com/user',
@@ -57,6 +66,22 @@ const vercel = oauthConnector({
   envKey: 'VERCEL',
   clientId: env.connectors.vercel.id,
   clientSecret: env.connectors.vercel.secret,
+  tokenFields: [
+    {
+      name: 'access_token',
+      label: 'Access token',
+      placeholder: 'vercel_…',
+      secret: true,
+      help: 'Vercel → Settings → Tokens → Create Token. Give it full account scope so it can create projects.',
+    },
+    {
+      name: 'team_id',
+      label: 'Team ID',
+      placeholder: 'team_… (leave blank for a personal account)',
+      optional: true,
+      help: 'Only if the site should live under a Vercel team. Vercel → Team Settings → General.',
+    },
+  ],
   verify: async (token) =>
     jsonFetch(
       'https://api.vercel.com/v2/user',

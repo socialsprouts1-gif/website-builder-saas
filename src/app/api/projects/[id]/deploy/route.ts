@@ -34,7 +34,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (project.status !== 'ready') return jsonError('Generate the site before deploying it.', 409);
 
     const body = deploySchema.parse(await request.json());
-    const files = await getCurrentFiles(projectId);
+    const files = (await getCurrentFiles(projectId)).map((file) => ({
+      ...file,
+      // Both Vercel and the GitHub contents API want repo-relative paths, and
+      // the generator sometimes writes "./index.html" or "/index.html".
+      path: file.path.replace(/^(\.\/|\/)+/, ''),
+    }));
     if (files.length === 0) return jsonError('This project has no files to deploy.', 409);
 
     const repoName = sanitizeRepoName(body.repoName ?? project.name ?? project.slug);
@@ -58,12 +63,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
       const result = await deployFiles({
         token: credentials.access_token,
+        teamId: credentials.team_id?.trim() || undefined,
         name: repoName,
         files,
       });
       if (!result.ok) return jsonError(result.error, 422);
 
-      await createAdminClient()
+      const { error: recordError } = await createAdminClient()
         .from('projects')
         .update({
           vercel_project_id: result.data.projectId,
@@ -71,6 +77,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           deploy_url: result.data.url,
         })
         .eq('id', projectId);
+
+      // The site is live either way; only the domain step needs these columns,
+      // so say so rather than reporting a failed deploy.
+      if (recordError) {
+        return NextResponse.json({
+          url: result.data.url,
+          canAddDomain: false,
+          warning:
+            'Deployed, but this database is missing the deploy columns, so a custom domain cannot be attached yet. Run supabase/setup.sql.',
+        });
+      }
 
       return NextResponse.json({ url: result.data.url, canAddDomain: Boolean(result.data.projectId) });
     }
@@ -129,11 +146,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   }
 }
 
+/**
+ * A name both targets accept. Vercel is the stricter of the two: lowercase,
+ * no underscores, no run of three or more dashes, 100 characters at most.
+ */
 function sanitizeRepoName(value: string): string {
   const cleaned = value
     .toLowerCase()
-    .replace(/[^a-z0-9-_]+/g, '-')
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-{2,}/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 90);
+    .slice(0, 90)
+    .replace(/-+$/g, '');
   return cleaned || 'lumen-site';
 }

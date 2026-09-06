@@ -9,7 +9,19 @@
 export type ConnectorScope = 'account' | 'project';
 
 export type ConnectorAuth =
-  | { kind: 'oauth'; authorizeUrl: string; tokenUrl: string; scopes: string[]; envKey: string }
+  | {
+      kind: 'oauth';
+      authorizeUrl: string;
+      tokenUrl: string;
+      scopes: string[];
+      envKey: string;
+      /**
+       * Providers that also hand out personal access tokens. Registering an
+       * OAuth app is a long detour for one person deploying their own site, so
+       * where a token will do, the user can paste one and skip the redirect.
+       */
+      fields?: ConnectorField[];
+    }
   | { kind: 'api_key'; fields: ConnectorField[] }
   | { kind: 'none' };
 
@@ -19,6 +31,8 @@ export interface ConnectorField {
   placeholder?: string;
   secret?: boolean;
   help?: string;
+  /** Blank is allowed. Required by default. */
+  optional?: boolean;
 }
 
 export interface ConnectorStatus {
@@ -51,6 +65,12 @@ export interface Connector {
   auth: ConnectorAuth;
   /** Whether the deployment has the credentials this connector needs. */
   isConfigured(): boolean;
+  /**
+   * Whether the redirect flow can actually run. False when the connector is
+   * OAuth-capable but this deployment has no client ID and secret for it — the
+   * UI then offers only the token form.
+   */
+  oauthReady(): boolean;
   /** Validates supplied credentials before they are stored. */
   connect(context: ConnectorContext): Promise<ConnectorSyncResult>;
   disconnect?(context: ConnectorContext): Promise<void>;

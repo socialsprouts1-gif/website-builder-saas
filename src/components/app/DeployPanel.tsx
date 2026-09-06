@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { useRouter } from 'next/navigation';
+import { Button, ButtonLink } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { Card } from '@/components/ui/Card';
 
@@ -17,15 +18,18 @@ export function DeployPanel({
   vercelConnected: boolean;
   githubConnected: boolean;
 }) {
+  const router = useRouter();
   const [repoName, setRepoName] = useState(defaultName);
   const [busy, setBusy] = useState<string | null>(null);
   const [result, setResult] = useState<{ url: string; label: string } | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function deploy(target: 'vercel' | 'github' | 'zip') {
     setBusy(target);
     setError(null);
     setResult(null);
+    setWarning(null);
     try {
       const response = await fetch(`/api/projects/${projectId}/deploy`, {
         method: 'POST',
@@ -55,6 +59,9 @@ export function DeployPanel({
       if (payload.url) {
         setResult({ url: payload.url, label: target === 'vercel' ? 'View live site' : 'Open repository' });
       }
+      if (payload.warning) setWarning(payload.warning);
+      // The domain panel only unlocks once the project knows where it deployed.
+      if (target === 'vercel' && payload.canAddDomain) router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'That did not work');
     } finally {
@@ -76,23 +83,35 @@ export function DeployPanel({
         <div className="grid gap-3 sm:grid-cols-3">
           <DeployButton
             title="Vercel"
-            body={vercelConnected ? 'Deploy to production.' : 'Connect Vercel first.'}
-            disabled={!vercelConnected || busy !== null}
+            body={
+              vercelConnected
+                ? 'Deploy to production.'
+                : 'Paste a Vercel token once, then deploy in one click.'
+            }
+            connected={vercelConnected}
             busy={busy === 'vercel'}
+            disabled={busy !== null}
             onClick={() => deploy('vercel')}
           />
           <DeployButton
             title="GitHub"
-            body={githubConnected ? 'Push to a private repo.' : 'Connect GitHub first.'}
-            disabled={!githubConnected || busy !== null}
+            body={
+              githubConnected
+                ? 'Push to a private repo.'
+                : 'Paste a GitHub token once, then push in one click.'
+            }
+            connected={githubConnected}
             busy={busy === 'github'}
+            disabled={busy !== null}
             onClick={() => deploy('github')}
           />
           <DeployButton
             title="Download"
             body="A zip of the whole site."
-            disabled={busy !== null}
+            connected
             busy={busy === 'zip'}
+            disabled={busy !== null}
+            cta="Download zip"
             onClick={() => deploy('zip')}
           />
         </div>
@@ -104,6 +123,12 @@ export function DeployPanel({
           <a href={result.url} target="_blank" rel="noreferrer" className="underline">
             {result.label}
           </a>
+        </p>
+      ) : null}
+
+      {warning ? (
+        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[13px] text-ink-secondary">
+          {warning}
         </p>
       ) : null}
 
@@ -125,26 +150,45 @@ export function DeployPanel({
   );
 }
 
+/**
+ * An unconnected target is not a dead button: it sends the user to the one
+ * screen that fixes it, rather than greying out with an explanation.
+ */
 function DeployButton({
   title,
   body,
+  connected,
   disabled,
   busy,
+  cta = 'Deploy',
   onClick,
 }: {
   title: string;
   body: string;
+  connected: boolean;
   disabled: boolean;
   busy: boolean;
+  cta?: string;
   onClick: () => void;
 }) {
   return (
     <div className="rounded-card border border-hairline p-4">
       <p className="text-sm text-ink-primary">{title}</p>
       <p className="mt-1 text-[12.5px] text-ink-muted">{body}</p>
-      <Button size="sm" className="mt-3 w-full" onClick={onClick} disabled={disabled}>
-        {busy ? 'Working…' : title === 'Download' ? 'Download zip' : 'Deploy'}
-      </Button>
+      {connected ? (
+        <Button size="sm" className="mt-3 w-full" onClick={onClick} disabled={disabled}>
+          {busy ? 'Working…' : cta}
+        </Button>
+      ) : (
+        <ButtonLink
+          href="/app/settings/connectors"
+          size="sm"
+          variant="secondary"
+          className="mt-3 w-full"
+        >
+          Connect {title}
+        </ButtonLink>
+      )}
     </div>
   );
 }

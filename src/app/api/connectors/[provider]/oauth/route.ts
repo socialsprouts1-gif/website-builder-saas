@@ -20,8 +20,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
 
   const connector = getConnector(provider);
   if (!connector || connector.auth.kind !== 'oauth') return jsonError('Unknown connector', 404);
-  if (!connector.isConfigured()) {
-    return jsonError(`${connector.name} is not configured on this deployment yet.`, 409);
+  // isConfigured() is also true for a connector you can hand a token to, which
+  // says nothing about whether the redirect flow can run. Only oauthReady does.
+  if (!connector.oauthReady()) {
+    return jsonError(`${connector.name} has no OAuth app here — connect it with a token instead.`, 409);
   }
 
   const clientId = process.env[`${connector.auth.envKey}_CLIENT_ID`];

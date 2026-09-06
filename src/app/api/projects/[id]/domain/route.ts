@@ -48,7 +48,11 @@ async function resolve(projectId: string) {
     return { error: jsonError('Connect Vercel in Settings → Connectors first.', 409) };
   }
 
-  return { project, token: credentials.access_token };
+  return {
+    project,
+    token: credentials.access_token,
+    teamId: credentials.team_id?.trim() || undefined,
+  };
 }
 
 export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -61,6 +65,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
     const result = await getDomain({
       token: resolved.token,
+      teamId: resolved.teamId,
       projectId: resolved.project.vercel_project_id!,
       domain: resolved.project.custom_domain,
     });
@@ -83,15 +88,23 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const admin = createAdminClient();
 
     if (body.action === 'remove') {
-      await removeDomain({ token: resolved.token, projectId, domain: body.domain });
+      await removeDomain({
+        token: resolved.token,
+        teamId: resolved.teamId,
+        projectId,
+        domain: body.domain,
+      });
       await admin.from('projects').update({ custom_domain: null }).eq('id', id);
       return NextResponse.json({ domain: null, removed: true });
     }
 
-    const result =
-      body.action === 'verify'
-        ? await verifyDomain({ token: resolved.token, projectId, domain: body.domain })
-        : await addDomain({ token: resolved.token, projectId, domain: body.domain });
+    const call = body.action === 'verify' ? verifyDomain : addDomain;
+    const result = await call({
+      token: resolved.token,
+      teamId: resolved.teamId,
+      projectId,
+      domain: body.domain,
+    });
 
     if (!result.ok) return jsonError(result.error, 422);
 

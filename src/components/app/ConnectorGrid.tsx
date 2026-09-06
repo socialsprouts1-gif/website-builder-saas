@@ -102,7 +102,7 @@ export function ConnectorGrid({ cards, projectId }: { cards: ConnectorCard[]; pr
             {query.trim() ? `Nothing matches “${query.trim()}”.` : 'Nothing here yet.'}
           </p>
         ) : (
-          <div className="grid auto-rows-fr gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {visible.map((card) => (
               <ConnectorTile
                 key={card.provider}
@@ -234,7 +234,7 @@ function ConnectorTile({
         </div>
       </div>
 
-      {!card.configured && card.authKind === 'oauth' ? (
+      {!card.configured ? (
         <p className="mt-auto pt-3 text-[11.5px] text-ink-muted">
           Not configured on this deployment — add its client ID and secret.
         </p>
@@ -251,22 +251,35 @@ function ConnectorTile({
                 Disconnect
               </Button>
             </>
-          ) : card.authKind === 'oauth' ? (
-            <Button size="sm" onClick={() => router.push(`/api/connectors/${card.provider}/oauth`)}>
-              Connect
-            </Button>
           ) : (
-            <Button size="sm" variant={open ? 'secondary' : 'primary'} onClick={onToggle}>
-              {open ? 'Cancel' : 'Connect'}
-            </Button>
+            <>
+              {card.oauthReady ? (
+                <Button size="sm" onClick={() => router.push(`/api/connectors/${card.provider}/oauth`)}>
+                  Connect
+                </Button>
+              ) : null}
+              {card.fields.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant={open || card.oauthReady ? 'secondary' : 'primary'}
+                  onClick={onToggle}
+                >
+                  {open ? 'Cancel' : card.oauthReady ? 'Use a token' : 'Connect'}
+                </Button>
+              ) : null}
+            </>
           )}
         </div>
       )}
 
-      {open && !connected && card.authKind === 'api_key' ? (
+      {open && !connected && card.fields.length > 0 ? (
         <div className="mt-4 space-y-3 border-t border-hairline pt-4">
           {card.fields.map((field) => (
-            <Field key={field.name} label={field.label} hint={field.help}>
+            <Field
+              key={field.name}
+              label={field.optional ? `${field.label} (optional)` : field.label}
+              hint={field.help}
+            >
               <Input
                 type={field.secret ? 'password' : 'text'}
                 placeholder={field.placeholder}

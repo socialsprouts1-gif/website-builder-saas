@@ -10,6 +10,15 @@ import 'server-only';
 
 const API = 'https://api.vercel.com';
 
+/**
+ * A token issued under a Vercel team only sees that team's resources when the
+ * team is named on the request, so every call carries it when there is one.
+ */
+function withTeam(path: string, teamId?: string): string {
+  if (!teamId) return path;
+  return `${path}${path.includes('?') ? '&' : '?'}teamId=${encodeURIComponent(teamId)}`;
+}
+
 async function call<T>(
   token: string,
   path: string,
@@ -48,36 +57,105 @@ export interface DeployResult {
   projectName: string;
 }
 
+interface VercelDeployment {
+  id?: string;
+  url?: string;
+  projectId?: string;
+  name?: string;
+  readyState?: string;
+  alias?: string[];
+}
+
+/**
+ * The address to show the user. A production deployment gets a stable alias
+ * (`the-project.vercel.app`) alongside its one-off build URL; the alias is the
+ * one worth handing over, so prefer the shortest one Vercel reports.
+ */
+function bestUrl(deployment: VercelDeployment): string | undefined {
+  const alias = (deployment.alias ?? []).filter(Boolean).sort((a, b) => a.length - b.length)[0];
+  return alias ?? deployment.url;
+}
+
 export async function deployFiles(params: {
   token: string;
   name: string;
+  teamId?: string;
   files: { path: string; content: string }[];
 }): Promise<{ ok: true; data: DeployResult } | { ok: false; error: string }> {
-  const result = await call<{ url?: string; projectId?: string; name?: string }>(
-    params.token,
-    '/v13/deployments',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        name: params.name,
-        target: 'production',
-        files: params.files.map((file) => ({ file: file.path, data: file.content })),
-        projectSettings: { framework: null, buildCommand: null, outputDirectory: null },
-      }),
-    },
-  );
+  const result = await call<VercelDeployment>(params.token, withTeam('/v13/deployments', params.teamId), {
+    method: 'POST',
+    body: JSON.stringify({
+      name: params.name,
+      target: 'production',
+      // base64 rather than raw text: it survives any byte the generated site
+      // happens to contain without depending on JSON transport encoding.
+      files: params.files.map((file) => ({
+        file: file.path,
+        data: Buffer.from(file.content, 'utf8').toString('base64'),
+        encoding: 'base64',
+      })),
+      projectSettings: { framework: null, buildCommand: null, outputDirectory: null },
+    }),
+  });
 
   if (!result.ok) return { ok: false, error: result.error };
-  if (!result.data.url) return { ok: false, error: 'Vercel accepted the deploy but returned no URL.' };
+
+  const created = result.data;
+  if (!created.url) return { ok: false, error: 'Vercel accepted the deploy but returned no URL.' };
+
+  const ready = created.id
+    ? await waitForReady({ token: params.token, teamId: params.teamId, id: created.id })
+    : null;
+
+  if (ready && !ready.ok) return ready;
+
+  const deployment = ready?.deployment ?? created;
 
   return {
     ok: true,
     data: {
-      url: `https://${result.data.url}`,
-      projectId: result.data.projectId ?? '',
-      projectName: result.data.name ?? params.name,
+      url: `https://${bestUrl(deployment) ?? created.url}`,
+      projectId: created.projectId ?? deployment.projectId ?? '',
+      projectName: created.name ?? params.name,
     },
   };
+}
+
+/**
+ * Vercel answers the create call while the deployment is still queued, so the
+ * URL it hands back 404s for a moment. These sites are static — no build step —
+ * so waiting the few seconds out means the link works when the user clicks it.
+ * Running long is not a failure: the deployment finishes on Vercel regardless,
+ * so a timeout falls through to returning the URL anyway.
+ */
+async function waitForReady(params: {
+  token: string;
+  teamId?: string;
+  id: string;
+}): Promise<{ ok: true; deployment: VercelDeployment } | { ok: false; error: string }> {
+  const deadline = Date.now() + 60_000;
+
+  for (let attempt = 0; ; attempt += 1) {
+    const result = await call<VercelDeployment>(
+      params.token,
+      withTeam(`/v13/deployments/${encodeURIComponent(params.id)}`, params.teamId),
+    );
+
+    // A transient read failure says nothing about the deployment itself.
+    if (result.ok) {
+      const state = result.data.readyState;
+      if (state === 'READY') return { ok: true, deployment: result.data };
+      if (state === 'ERROR' || state === 'CANCELED') {
+        return { ok: false, error: 'Vercel could not finish this deployment. Check its build logs.' };
+      }
+      if (Date.now() >= deadline) return { ok: true, deployment: result.data };
+    } else if (Date.now() >= deadline) {
+      return { ok: true, deployment: {} };
+    }
+
+    // Back off from half a second to two, so a fast deploy returns quickly.
+    await new Promise((resolve) => setTimeout(resolve, Math.min(500 * (attempt + 1), 2_000)));
+  }
 }
 
 export interface DnsRecord {
@@ -155,10 +233,11 @@ export async function addDomain(params: {
   token: string;
   projectId: string;
   domain: string;
+  teamId?: string;
 }): Promise<{ ok: true; data: DomainStatus } | { ok: false; error: string }> {
   const result = await call<VercelDomain>(
     params.token,
-    `/v10/projects/${encodeURIComponent(params.projectId)}/domains`,
+    withTeam(`/v10/projects/${encodeURIComponent(params.projectId)}/domains`, params.teamId),
     { method: 'POST', body: JSON.stringify({ name: params.domain }) },
   );
 
@@ -173,10 +252,14 @@ export async function getDomain(params: {
   token: string;
   projectId: string;
   domain: string;
+  teamId?: string;
 }): Promise<{ ok: true; data: DomainStatus } | { ok: false; error: string }> {
   const result = await call<VercelDomain>(
     params.token,
-    `/v9/projects/${encodeURIComponent(params.projectId)}/domains/${encodeURIComponent(params.domain)}`,
+    withTeam(
+      `/v9/projects/${encodeURIComponent(params.projectId)}/domains/${encodeURIComponent(params.domain)}`,
+      params.teamId,
+    ),
   );
   if (!result.ok) return { ok: false, error: result.error };
   return { ok: true, data: toStatus(params.domain, result.data) };
@@ -187,10 +270,14 @@ export async function verifyDomain(params: {
   token: string;
   projectId: string;
   domain: string;
+  teamId?: string;
 }): Promise<{ ok: true; data: DomainStatus } | { ok: false; error: string }> {
   const result = await call<VercelDomain>(
     params.token,
-    `/v9/projects/${encodeURIComponent(params.projectId)}/domains/${encodeURIComponent(params.domain)}/verify`,
+    withTeam(
+      `/v9/projects/${encodeURIComponent(params.projectId)}/domains/${encodeURIComponent(params.domain)}/verify`,
+      params.teamId,
+    ),
     { method: 'POST' },
   );
 
@@ -204,10 +291,14 @@ export async function removeDomain(params: {
   token: string;
   projectId: string;
   domain: string;
+  teamId?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const result = await call(
     params.token,
-    `/v9/projects/${encodeURIComponent(params.projectId)}/domains/${encodeURIComponent(params.domain)}`,
+    withTeam(
+      `/v9/projects/${encodeURIComponent(params.projectId)}/domains/${encodeURIComponent(params.domain)}`,
+      params.teamId,
+    ),
     { method: 'DELETE' },
   );
   return result.ok ? { ok: true } : { ok: false, error: result.error };
