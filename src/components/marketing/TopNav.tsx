@@ -8,6 +8,7 @@ import { cn } from '@/components/ui/cn';
 
 const LINKS = [
   { href: '/how-it-works', label: 'How it works' },
+  { href: '/ideas', label: 'Ideas' },
   { href: '/showcase', label: 'Showcase' },
   { href: '/templates', label: 'Templates' },
 ];

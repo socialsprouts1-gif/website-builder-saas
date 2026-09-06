@@ -116,13 +116,16 @@ function EmptyGallery({ filter }: { filter: string | null }) {
         You do not need one. Describe your business in a sentence and Lumen writes a site from scratch — that
         is the whole point.
       </p>
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
         <Button
           onClick={() =>
             router.push(category ? `/app/new?category=${category.slug}` : '/app/new')
           }
         >
           {category ? `Generate a ${category.label.toLowerCase()} site →` : 'Start from a prompt →'}
+        </Button>
+        <Button variant="secondary" onClick={() => router.push('/ideas')}>
+          See worked examples
         </Button>
       </div>
     </div>
