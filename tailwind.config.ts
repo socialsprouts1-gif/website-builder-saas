@@ -53,11 +53,18 @@ const config: Config = {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.35' },
         },
+        // The build screen's isometric stack. The X tilt is what makes the
+        // Z-offset slabs read as a stack rather than a pile of rectangles.
+        orbit: {
+          from: { transform: 'rotateX(58deg) rotateZ(0deg)' },
+          to: { transform: 'rotateX(58deg) rotateZ(360deg)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
         shimmer: 'shimmer 1.6s linear infinite',
         'pulse-dot': 'pulseDot 1.8s ease-in-out infinite',
+        orbit: 'orbit 24s linear infinite',
       },
     },
   },

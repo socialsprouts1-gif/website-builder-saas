@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/components/ui/cn';
 import { VisualEditorPanel } from '@/components/app/VisualEditorPanel';
+import { BuildingStage, type BuildStageId } from '@/components/app/BuildingStage';
 import type { ModelOption } from '@/lib/openai/models';
 
 export interface WorkspaceMessage {
@@ -65,7 +66,8 @@ export function Workspace({
   const [progress, setProgress] = useState<string | null>(
     initialStatus === 'generating' ? 'Starting up…' : null,
   );
-  const [streamPreview, setStreamPreview] = useState('');
+  const [stage, setStage] = useState<BuildStageId>('brief');
+  const [builtFiles, setBuiltFiles] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
   const [page, setPage] = useState(pages[0] ?? 'index.html');
@@ -101,16 +103,20 @@ export function Workspace({
 
       if (payload.type === 'stage' || payload.type === 'file') {
         setProgress(payload.message ?? payload.stage ?? null);
+        if (payload.stage) setStage(payload.stage as BuildStageId);
       }
-      if (payload.type === 'token') {
-        setStreamPreview((current) => (current + payload.delta).slice(-2200));
+      if (payload.type === 'file' && payload.path) {
+        setStage('code');
+        setBuiltFiles((current) =>
+          current.includes(payload.path) ? current : [...current, payload.path],
+        );
       }
       if (payload.type === 'meta' && payload.substituted) {
         setError(`That model was unavailable — Lumen used ${payload.model} instead.`);
       }
       if (payload.type === 'done') {
         setProgress(null);
-        setStreamPreview('');
+        setStage('done');
         setBusy(false);
         setReady(true);
         source.close();
@@ -179,7 +185,6 @@ export function Workspace({
           const payload = JSON.parse(raw);
           if (payload.type === 'ping') continue;
           if (payload.type === 'stage') setProgress(payload.message ?? null);
-          if (payload.type === 'token') setStreamPreview((current) => (current + payload.delta).slice(-2200));
           if (payload.type === 'error') throw new Error(payload.message);
           if (payload.type === 'done') {
             setMessages((current) => [
@@ -210,7 +215,6 @@ export function Workspace({
     } finally {
       setBusy(false);
       setProgress(null);
-      setStreamPreview('');
     }
   }
 
@@ -273,16 +277,14 @@ export function Workspace({
               ))}
 
               {progress ? (
-                <div className="mr-4 space-y-2 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
+                <div className="mr-4 space-y-2.5 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
                   <p className="flex items-center gap-2 text-[13px] text-accent">
                     <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" />
                     {progress}
                   </p>
-                  {streamPreview ? (
-                    <pre className="max-h-40 overflow-hidden whitespace-pre-wrap break-all font-mono text-[10.5px] leading-relaxed text-ink-muted">
-                      {streamPreview}
-                    </pre>
-                  ) : null}
+                  <span className="block h-[2px] w-full overflow-hidden rounded-pill bg-white/8">
+                    <span className="block h-full w-1/3 animate-shimmer rounded-pill bg-accent/70" />
+                  </span>
                 </div>
               ) : null}
 
@@ -375,6 +377,14 @@ export function Workspace({
           className="flex min-h-0 flex-1 flex-col"
           bodyClassName="flex-1 min-h-0 flex justify-center overflow-auto p-0"
           actions={
+            !ready ? (
+              // Nothing in this row does anything until there is a site, so
+              // during the build it is one honest status chip instead.
+              <span className="flex items-center gap-2 rounded-pill border border-accent/30 bg-accent-soft px-2.5 py-1 text-[10.5px] uppercase tracking-[0.14em] text-accent">
+                <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" />
+                Building
+              </span>
+            ) : (
             <>
               <select
                 value={page}
@@ -412,6 +422,7 @@ export function Workspace({
                 open ↗
               </a>
             </>
+            )
           }
         >
           {ready ? (
@@ -426,27 +437,10 @@ export function Workspace({
               style={{ width: VIEWPORT_WIDTH[viewport], maxWidth: '100%' }}
             />
           ) : (
-            <BuildingState progress={progress} stream={streamPreview} />
+            <BuildingStage stage={stage} message={progress} files={builtFiles} />
           )}
         </CodeWindow>
       </div>
-    </div>
-  );
-}
-
-function BuildingState({ progress, stream }: { progress: string | null; stream: string }) {
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-8 py-16 text-center">
-      <span className="h-2 w-2 animate-pulse-dot rounded-pill bg-accent" />
-      <p className="font-display text-xl text-ink-primary">{progress ?? 'Building your site…'}</p>
-      <p className="max-w-sm text-[13px] text-ink-muted">
-        Lumen is writing the brief, the design system and the code. This usually takes under a minute.
-      </p>
-      {stream ? (
-        <pre className="mt-2 max-h-48 w-full max-w-xl overflow-hidden whitespace-pre-wrap break-all rounded-[10px] border border-hairline bg-raised p-3 text-left font-mono text-[10.5px] leading-relaxed text-ink-muted">
-          {stream}
-        </pre>
-      ) : null}
     </div>
   );
 }

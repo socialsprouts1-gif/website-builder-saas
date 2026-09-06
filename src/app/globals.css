@@ -97,3 +97,19 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/*
+ * A continuously rotating element is the classic vestibular trigger, so anyone
+ * who has asked their system for less motion gets the build scene as a still
+ * image — the stage colours still change, which is what carries the meaning.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
