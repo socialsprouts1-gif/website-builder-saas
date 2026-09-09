@@ -29,7 +29,15 @@ export function estimateCostUsd(model: string, tokensIn: number, tokensOut: numb
 export async function recordUsage(params: {
   userId: string;
   projectId?: string | null;
-  eventType: 'generation' | 'chat_edit' | 'vision' | 'transcription' | 'embedding' | 'chatbot_reply' | 'image';
+  eventType:
+    | 'generation'
+    | 'chat_edit'
+    | 'vision'
+    | 'transcription'
+    | 'embedding'
+    | 'chatbot_reply'
+    | 'image'
+    | 'interview';
   model: string;
   keySource: KeySource;
   tokensIn?: number;

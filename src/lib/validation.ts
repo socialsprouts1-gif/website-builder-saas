@@ -14,6 +14,16 @@ export const createProjectSchema = z.object({
     .nullable()
     .optional(),
   templateSlug: z.string().max(120).nullable().optional(),
+  /** Replies to the pre-build interview, folded into the brief server-side. */
+  answers: z
+    .array(
+      z.object({
+        question: z.string().trim().min(1).max(300),
+        answer: z.string().trim().max(600),
+      }),
+    )
+    .max(12)
+    .optional(),
 });
 
 export const chatEditSchema = z.object({

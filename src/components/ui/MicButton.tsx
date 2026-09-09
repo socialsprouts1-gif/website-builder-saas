@@ -1,9 +1,12 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from './cn';
+import { AUTO_DETECT, DEFAULT_LANGUAGE, LANGUAGES, normaliseLanguage } from '@/lib/languages';
 
 type State = 'idle' | 'recording' | 'transcribing';
+
+const STORAGE_KEY = 'lumen.voice.language';
 
 /**
  * Records a short clip and posts it to /api/voice/transcribe.
@@ -19,8 +22,30 @@ export function MicButton({
 }) {
   const [state, setState] = useState<State>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  // Read after mount so the server and first client render agree.
+  const languageRef = useRef(DEFAULT_LANGUAGE);
+  languageRef.current = language;
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved !== null) setLanguage(normaliseLanguage(saved));
+    } catch {
+      // Private mode, or storage blocked. English it is.
+    }
+  }, []);
+
+  function chooseLanguage(value: string) {
+    setLanguage(value);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, value);
+    } catch {
+      // Not remembering the choice is survivable; failing to record is not.
+    }
+  }
 
   const stop = useCallback(() => {
     recorderRef.current?.stop();
@@ -42,6 +67,7 @@ export function MicButton({
           const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
           const form = new FormData();
           form.append('audio', blob, 'clip.webm');
+          form.append('language', languageRef.current);
           const response = await fetch('/api/voice/transcribe', { method: 'POST', body: form });
           const payload = await response.json();
           if (!response.ok) throw new Error(payload.error ?? 'Transcription failed');
@@ -62,7 +88,25 @@ export function MicButton({
   }, [onTranscript]);
 
   return (
-    <span className="relative">
+    <span className="relative inline-flex items-center gap-1">
+      <label className="sr-only" htmlFor="voice-language">
+        Language you will speak
+      </label>
+      <select
+        id="voice-language"
+        value={language}
+        onChange={(event) => chooseLanguage(event.target.value)}
+        disabled={state !== 'idle'}
+        title="Language you will speak"
+        className="h-9 max-w-[92px] shrink-0 truncate rounded-pill border border-hairline bg-raised px-2 text-[11.5px] text-ink-muted outline-none transition hover:text-ink-primary focus:border-accent/40 disabled:opacity-40"
+      >
+        {LANGUAGES.map((item) => (
+          <option key={item.code} value={item.code}>
+            {item.label}
+          </option>
+        ))}
+        <option value={AUTO_DETECT}>Detect it</option>
+      </select>
       <button
         type="button"
         title={error ?? (state === 'recording' ? 'Stop and transcribe' : 'Speak your prompt')}

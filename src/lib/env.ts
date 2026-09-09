@@ -108,6 +108,9 @@ export const CREDIT_COST = {
   chatbot_reply: 1,
   // Transcription is a fraction of a cent and already capped at 60/hour.
   transcription: 0,
+  // The pre-build interview runs on the fast model and exists to make the one
+  // generation the user does pay for land closer to what they wanted.
+  interview: 0,
 } as const;
 
 export type CreditedEvent = keyof typeof CREDIT_COST;

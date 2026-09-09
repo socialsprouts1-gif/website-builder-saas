@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { CATEGORIES, categoryBySlug } from '@/lib/categories';
 import { cn } from '@/components/ui/cn';
 import type { ModelOption } from '@/lib/openai/models';
+import { InterviewStep } from '@/components/app/InterviewStep';
+import type { Answer, InterviewQuestion } from '@/lib/generation/interview';
 
 type Mode = 'describe' | 'screenshot' | 'speak';
 
@@ -39,6 +41,8 @@ export function NewSiteForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [questions, setQuestions] = useState<InterviewQuestion[] | null>(null);
+  const [asking, setAsking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Seed from the marketing hero / onboarding hand-off.
@@ -71,13 +75,46 @@ export function NewSiteForm({
     setScreenshot({ dataUrl, name: file.name });
   }
 
-  async function submit() {
+  const brief = prompt.trim() || 'Build a site based on this screenshot.';
+
+  /**
+   * Step one: ask Lumen what it needs to know. If the questions cannot be
+   * written — no key, a bad reply, the network — building goes ahead anyway
+   * rather than blocking on a step that is only meant to help.
+   */
+  async function askFirst() {
     if (mode === 'screenshot' && !screenshot) {
       setError('Add a screenshot first.');
       return;
     }
     if (mode !== 'screenshot' && !prompt.trim()) return;
 
+    setAsking(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/interview', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          prompt: brief,
+          category,
+          hasScreenshot: mode === 'screenshot' && Boolean(screenshot),
+        }),
+      });
+      const payload = await response.json();
+      if (response.ok && Array.isArray(payload.questions) && payload.questions.length > 0) {
+        setQuestions(payload.questions);
+        return;
+      }
+      await create([]);
+    } catch {
+      await create([]);
+    } finally {
+      setAsking(false);
+    }
+  }
+
+  async function create(answers: Answer[]) {
     setBusy(true);
     setError(null);
     try {
@@ -85,11 +122,12 @@ export function NewSiteForm({
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          prompt: prompt.trim() || 'Build a site based on this screenshot.',
+          prompt: brief,
           category,
           model: model || null,
           inputMode: mode === 'screenshot' ? 'screenshot' : mode === 'speak' ? 'voice' : 'prompt',
           screenshotDataUrl: mode === 'screenshot' ? screenshot?.dataUrl : null,
+          answers,
         }),
       });
       const payload = await response.json();
@@ -98,10 +136,32 @@ export function NewSiteForm({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not start generation');
       setBusy(false);
+      setQuestions(null);
     }
   }
 
   const activeMode = MODES.find((item) => item.id === mode)!;
+
+  if (questions) {
+    return (
+      <div className="space-y-5">
+        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
+          <span className="text-ink-secondary">You asked for:</span> {brief}
+        </p>
+        <InterviewStep
+          questions={questions}
+          busy={busy}
+          onDone={(answers) => void create(answers)}
+          onSkipAll={() => void create([])}
+        />
+        {error ? (
+          <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -186,8 +246,8 @@ export function NewSiteForm({
       <PromptBar
         value={prompt}
         onChange={setPrompt}
-        onSubmit={submit}
-        busy={busy}
+        onSubmit={askFirst}
+        busy={busy || asking}
         autoFocus={mode === 'describe'}
         allowVoice
         placeholder={
@@ -197,8 +257,12 @@ export function NewSiteForm({
               ? 'Tap the mic and describe your business out loud…'
               : 'A candlelit French bistro with online reservations…'
         }
-        submitLabel="Generate"
+        submitLabel={asking ? 'Thinking…' : 'Continue'}
       />
+
+      <p className="text-center text-[12px] text-ink-muted">
+        Lumen asks a few questions before it builds — you can skip them.
+      </p>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         {CATEGORIES.slice(0, 6).map((item) => (

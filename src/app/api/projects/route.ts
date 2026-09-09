@@ -9,6 +9,7 @@ import { categoryBySlug } from '@/lib/categories';
 import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/errors';
 import { getAllowance } from '@/lib/allowance';
 import { ensureUserProfile } from '@/lib/profile';
+import { applyAnswers } from '@/lib/generation/interview';
 
 export const runtime = 'nodejs';
 
@@ -45,6 +46,10 @@ export async function POST(request: NextRequest) {
 
     const body = createProjectSchema.parse(await request.json());
     const category = categoryBySlug(body.category);
+
+    // The interview answers become part of the brief rather than a separate
+    // input, so every downstream stage sees them without changing shape.
+    const brief = applyAnswers(body.prompt, body.answers ?? []);
 
     // projects.user_id references public.users; make sure that row exists
     // before inserting, rather than failing on the constraint.
@@ -100,7 +105,7 @@ export async function POST(request: NextRequest) {
         status: 'queued',
         stage: 'queued',
         input_mode: body.inputMode,
-        prompt_text: body.prompt,
+        prompt_text: brief,
         screenshot_url: screenshotUrl,
         model_used: body.model ?? null,
       })
@@ -109,11 +114,20 @@ export async function POST(request: NextRequest) {
 
     if (jobError || !job) return jsonError(jobError?.message ?? 'Could not queue generation', 500);
 
-    await admin.from('chat_messages').insert({
-      project_id: project.id,
-      role: 'user',
-      content: body.prompt,
-    });
+    // The log shows what the person actually said, then what they answered —
+    // reading back the merged brief as if they had typed it would be a lie.
+    const messages = [{ project_id: project.id, role: 'user', content: body.prompt }];
+    if (body.answers?.length) {
+      messages.push({
+        project_id: project.id,
+        role: 'user',
+        content: body.answers
+          .filter((entry) => entry.answer.trim())
+          .map((entry) => `${entry.question} → ${entry.answer.trim()}`)
+          .join('\n'),
+      });
+    }
+    await admin.from('chat_messages').insert(messages);
 
     return NextResponse.json({ projectId: project.id, jobId: job.id });
   } catch (cause) {
