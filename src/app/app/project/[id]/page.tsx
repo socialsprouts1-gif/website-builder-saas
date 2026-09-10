@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentFiles } from '@/lib/generation/storage';
 import { resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
+import { reapStaleJobs } from '@/lib/generation/reap';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,11 @@ export default async function ProjectWorkspacePage({
   const { job } = await searchParams;
 
   const user = await requireUser();
+
+  // Settle abandoned builds before reading status, so a project whose build
+  // died shows as stopped with a way to restart rather than a frozen spinner.
+  await reapStaleJobs(user.id).catch(() => 0);
+
   const supabase = await createClient();
 
   const { data: project } = await supabase

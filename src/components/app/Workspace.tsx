@@ -73,6 +73,11 @@ export function Workspace({
   const [page, setPage] = useState(pages[0] ?? 'index.html');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [ready, setReady] = useState(initialStatus === 'ready');
+  // A build that died leaves the project here with nothing running. Without a
+  // way out, the workspace shows a build screen for something that is not
+  // building.
+  const [stopped, setStopped] = useState(initialStatus === 'failed' && !initialJobId);
+  const [retrying, setRetrying] = useState(false);
 
   const logRef = useRef<HTMLDivElement>(null);
   const generationStarted = useRef(false);
@@ -126,6 +131,7 @@ export function Workspace({
         setError(payload.message ?? 'Generation failed');
         setProgress(null);
         setBusy(false);
+        setStopped(true);
         source.close();
       }
     };
@@ -215,6 +221,21 @@ export function Workspace({
     } finally {
       setBusy(false);
       setProgress(null);
+    }
+  }
+
+  async function retryBuild() {
+    setRetrying(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/retry`, { method: 'POST' });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? 'Could not start it again');
+      // The stream only runs for a job named in the URL, so reload into it.
+      window.location.href = `/app/project/${projectId}?job=${payload.jobId}`;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not start it again');
+      setRetrying(false);
     }
   }
 
@@ -437,10 +458,38 @@ export function Workspace({
               style={{ width: VIEWPORT_WIDTH[viewport], maxWidth: '100%' }}
             />
           ) : (
-            <BuildingStage stage={stage} message={progress} files={builtFiles} />
+            stopped ? (
+              <StoppedState onRetry={retryBuild} busy={retrying} message={error} />
+            ) : (
+              <BuildingStage stage={stage} message={progress} files={builtFiles} />
+            )
           )}
         </CodeWindow>
       </div>
+    </div>
+  );
+}
+
+/** What a project shows when its build never finished. */
+function StoppedState({
+  onRetry,
+  busy,
+  message,
+}: {
+  onRetry: () => void;
+  busy: boolean;
+  message: string | null;
+}) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-8 py-16 text-center">
+      <p className="font-display text-xl text-ink-primary">This build stopped early</p>
+      <p className="max-w-sm text-[13px] leading-relaxed text-ink-muted">
+        {message ??
+          'The tab was closed or the connection dropped before the site finished. Nothing was saved, and nothing was charged twice.'}
+      </p>
+      <Button onClick={onRetry} disabled={busy} className="mt-2">
+        {busy ? 'Starting…' : 'Build it again'}
+      </Button>
     </div>
   );
 }

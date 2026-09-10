@@ -29,6 +29,9 @@ export function PromptBar({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
+  // What was already typed when dictation started. Live results replace only
+  // the spoken part, so a half-written sentence is not eaten by the mic.
+  const spokenBaseRef = useRef<string | null>(null);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -75,8 +78,15 @@ export function PromptBar({
       <div className="flex items-center justify-end gap-2 sm:gap-3">
         {allowVoice ? (
           <MicButton
+            onSessionStart={() => {
+              spokenBaseRef.current = value.trim();
+              // Nobody should have to click into the box to see their words.
+              textareaRef.current?.focus();
+            }}
             onTranscript={(text) => {
-              onChange(value ? `${value} ${text}` : text);
+              const base = spokenBaseRef.current ?? value.trim();
+              spokenBaseRef.current = base;
+              onChange(base ? `${base} ${text}` : text);
               requestAnimationFrame(autosize);
             }}
           />
