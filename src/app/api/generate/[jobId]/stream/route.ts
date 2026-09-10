@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { readProgress } from '@/lib/generation/runner';
+import { reapJob } from '@/lib/generation/reap';
 import { sseEncode, sseHeaders } from '@/lib/api';
 
 export const runtime = 'nodejs';
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
         while (!closed) {
           const { data: job } = await admin
             .from('generation_jobs')
-            .select('status, stage, progress, error')
+            .select('status, stage, progress, error, created_at, project_id')
             .eq('id', jobId)
             .maybeSingle();
 
@@ -101,6 +102,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
           }
           if (job.status === 'failed') {
             send({ type: 'error', stage: 'failed', message: job.error ?? 'Generation failed' });
+            break;
+          }
+
+          // A build whose chain broke has nothing left to move it. The watcher
+          // is the only thing looking, so it is the thing that settles it —
+          // otherwise the screen sits on a build that will never finish.
+          const abandoned = await reapJob({ id: jobId, createdAt: job.created_at, projectId: job.project_id });
+          if (abandoned) {
+            send({ type: 'error', stage: 'failed', message: abandoned });
             break;
           }
 

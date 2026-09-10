@@ -4,25 +4,61 @@ import { createAdminClient } from '@/lib/supabase/admin';
 /**
  * Marks abandoned builds as failed.
  *
- * Generation runs inside the SSE request that streams it, so it only makes
- * progress while a browser is holding that connection open. Close the tab, lose
- * the network, or let the serverless function hit its ceiling, and the job is
- * left "running" and the project "generating" with nothing left alive to
- * finish or fail them — which is how a site sits there Building for a day.
+ * A build advances by one invocation calling the next. If a link in that chain
+ * never lands — the platform dropped it, the network failed — the job is left
+ * "running" and the project "generating" with nothing alive to finish or fail
+ * them, which is how a site sits there Building for an hour.
  *
- * There is no background worker to fix that, so the sweep happens when the
- * owner next looks: cheap, and it can only ever affect their own rows.
+ * There is no background worker to fix that, so it is settled by whoever looks
+ * next: this sweep on a page load, and reapJob on every poll of a live watcher.
  */
 
 /**
- * Generation is capped at 300s by the route's maxDuration. Ten minutes is
- * comfortably past any legitimate run, including a slow model and a retry of
- * the same job in another tab.
+ * A build runs as several invocations, each capped at 300s, chained one after
+ * another. Twenty minutes is past any plausible chain — four steps at the full
+ * ceiling is twenty — while still surfacing a broken one the same session.
  */
-const STALE_AFTER_MS = 10 * 60 * 1000;
+const STALE_AFTER_MS = 20 * 60 * 1000;
 
 const ABANDONED_MESSAGE =
   'The build stopped before it finished — the tab was closed or the connection dropped.';
+
+/**
+ * Settles one job if it has been running too long.
+ *
+ * The sweep below only happens on a page load, which is no help to a tab that
+ * has been sitting open watching a build for an hour. The watcher calls this on
+ * every poll so a broken build surfaces where someone is actually looking.
+ *
+ * Returns the failure message when it settled the job, or null when the job is
+ * still within its time.
+ */
+export async function reapJob(job: {
+  id: string;
+  createdAt: string;
+  projectId: string;
+}): Promise<string | null> {
+  if (Date.now() - new Date(job.createdAt).getTime() < STALE_AFTER_MS) return null;
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('generation_jobs')
+    .update({ status: 'failed', error: ABANDONED_MESSAGE, completed_at: new Date().toISOString() })
+    .eq('id', job.id)
+    .in('status', ['queued', 'running'])
+    .select('id')
+    .maybeSingle();
+
+  if (!data) return null;
+
+  await admin
+    .from('projects')
+    .update({ status: 'failed' })
+    .eq('id', job.projectId)
+    .eq('status', 'generating');
+
+  return ABANDONED_MESSAGE;
+}
 
 export async function reapStaleJobs(userId: string): Promise<number> {
   const admin = createAdminClient();

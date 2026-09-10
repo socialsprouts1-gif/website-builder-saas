@@ -111,8 +111,19 @@ export function Workspace({
       // The watcher below reports the real state either way.
     });
 
-    const source = new EventSource(`/api/generate/${initialJobId}/stream`);
+    // The watcher's own request is capped by the platform, so it ends long
+    // before a long build does. Reconnecting is free — it re-reads the job row
+    // — so a dropped view reopens instead of leaving a dead screen.
+    let source: EventSource;
+    let reconnect: ReturnType<typeof setTimeout> | undefined;
+    let finished = false;
 
+    const open = () => {
+      source = new EventSource(`/api/generate/${initialJobId}/stream`);
+      wire(source);
+    };
+
+    const wire = (source: EventSource) => {
     source.onmessage = (event) => {
       const payload = JSON.parse(event.data);
       if (payload.type === 'ping') return;
@@ -132,14 +143,17 @@ export function Workspace({
         setError(`That model was unavailable — Lumen used ${payload.model} instead.`);
       }
       if (payload.type === 'done') {
+        finished = true;
         setProgress(null);
         setStage('done');
+        setPercent(100);
         setBusy(false);
         setReady(true);
         source.close();
         refreshPreview();
       }
       if (payload.type === 'error') {
+        finished = true;
         setError(payload.message ?? 'Generation failed');
         setProgress(null);
         setBusy(false);
@@ -150,12 +164,20 @@ export function Workspace({
 
     source.onerror = () => {
       source.close();
-      // The build runs on the server, so losing the watcher costs nothing but
-      // the live view. Say so, and keep the build screen up.
-      setError('Lost the live view — the site is still building. Reload to pick it back up.');
+      if (finished) return;
+      // The build is on the server; only the view was lost. Reopen quietly
+      // rather than telling the user something is wrong when nothing is.
+      reconnect = setTimeout(open, 1_500);
+    };
     };
 
-    return () => source.close();
+    open();
+
+    return () => {
+      finished = true;
+      clearTimeout(reconnect);
+      source?.close();
+    };
   }, [initialJobId, initialStatus, refreshPreview]);
 
   // ---- chat iteration -------------------------------------------------------

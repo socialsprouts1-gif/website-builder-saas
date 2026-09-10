@@ -1,17 +1,21 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { GenerationJobRow } from '@/lib/database.types';
-import { runGeneration } from './pipeline';
-import type { GenerationEvent } from './types';
+import { nextStep, runBuildStep, type BuildState, type BuildStep } from './pipeline';
 
 /**
  * Running a build on the server, not in the tab that asked for it.
  *
  * Generation used to happen inside the SSE request that streamed it, which tied
  * the work to one open connection: navigate away and it died; come back and it
- * started over. Now a build is claimed once, run to completion by the server,
- * and reported through the job row — so closing the tab, switching pages, or
- * shutting the laptop makes no difference to whether the site gets built.
+ * started over. Now a build is claimed once, run by the server, and reported
+ * through the job row — so closing the tab, switching pages, or shutting the
+ * laptop makes no difference to whether the site gets built.
+ *
+ * It also runs as four separate invocations rather than one. A whole site does
+ * not reliably fit inside a serverless function's time limit, and a build that
+ * dies at the ceiling loses everything it had written. Each step now gets its
+ * own full budget and hands its work to the next through the job row.
  */
 
 export interface JobProgress {
@@ -80,6 +84,12 @@ export async function claimJob(jobId: string, userId: string): Promise<Generatio
   return (data as GenerationJobRow | null) ?? null;
 }
 
+/** The build's working state, parked in the job row between steps. */
+export function readBuildState(job: Pick<GenerationJobRow, 'progress'>): BuildState {
+  const raw = job.progress as { build?: BuildState } | null;
+  return raw?.build ?? {};
+}
+
 export function readProgress(job: Pick<GenerationJobRow, 'progress' | 'stage'>): JobProgress {
   const raw = job.progress as Partial<JobProgress> | null;
   const progress: JobProgress = {
@@ -96,36 +106,40 @@ export function readProgress(job: Pick<GenerationJobRow, 'progress' | 'stage'>):
 }
 
 /**
- * Runs the build to completion and keeps the job row current as it goes.
+ * Runs exactly one step of a build, then says whether another is due.
  *
- * Nothing here talks to a browser. Whatever is watching reads the row.
+ * Nothing here talks to a browser. Whatever is watching reads the job row.
  */
-export async function runJob(job: GenerationJobRow, businessType: string | null): Promise<void> {
+export async function runNextStep(
+  job: GenerationJobRow,
+  businessType: string | null,
+): Promise<{ done: boolean; failed: boolean }> {
   const admin = createAdminClient();
-  const progress: JobProgress = { ...EMPTY, stage: 'brief', files: [] };
+  const before = readProgress(job);
+  const state = readBuildState(job);
+  const step: BuildStep = nextStep(state);
 
-  // Token events are deliberately dropped: they were only ever used to show
-  // code streaming past, which no longer appears anywhere.
-  const emit = async (event: GenerationEvent) => {
-    if (event.type === 'token') return;
-    // done and error are written by the pipeline itself, with the outcome.
-    if (event.type === 'done' || event.type === 'error') return;
+  const files = [...before.files];
+  let expected = before.expected;
 
-    if (event.stage) progress.stage = event.stage;
-    if (event.message) progress.message = event.message;
-    if (typeof event.expected === 'number') progress.expected = event.expected;
-    if (event.type === 'file' && event.path) {
-      progress.stage = 'code';
-      if (!progress.files.includes(event.path)) progress.files.push(event.path);
-    }
-    progress.percent = computePercent(progress);
-
-    await writeProgress(job.id, progress);
+  const emitFile = (path: string) => {
+    if (files.includes(path)) return;
+    files.push(path);
+    // Fire and forget: a file line arriving late is better than the build
+    // waiting on a database write to report it.
+    void writeState(job.id, {
+      stage: 'code',
+      message: `Writing ${path}`,
+      files,
+      expected,
+      percent: 0,
+      build: state,
+    });
   };
 
   try {
-    await runGeneration(
-      {
+    const outcome = await runBuildStep(step, state, {
+      input: {
         jobId: job.id,
         projectId: job.project_id,
         userId: job.user_id,
@@ -135,18 +149,43 @@ export async function runJob(job: GenerationJobRow, businessType: string | null)
         requestedModel: job.model_used,
         inputMode: job.input_mode,
       },
-      emit,
-    );
+      emitFile,
+    });
+
+    if (typeof outcome.expected === 'number') expected = outcome.expected;
+
+    await writeState(job.id, {
+      stage: outcome.stage,
+      message: outcome.message,
+      files,
+      expected,
+      percent: 0,
+      build: outcome.state,
+    });
+
+    if (outcome.next === null) {
+      await admin
+        .from('generation_jobs')
+        .update({ status: 'succeeded', stage: 'done', completed_at: new Date().toISOString() })
+        .eq('id', job.id);
+      return { done: true, failed: false };
+    }
+
+    return { done: false, failed: false };
   } catch (cause) {
-    // runGeneration marks the job failed itself; this is the belt to that
-    // braces, for anything thrown before it got that far.
     const message = cause instanceof Error ? cause.message : 'Generation failed';
     await admin
       .from('generation_jobs')
-      .update({ status: 'failed', stage: 'failed', error: message, completed_at: new Date().toISOString() })
+      .update({
+        status: 'failed',
+        stage: 'failed',
+        error: message,
+        completed_at: new Date().toISOString(),
+      })
       .eq('id', job.id)
       .neq('status', 'succeeded');
     await admin.from('projects').update({ status: 'failed' }).eq('id', job.project_id);
+    return { done: true, failed: true };
   }
 }
 
@@ -155,14 +194,21 @@ export async function runJob(job: GenerationJobRow, businessType: string | null)
  * the progress column still generates correctly — the watcher just falls back
  * to the coarse stage until the migration is run.
  */
-async function writeProgress(jobId: string, progress: JobProgress): Promise<void> {
+async function writeState(
+  jobId: string,
+  progress: JobProgress & { build: BuildState },
+): Promise<void> {
   const admin = createAdminClient();
+  const payload = { ...progress, percent: computePercent(progress) };
+
   const { error } = await admin
     .from('generation_jobs')
-    .update({ stage: progress.stage, progress: { ...progress } })
+    .update({ stage: payload.stage, progress: payload as never })
     .eq('id', jobId);
 
   if (error) {
-    await admin.from('generation_jobs').update({ stage: progress.stage }).eq('id', jobId);
+    // Without the column the build still runs; only the fine-grained report is
+    // lost, and the watcher falls back to the coarse stage.
+    await admin.from('generation_jobs').update({ stage: payload.stage }).eq('id', jobId);
   }
 }
