@@ -34,6 +34,22 @@ export default async function ProjectWorkspacePage({
     .maybeSingle();
   if (!project) notFound();
 
+  // Coming back from anywhere but the redirect after creation, there is no
+  // ?job= in the URL. The build is still running on the server, so find it and
+  // watch it rather than showing a build screen with nothing behind it.
+  let jobId = job ?? null;
+  if (!jobId && project.status === 'generating') {
+    const { data: live } = await supabase
+      .from('generation_jobs')
+      .select('id')
+      .eq('project_id', id)
+      .in('status', ['queued', 'running'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    jobId = live?.id ?? null;
+  }
+
   const [{ data: messages }, { data: versions }] = await Promise.all([
     supabase
       .from('chat_messages')
@@ -70,7 +86,7 @@ export default async function ProjectWorkspacePage({
       pages={pages.length > 0 ? pages : ['index.html']}
       models={{ quality: catalog.quality, fast: catalog.fast, all: catalog.all }}
       activeModel={project.model}
-      initialJobId={job ?? null}
+      initialJobId={jobId}
     />
   );
 }

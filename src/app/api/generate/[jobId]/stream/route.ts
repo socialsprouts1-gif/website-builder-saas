@@ -1,13 +1,24 @@
 import type { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { runGeneration } from '@/lib/generation/pipeline';
+import { readProgress } from '@/lib/generation/runner';
 import { sseEncode, sseHeaders } from '@/lib/api';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-/** Runs a queued generation and streams its progress as Server-Sent Events. */
+/**
+ * Watches a build. It runs nothing.
+ *
+ * The build itself is started by POST ../run and carries on server-side
+ * regardless of who is connected, so this only tails the job row and reports
+ * what it finds. That is what makes leaving and coming back free: reconnecting
+ * costs a database read, never a second generation.
+ */
+
+const POLL_MS = 1_200;
+const HEARTBEAT_EVERY = 12;
+
 export async function GET(request: NextRequest, context: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await context.params;
 
@@ -18,91 +29,77 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
   if (!user) return new Response('Unauthorized', { status: 401 });
 
   const admin = createAdminClient();
-  const { data: job } = await admin
+  const { data: exists } = await admin
     .from('generation_jobs')
-    .select('*')
+    .select('id')
     .eq('id', jobId)
     .eq('user_id', user.id)
     .maybeSingle();
-
-  if (!job) return new Response('Not found', { status: 404 });
-
-  // A job that already finished replays its outcome instead of regenerating —
-  // reloading the workspace must never cost the user a second generation.
-  if (job.status === 'succeeded' || job.status === 'failed') {
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(
-          sseEncode(
-            job.status === 'succeeded'
-              ? { type: 'done', stage: 'done', projectId: job.project_id }
-              : { type: 'error', stage: 'failed', message: job.error ?? 'Generation failed' },
-          ),
-        );
-        controller.close();
-      },
-    });
-    return new Response(stream, { headers: sseHeaders() });
-  }
-
-  const staleAfter = Date.now() - 6 * 60 * 1000;
-  if (job.status === 'running' && new Date(job.created_at).getTime() > staleAfter) {
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(
-          sseEncode({ type: 'stage', stage: 'code', message: 'Already building in another tab…' }),
-        );
-        controller.close();
-      },
-    });
-    return new Response(stream, { headers: sseHeaders() });
-  }
-
-  const { data: project } = await admin
-    .from('projects')
-    .select('business_type')
-    .eq('id', job.project_id)
-    .maybeSingle();
-
-  const businessType = project?.business_type ?? null;
+  if (!exists) return new Response('Not found', { status: 404 });
 
   const stream = new ReadableStream({
     async start(controller) {
       let closed = false;
       const send = (payload: unknown) => {
-        if (closed) return;
+        if (closed) return false;
         try {
           controller.enqueue(sseEncode(payload));
+          return true;
         } catch {
           closed = true;
+          return false;
         }
       };
 
-      // Keeps proxies from closing an idle connection during a long model call.
-      const heartbeat = setInterval(() => send({ type: 'ping' }), 15_000);
+      // The browser going away must not keep this polling loop alive.
+      request.signal.addEventListener('abort', () => {
+        closed = true;
+      });
+
+      let lastMessage = '';
+      let seenFiles = 0;
+      let ticks = 0;
 
       try {
-        await runGeneration(
-          {
-            jobId,
-            projectId: job.project_id,
-            userId: user.id,
-            prompt: job.prompt_text ?? '',
-            businessType,
-            screenshotDataUrl: job.screenshot_url,
-            requestedModel: job.model_used,
-            inputMode: job.input_mode,
-          },
-          send,
-        );
-      } catch (cause) {
-        send({
-          type: 'error',
-          stage: 'failed',
-          message: cause instanceof Error ? cause.message : 'Generation failed',
-        });
+        while (!closed) {
+          const { data: job } = await admin
+            .from('generation_jobs')
+            .select('status, stage, progress, error')
+            .eq('id', jobId)
+            .maybeSingle();
+
+          if (!job) {
+            send({ type: 'error', stage: 'failed', message: 'That build no longer exists.' });
+            break;
+          }
+
+          const progress = readProgress(job);
+
+          // Only changes are sent, so a slow stage does not spam the client.
+          if (progress.message !== lastMessage) {
+            lastMessage = progress.message;
+            send({ type: 'stage', stage: progress.stage, message: progress.message });
+          }
+          for (const path of progress.files.slice(seenFiles)) {
+            send({ type: 'file', stage: 'code', path, message: `Writing ${path}` });
+          }
+          seenFiles = progress.files.length;
+
+          if (job.status === 'succeeded') {
+            send({ type: 'done', stage: 'done' });
+            break;
+          }
+          if (job.status === 'failed') {
+            send({ type: 'error', stage: 'failed', message: job.error ?? 'Generation failed' });
+            break;
+          }
+
+          ticks += 1;
+          if (ticks % HEARTBEAT_EVERY === 0) send({ type: 'ping' });
+
+          await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+        }
       } finally {
-        clearInterval(heartbeat);
         closed = true;
         try {
           controller.close();

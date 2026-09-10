@@ -95,10 +95,17 @@ export function Workspace({
     router.refresh();
   }, [router]);
 
-  // ---- initial generation ---------------------------------------------------
+  // ---- watching the build ---------------------------------------------------
   useEffect(() => {
     if (!initialJobId || generationStarted.current || initialStatus !== 'generating') return;
     generationStarted.current = true;
+
+    // Ask the server to start it, then watch. Starting is idempotent — the job
+    // is claimed with a conditional update — so arriving on this page a second
+    // time watches the build already in flight instead of launching another.
+    void fetch(`/api/generate/${initialJobId}/run`, { method: 'POST' }).catch(() => {
+      // The watcher below reports the real state either way.
+    });
 
     const source = new EventSource(`/api/generate/${initialJobId}/stream`);
 
@@ -138,9 +145,9 @@ export function Workspace({
 
     source.onerror = () => {
       source.close();
-      setBusy(false);
-      setProgress(null);
-      setError('The connection dropped. Reload to see where it got to.');
+      // The build runs on the server, so losing the watcher costs nothing but
+      // the live view. Say so, and keep the build screen up.
+      setError('Lost the live view — the site is still building. Reload to pick it back up.');
     };
 
     return () => source.close();

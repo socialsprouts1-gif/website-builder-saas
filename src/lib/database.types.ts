@@ -67,6 +67,8 @@ export type GenerationJobRow = {
   tokens_out: number;
   cost_usd: number;
   error: string | null;
+  /** Live progress a returning browser can read: {stage, message, files}. */
+  progress: Json | null;
   created_at: string;
   completed_at: string | null;
 }

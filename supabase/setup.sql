@@ -618,3 +618,17 @@ alter table public.projects add column if not exists vercel_project_id text;
 alter table public.projects add column if not exists vercel_project_name text;
 alter table public.projects add column if not exists deploy_url text;
 alter table public.projects add column if not exists custom_domain text;
+
+-- ==========================================================
+-- 0007_job_progress.sql
+-- ==========================================================
+
+-- Generation runs on the server now, detached from whatever tab started it, so
+-- progress has to live somewhere a returning browser can read it.
+
+alter table public.generation_jobs
+  add column if not exists progress jsonb not null default '{}'::jsonb;
+
+create index if not exists generation_jobs_status_idx
+  on public.generation_jobs (status)
+  where status in ('queued', 'running');
