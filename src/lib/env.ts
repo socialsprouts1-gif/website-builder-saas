@@ -27,10 +27,37 @@ const PUBLIC = {
   siteUrl: clean(process.env.NEXT_PUBLIC_SITE_URL),
   supabaseUrl: clean(process.env.NEXT_PUBLIC_SUPABASE_URL),
   supabaseAnonKey: clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+  // Vercel sets these on every deployment, in every environment, without
+  // anyone configuring anything.
+  vercelProductionUrl: clean(process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL),
+  vercelDeploymentUrl: clean(process.env.NEXT_PUBLIC_VERCEL_URL),
 } as const;
 
+/**
+ * The address this deployment answers on.
+ *
+ * NEXT_PUBLIC_SITE_URL wins when it is set, but it is scoped per environment in
+ * Vercel: a value added only to Production is simply absent from a preview
+ * build, and falling straight to localhost from there breaks canonical URLs,
+ * the sitemap and OAuth redirects on every preview. Vercel's own deployment
+ * variables are always present, so they fill the gap before localhost does.
+ */
+function resolveSiteUrl(): string {
+  if (PUBLIC.siteUrl) return withScheme(PUBLIC.siteUrl);
+  if (PUBLIC.vercelProductionUrl) return withScheme(PUBLIC.vercelProductionUrl);
+  if (PUBLIC.vercelDeploymentUrl) return withScheme(PUBLIC.vercelDeploymentUrl);
+  return 'http://localhost:3000';
+}
+
+/** Vercel's variables carry no scheme; a configured value usually does. */
+function withScheme(value: string): string {
+  const trimmed = value.replace(/\/+$/, '');
+  if (/^https?:\/\//.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export const env = {
-  siteUrl: PUBLIC.siteUrl ?? 'http://localhost:3000',
+  siteUrl: resolveSiteUrl(),
 
   supabase: {
     url: PUBLIC.supabaseUrl,
