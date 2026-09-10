@@ -408,11 +408,11 @@ export function Workspace({
                   onChange={(event) => setModel(event.target.value)}
                   className="max-w-[62%] truncate rounded-pill border border-hairline bg-raised px-2.5 py-1 text-[11.5px] text-ink-secondary outline-none focus:border-accent/40"
                 >
-                  {models.quality ? (
-                    <option value={models.quality.id}>Best quality — {models.quality.label}</option>
-                  ) : null}
                   {models.fast ? (
-                    <option value={models.fast.id}>Fast &amp; cheap — {models.fast.label}</option>
+                    <option value={models.fast.id}>Fast — {models.fast.label}</option>
+                  ) : null}
+                  {models.quality ? (
+                    <option value={models.quality.id}>Best quality, slower — {models.quality.label}</option>
                   ) : null}
                   <optgroup label="All models">
                     {models.all.map((option) => (

@@ -37,7 +37,11 @@ export function NewSiteForm({
   const [prompt, setPrompt] = useState('');
   const [category, setCategory] = useState<string | null>(defaultCategory);
   const [screenshot, setScreenshot] = useState<{ dataUrl: string; name: string } | null>(null);
-  const [model, setModel] = useState<string>(defaultModel ?? models.quality?.id ?? '');
+  // The fast model is the default for a first build. The biggest model writes
+  // a slightly better page and takes several times as long to do it, which is
+  // the wrong trade when someone is watching a progress bar — and the whole
+  // site is editable in chat afterwards either way.
+  const [model, setModel] = useState<string>(defaultModel ?? models.fast?.id ?? models.quality?.id ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -287,8 +291,12 @@ export function NewSiteForm({
             onChange={(event) => setModel(event.target.value)}
             className="rounded-pill border border-hairline bg-raised px-3 py-1.5 text-[12.5px] text-ink-secondary outline-none focus:border-accent/40"
           >
-            {models.quality ? <option value={models.quality.id}>Best quality — {models.quality.label}</option> : null}
-            {models.fast ? <option value={models.fast.id}>Fast &amp; cheap — {models.fast.label}</option> : null}
+            {models.fast ? (
+              <option value={models.fast.id}>Fast — {models.fast.label}</option>
+            ) : null}
+            {models.quality ? (
+              <option value={models.quality.id}>Best quality, slower — {models.quality.label}</option>
+            ) : null}
             <optgroup label="All models">
               {models.all.map((option) => (
                 <option key={option.id} value={option.id}>

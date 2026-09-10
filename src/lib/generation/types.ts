@@ -53,6 +53,8 @@ export interface DesignSystem {
   /** How decorative SVG/CSS art should look: e.g. "soft organic blobs". */
   decor: string;
   mood: string;
+  /** Class names the stylesheet defines and every page uses. */
+  components?: string[];
 }
 
 export type GenerationStage =

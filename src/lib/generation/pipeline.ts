@@ -12,7 +12,6 @@ import {
   buildBriefPrompt,
   buildEditPrompt,
   buildPagePrompt,
-  buildHomePrompt,
   buildStylesPrompt,
   staticSiteFiles,
 } from './prompts';
@@ -29,16 +28,6 @@ type Emit = (event: GenerationEvent) => void | Promise<void>;
 
 const CODE_AUTHOR =
   'You are Lumen: a senior front-end engineer and a designer with taste, building the finished website a small business will actually put its name on. You write the whole thing by hand in HTML and CSS, and you care as much about how it looks as whether it works. Wireframes, placeholder boxes and flat centred text are failures.';
-
-/**
- * The homepage's <nav>, handed to the other pages so they reproduce it rather
- * than inventing their own. Falls back to empty, which simply means each page
- * writes its own nav from the brief's page list.
- */
-function extractNav(html: string): string {
-  const match = html.match(/<nav[\s\S]*?<\/nav>/i);
-  return match ? match[0] : '';
-}
 
 /** Small helper so a malformed JSON response degrades into a clear error. */
 function parseJson<T>(raw: string, what: string): T {
@@ -99,7 +88,7 @@ export interface BuildState {
   pending?: string[];
 }
 
-export type BuildStep = 'plan' | 'styles' | 'home' | 'pages' | 'persist';
+export type BuildStep = 'plan' | 'styles' | 'pages' | 'persist';
 
 export interface StepOutcome {
   state: BuildState;
@@ -114,9 +103,7 @@ export interface StepOutcome {
 /** Which step to run, decided entirely by what the state already contains. */
 export function nextStep(state: BuildState): BuildStep {
   if (!state.plan) return 'plan';
-  const draft = state.draft;
-  if (!draft) return 'styles';
-  if (!draft.some((file) => file.path === 'index.html')) return 'home';
+  if (!state.draft) return 'styles';
   if ((state.pending ?? []).length > 0) return 'pages';
   return 'persist';
 }
@@ -260,27 +247,12 @@ export async function runBuildStep(
     if (written.length === 0) {
       throw new Error('The model produced no files. Try again, or switch model.');
     }
+    // Every page, homepage included, goes into the same parallel batch.
     return {
-      state: { ...state, draft: written },
-      next: 'home',
+      state: { ...state, draft: written, pending: plan.brief.pages.map((page) => page.path) },
+      next: 'pages',
       stage: 'code',
-      message: 'Writing the homepage…',
-    };
-  }
-
-  if (step === 'home') {
-    const draft = state.draft ?? [];
-    const styles = draft.find((file) => file.path.endsWith('.css'))?.content ?? '';
-    const written = await write(buildHomePrompt(plan.brief, plan.design, styles));
-    if (!written.some((file) => file.path === 'index.html')) {
-      throw new Error('The model did not produce a homepage. Try again, or switch model.');
-    }
-    const pending = plan.brief.pages.slice(1).map((page) => page.path);
-    return {
-      state: { ...state, draft: mergeFiles(draft, written), pending },
-      next: pending.length > 0 ? 'pages' : 'persist',
-      stage: 'code',
-      message: pending.length > 0 ? `Writing ${pending.length} more pages…` : 'Saving your site…',
+      message: `Writing ${plan.brief.pages.length} pages…`,
     };
   }
 
@@ -288,7 +260,6 @@ export async function runBuildStep(
     const draft = state.draft ?? [];
     const pending = state.pending ?? [];
     const styles = draft.find((file) => file.path.endsWith('.css'))?.content ?? '';
-    const nav = extractNav(draft.find((file) => file.path === 'index.html')?.content ?? '');
 
     // Concurrent on purpose: the wait becomes the slowest page rather than the
     // sum of all of them. One page failing does not lose the others — it is
@@ -297,10 +268,13 @@ export async function runBuildStep(
       pending.map((path) => {
         const page = plan.brief.pages.find((candidate) => candidate.path === path);
         if (!page) return Promise.resolve<SiteFile[]>([]);
-        return write(buildPagePrompt({ brief: plan.brief, design: plan.design, page, styles, nav }));
+        return write(buildPagePrompt({ brief: plan.brief, design: plan.design, page, styles }));
       }),
     );
     const written = results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+    if (!written.some((file) => file.path === 'index.html')) {
+      throw new Error('The model did not produce a homepage. Try again, or switch model.');
+    }
 
     return {
       state: { ...state, draft: mergeFiles(draft, written), pending: [] },

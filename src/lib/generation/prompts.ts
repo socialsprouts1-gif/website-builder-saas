@@ -12,8 +12,8 @@ export const PLAN_SYSTEM = `You are Lumen's site architect and design director. 
 
 THE BRIEF
 - Invent a plausible, specific business identity when the user has not given one (real-sounding name, real-sounding details). Never use placeholder names like "Your Business" or "Acme".
-- Choose 3-4 pages maximum, including the homepage. Small businesses do not need more, and every extra page is another minute the owner waits.
-- Every page needs a clear purpose. The homepage needs 6-8 named sections; other pages need 4-6. Name them concretely — "signature dishes card grid", "the room, split with photo panel", "what regulars say", "reserve a table band" — not "features" or "about".
+- Choose 3 pages maximum, including the homepage. A small business needs a homepage that does the work and two supporting pages; anything more is a page nobody reads.
+- Every page needs a clear purpose. The homepage needs 5-6 named sections; other pages need 3-4. Name them concretely — "signature dishes card grid", "the room, split with photo panel", "what regulars say", "reserve a table band" — not "features" or "about".
 - Vary the section types across the page so the layout has rhythm rather than a stack of identical blocks.
 - If the business type implies a conversion action (reservations, bookings, appointments, quotes, orders), it must appear in mustHave.
 - Keep tone and colorDirection short and concrete.
@@ -30,6 +30,7 @@ You are not choosing a safe default. A generic site is a failure — two Lumen s
 - Pick a real Google Fonts pairing with clear contrast between display and body, and give the exact stylesheet href.
 - decor names the decorative language the page will draw in CSS and SVG — for example "soft organic blobs", "thin geometric line work", "layered arcs", "grain and noise over gradient". Choose one that suits the business.
 - spacingScale is 6-7 rem values, smallest first, generous at the top end so sections breathe.
+- components lists the class names the pages will use, so the stylesheet and the pages agree without seeing each other's work. Name them plainly: "hero", "section", "card-grid", "card", "btn", "btn-ghost", "nav", "footer", "stat", "quote", "split", "media".
 
 Respond with JSON only:
 {
@@ -53,7 +54,8 @@ Respond with JSON only:
     "radiusLarge": string,
     "spacingScale": string[],
     "decor": string,
-    "mood": string
+    "mood": string,
+    "components": string[]
   }
 }
 The first page MUST have path "index.html".`;
@@ -96,6 +98,7 @@ Rules:
 - Pick a real Google Fonts pairing with clear contrast between display and body, and give the exact stylesheet href.
 - decor names the decorative language the page will draw in CSS and SVG — for example "soft organic blobs", "thin geometric line work", "layered arcs", "grain and noise over gradient". Choose one that suits the business.
 - spacingScale is 6-7 rem values, smallest first, generous at the top end so sections breathe.
+- components lists the class names the pages will use, so the stylesheet and the pages agree without seeing each other's work. Name them plainly: "hero", "section", "card-grid", "card", "btn", "btn-ghost", "nav", "footer", "stat", "quote", "split", "media".
 
 Respond with JSON only:
 {
@@ -208,68 +211,62 @@ DESIGN SYSTEM (use these exact values as CSS custom properties):
 ${JSON.stringify(design, null, 2)}
 
 Emit exactly two files, in this order:
-- styles.css — the stylesheet for the WHOLE site. Every page will use it, so include the classes each of these pages needs: ${brief.pages.map((page) => `${page.path} (${page.sections.join(', ')})`).join('; ')}
-- script.js — mobile nav toggle, any small interactions, and a form stub that shows a success message.
+- styles.css — the stylesheet for the WHOLE site, built from the class names above. Write it once and reuse: one .section rule with modifiers beats a bespoke rule per section. Do not repeat a property that a custom property or a shared class already sets.
+- script.js — mobile nav toggle, any small interactions, and a form stub that shows a success message. Keep it under 60 lines.
+
+Every page will be written against these class names, so they must all exist:
+${(design.components ?? []).join(', ') || 'hero, section, card-grid, card, btn, nav, footer'}
 
 ${CODE_RULES}`;
 }
 
 /**
- * The homepage, written against the finished stylesheet.
- */
-export function buildHomePrompt(brief: SiteBrief, design: DesignSystem, styles: string): string {
-  const home = brief.pages[0];
-
-  return `Write the homepage of the website described below. The stylesheet already exists — use its classes and custom properties, and do NOT re-emit it.
-
-BRIEF:
-${JSON.stringify(brief, null, 2)}
-
-DESIGN SYSTEM:
-${JSON.stringify(design, null, 2)}
-
-THIS PAGE: index.html — ${home?.title ?? 'Home'}
-Sections, in order: ${home?.sections.join(', ') ?? ''}
-
-The nav must link to every page of the site: ${brief.pages.map((page) => page.path).join(', ')}.
-
-The existing styles.css:
-${styles}
-
-Emit exactly one file: index.html. It links to styles.css and script.js.
-
-${CODE_RULES}`;
-}
-
-/**
- * Round two, one call per remaining page, all in flight together.
+ * The navigation every page renders, described once.
  *
- * Each is given the real stylesheet and the real nav from the homepage, so the
- * pages match rather than each inventing its own interpretation of the design.
+ * The other pages used to copy the nav out of the finished homepage, which
+ * meant they could not start until it was done. Describing it here instead lets
+ * every page — homepage included — be written at the same time.
+ */
+export function navSpec(brief: SiteBrief): string {
+  return brief.pages.map((page) => `${page.title} → ${page.path}`).join('\n');
+}
+
+/**
+ * One page. Every page of the site is written by one of these, all at once.
+ *
+ * Each is given the finished stylesheet and the agreed navigation, so the pages
+ * match rather than each inventing its own reading of the design.
  */
 export function buildPagePrompt(params: {
   brief: SiteBrief;
   design: DesignSystem;
   page: SiteBrief['pages'][number];
   styles: string;
-  nav: string;
 }): string {
-  return `Build ONE page of an existing website. The stylesheet and navigation already exist — match them exactly.
+  const isHome = params.page.path === 'index.html';
+
+  return `Write ONE page of a website. The stylesheet already exists — use its classes and custom properties, and do NOT re-emit it.
 
 BUSINESS: ${params.brief.businessName} — ${params.brief.tagline}
+AUDIENCE: ${params.brief.audience}
 TONE: ${params.brief.tone}
-
+${isHome ? `MUST APPEAR SOMEWHERE ON THIS PAGE: ${params.brief.mustHave.join(', ')}\n` : ''}
 THIS PAGE: ${params.page.path} — ${params.page.title}
 Purpose: ${params.page.purpose}
-Sections: ${params.page.sections.join(', ')}
+Sections, in this order: ${params.page.sections.join(', ')}
+${isHome ? 'This is the homepage: the opening screen must be the most ambitious thing on the site.\n' : ''}
+The navigation, identical on every page — render these links in your header, marking this page as current:
+${navSpec(params.brief)}
 
-The site's navigation, to reproduce verbatim inside your header:
-${params.nav}
+SEO for the site: ${JSON.stringify(params.brief.seo)}
 
-The site's existing styles.css, whose classes and custom properties you must reuse — do NOT re-emit it, and do NOT invent a second visual language:
+The class names available to you, all defined in the existing styles.css:
+${(params.design.components ?? []).join(', ') || 'hero, section, card-grid, card, btn, nav, footer'}
+
+The existing styles.css, whose classes and custom properties you must reuse:
 ${params.styles}
 
-Emit exactly one file: ${params.page.path}. It links to styles.css and script.js the same way the homepage does.
+Emit exactly one file: ${params.page.path}. It links to styles.css and script.js.
 
 ${CODE_RULES}`;
 }
