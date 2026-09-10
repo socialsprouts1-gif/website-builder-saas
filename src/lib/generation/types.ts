@@ -74,6 +74,8 @@ export interface GenerationEvent {
   versionId?: string;
   model?: string;
   substituted?: boolean;
+  /** How many files this build will produce, once the plan is known. */
+  expected?: number;
 }
 
 export interface ScreenshotExtraction {

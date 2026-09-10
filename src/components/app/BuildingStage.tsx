@@ -22,23 +22,17 @@ const STEPS: { id: BuildStageId; label: string; detail: string }[] = [
   { id: 'persist', label: 'Saving version one', detail: 'So you can always come back to it.' },
 ];
 
-/** How much of the bar each stage is worth. Code is the long one. */
-const WEIGHT: Record<BuildStageId, number> = {
-  brief: 0.18,
-  design: 0.34,
-  code: 0.86,
-  persist: 0.96,
-  done: 1,
-};
-
 export function BuildingStage({
   stage,
   message,
   files,
+  percent,
 }: {
   stage: BuildStageId;
   message: string | null;
   files: string[];
+  /** 0-100, computed by the server so every watcher agrees. */
+  percent: number;
 }) {
   const activeIndex = STEPS.findIndex((step) => step.id === stage);
   // 'persist' and 'done' both sit past the last visible step.
@@ -51,12 +45,20 @@ export function BuildingStage({
       <BuildScene stage={stage} />
 
       <div className="w-full max-w-sm lg:max-w-md">
-        <p className="font-display text-[22px] leading-tight text-ink-primary">
-          {message ?? 'Building your site…'}
-        </p>
+        <div className="flex items-baseline justify-between gap-4">
+          <p className="font-display text-[22px] leading-tight text-ink-primary">
+            {message ?? 'Building your site…'}
+          </p>
+          <p
+            className="shrink-0 font-display text-[26px] leading-none text-accent tabular-nums"
+            aria-label={`${percent} percent complete`}
+          >
+            {percent}%
+          </p>
+        </div>
         <Elapsed />
 
-        <ProgressBar value={WEIGHT[stage] ?? 0.1} />
+        <ProgressBar percent={percent} />
 
         <ol className="mt-6 space-y-1">
           {STEPS.map((step, index) => (
@@ -207,12 +209,18 @@ function Marker({ state }: { state: 'done' | 'active' | 'pending' }) {
   );
 }
 
-function ProgressBar({ value }: { value: number }) {
+function ProgressBar({ percent }: { percent: number }) {
   return (
-    <div className="mt-5 h-[3px] w-full overflow-hidden rounded-pill bg-white/8">
+    <div
+      className="mt-5 h-[4px] w-full overflow-hidden rounded-pill bg-white/8"
+      role="progressbar"
+      aria-valuenow={percent}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <div
-        className="h-full rounded-pill bg-accent transition-[width] duration-1000 ease-out"
-        style={{ width: `${Math.round(value * 100)}%` }}
+        className="h-full rounded-pill bg-accent transition-[width] duration-700 ease-out"
+        style={{ width: `${Math.min(Math.max(percent, 0), 100)}%` }}
       />
     </div>
   );

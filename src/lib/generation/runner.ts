@@ -18,9 +18,47 @@ export interface JobProgress {
   stage: string;
   message: string;
   files: string[];
+  /** Files this build will produce in total, known once the plan lands. */
+  expected: number;
+  /** 0-100, computed here so every watcher shows the same number. */
+  percent: number;
 }
 
-const EMPTY: JobProgress = { stage: 'queued', message: 'Starting up…', files: [] };
+const EMPTY: JobProgress = {
+  stage: 'queued',
+  message: 'Starting up…',
+  files: [],
+  expected: 0,
+  percent: 2,
+};
+
+/**
+ * Where each stage sits on the bar. Writing the files is most of the wall
+ * clock, so it owns most of the range and fills in as files arrive rather than
+ * jumping in one step.
+ */
+const FLOOR: Record<string, number> = {
+  queued: 2,
+  brief: 8,
+  design: 20,
+  code: 30,
+  persist: 95,
+  done: 100,
+  failed: 100,
+};
+
+const CODE_SPAN = 62;
+
+function computePercent(progress: JobProgress): number {
+  const floor = FLOOR[progress.stage] ?? EMPTY.percent;
+  if (progress.stage !== 'code' || progress.expected <= 0) return floor;
+
+  // Never quite reaches the top of its band: the last file is not the last of
+  // the work, and a bar that sits at 92 then finishes beats one that sits at
+  // 100 while the user waits.
+  const share = Math.min(progress.files.length / progress.expected, 1);
+  return Math.min(FLOOR.code + Math.round(share * CODE_SPAN), FLOOR.persist - 3);
+}
 
 /**
  * Takes ownership of a queued job, or returns null if someone already has it.
@@ -44,11 +82,17 @@ export async function claimJob(jobId: string, userId: string): Promise<Generatio
 
 export function readProgress(job: Pick<GenerationJobRow, 'progress' | 'stage'>): JobProgress {
   const raw = job.progress as Partial<JobProgress> | null;
-  return {
+  const progress: JobProgress = {
     stage: raw?.stage ?? job.stage ?? EMPTY.stage,
     message: raw?.message ?? EMPTY.message,
     files: Array.isArray(raw?.files) ? raw.files : [],
+    expected: typeof raw?.expected === 'number' ? raw.expected : 0,
+    percent: 0,
   };
+  // Recomputed on read rather than trusted from the row, so a build written by
+  // an older deployment still reports a sane number.
+  progress.percent = computePercent(progress);
+  return progress;
 }
 
 /**
@@ -69,10 +113,12 @@ export async function runJob(job: GenerationJobRow, businessType: string | null)
 
     if (event.stage) progress.stage = event.stage;
     if (event.message) progress.message = event.message;
+    if (typeof event.expected === 'number') progress.expected = event.expected;
     if (event.type === 'file' && event.path) {
       progress.stage = 'code';
       if (!progress.files.includes(event.path)) progress.files.push(event.path);
     }
+    progress.percent = computePercent(progress);
 
     await writeProgress(job.id, progress);
   };

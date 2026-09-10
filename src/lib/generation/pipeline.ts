@@ -6,14 +6,14 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { GenerationJobRow } from '@/lib/database.types';
 import { StreamingFileParser, mergeFiles } from './parser';
 import {
-  BRIEF_SYSTEM,
-  DESIGN_SYSTEM_PROMPT,
   EDIT_SYSTEM,
+  PLAN_SYSTEM,
   VISION_SYSTEM,
   buildBriefPrompt,
-  buildCodePrompt,
-  buildDesignPrompt,
   buildEditPrompt,
+  buildPagePrompt,
+  buildShellPrompt,
+  staticSiteFiles,
 } from './prompts';
 import { createVersion, getCurrentFiles } from './storage';
 import type {
@@ -25,6 +25,19 @@ import type {
 } from './types';
 
 type Emit = (event: GenerationEvent) => void | Promise<void>;
+
+const CODE_AUTHOR =
+  'You are Lumen: a senior front-end engineer and a designer with taste, building the finished website a small business will actually put its name on. You write the whole thing by hand in HTML and CSS, and you care as much about how it looks as whether it works. Wireframes, placeholder boxes and flat centred text are failures.';
+
+/**
+ * The homepage's <nav>, handed to the other pages so they reproduce it rather
+ * than inventing their own. Falls back to empty, which simply means each page
+ * writes its own nav from the brief's page list.
+ */
+function extractNav(html: string): string {
+  const match = html.match(/<nav[\s\S]*?<\/nav>/i);
+  return match ? match[0] : '';
+}
 
 /** Small helper so a malformed JSON response degrades into a clear error. */
 function parseJson<T>(raw: string, what: string): T {
@@ -121,12 +134,16 @@ export async function runGeneration(input: GenerationInput, emit: Emit): Promise
       });
     }
 
-    // --- 1. Brief -----------------------------------------------------------
+    // --- 1. Plan ------------------------------------------------------------
+    // Brief and design system in one request, on the fast model. They are
+    // planning steps producing a page of JSON, and the big model bought
+    // nothing here except two more waits.
     await emit({ type: 'stage', stage: 'brief', message: 'Planning your site…' });
-    const briefResponse = await client.chat.completions.create({
-      model,
+    const planModel = catalog.fast?.id ?? model;
+    const planResponse = await client.chat.completions.create({
+      model: planModel,
       messages: [
-        { role: 'system', content: BRIEF_SYSTEM },
+        { role: 'system', content: PLAN_SYSTEM },
         {
           role: 'user',
           content: buildBriefPrompt({
@@ -138,62 +155,81 @@ export async function runGeneration(input: GenerationInput, emit: Emit): Promise
       ],
       response_format: { type: 'json_object' },
     });
-    tokensIn += briefResponse.usage?.prompt_tokens ?? 0;
-    tokensOut += briefResponse.usage?.completion_tokens ?? 0;
-    const brief = parseJson<SiteBrief>(briefResponse.choices[0]?.message?.content ?? '', 'site brief');
-    await emit({ type: 'stage', stage: 'design', message: `Designing ${brief.businessName}…` });
+    tokensIn += planResponse.usage?.prompt_tokens ?? 0;
+    tokensOut += planResponse.usage?.completion_tokens ?? 0;
 
-    // --- 2. Per-project design system ---------------------------------------
-    const designResponse = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: 'system', content: DESIGN_SYSTEM_PROMPT },
-        { role: 'user', content: buildDesignPrompt(brief) },
-      ],
-      response_format: { type: 'json_object' },
-    });
-    tokensIn += designResponse.usage?.prompt_tokens ?? 0;
-    tokensOut += designResponse.usage?.completion_tokens ?? 0;
-    const design = parseJson<DesignSystem>(
-      designResponse.choices[0]?.message?.content ?? '',
-      'design system',
+    const plan = parseJson<{ brief: SiteBrief; design: DesignSystem }>(
+      planResponse.choices[0]?.message?.content ?? '',
+      'site plan',
     );
+    const brief = plan.brief;
+    const design = plan.design;
+    if (!brief?.pages?.length) throw new Error('The model returned a plan with no pages. Try again.');
 
-    // --- 3. Code ------------------------------------------------------------
-    await emit({ type: 'stage', stage: 'code', message: 'Writing the code…' });
+    await emit({
+      type: 'stage',
+      stage: 'design',
+      message: `Designing ${brief.businessName}…`,
+      expected: brief.pages.length + 2,
+    });
+
+    // --- 2. Shell: the stylesheet, the homepage, the script -----------------
+    await emit({ type: 'stage', stage: 'code', message: 'Writing the homepage…' });
     await updateJob(input.jobId, { stage: 'code' });
 
-    const parser = new StreamingFileParser(
-      (path) => void emit({ type: 'file', path, message: `Writing ${path}` }),
-    );
+    const write = async (prompt: string) => {
+      const parser = new StreamingFileParser(
+        (path) => void emit({ type: 'file', path, message: `Writing ${path}` }),
+      );
+      const stream = await client.chat.completions.create({
+        model,
+        stream: true,
+        stream_options: { include_usage: true },
+        messages: [
+          { role: 'system', content: CODE_AUTHOR },
+          { role: 'user', content: prompt },
+        ],
+      });
 
-    const stream = await client.chat.completions.create({
-      model,
-      stream: true,
-      stream_options: { include_usage: true },
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are Lumen: a senior front-end engineer and a designer with taste, building the finished website a small business will actually put its name on. You write the whole thing by hand in HTML and CSS, and you care as much about how it looks as whether it works. Wireframes, placeholder boxes and flat centred text are failures.',
-        },
-        { role: 'user', content: buildCodePrompt(brief, design) },
-      ],
-    });
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) parser.push(delta);
+        if (chunk.usage) {
+          tokensIn += chunk.usage.prompt_tokens ?? 0;
+          tokensOut += chunk.usage.completion_tokens ?? 0;
+        }
+      }
+      return parser.finish();
+    };
 
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        parser.push(delta);
-        await emit({ type: 'token', delta });
-      }
-      if (chunk.usage) {
-        tokensIn += chunk.usage.prompt_tokens ?? 0;
-        tokensOut += chunk.usage.completion_tokens ?? 0;
-      }
+    const shell = await write(buildShellPrompt(brief, design));
+    if (shell.length === 0) throw new Error('The model produced no files. Try again, or switch model.');
+
+    // --- 3. The rest of the pages, all at once ------------------------------
+    const rest = brief.pages.slice(1);
+    let extraPages: SiteFile[] = [];
+
+    if (rest.length > 0) {
+      await emit({
+        type: 'stage',
+        stage: 'code',
+        message: rest.length === 1 ? 'Writing the last page…' : `Writing ${rest.length} more pages…`,
+      });
+
+      const styles = shell.find((file) => file.path.endsWith('.css'))?.content ?? '';
+      const nav = extractNav(shell.find((file) => file.path === 'index.html')?.content ?? '');
+
+      // Concurrent on purpose: the wait becomes the slowest page rather than
+      // the sum of all of them. One page failing does not lose the others.
+      const results = await Promise.allSettled(
+        rest.map((page) => write(buildPagePrompt({ brief, design, page, styles, nav }))),
+      );
+      extraPages = results.flatMap((result) =>
+        result.status === 'fulfilled' ? result.value : [],
+      );
     }
 
-    const files = parser.finish();
+    const files = mergeFiles(shell, [...extraPages, ...staticSiteFiles(brief)]);
     if (files.length === 0) throw new Error('The model produced no files. Try again, or switch model.');
 
     // --- 4. Persist ---------------------------------------------------------

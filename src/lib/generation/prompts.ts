@@ -1,5 +1,63 @@
 import type { DesignSystem, ScreenshotExtraction, SiteBrief, SiteFile } from './types';
 
+/**
+ * Brief and design system in one call.
+ *
+ * These were two sequential round trips on the big model. They are planning
+ * steps producing a page of JSON each, which the fast model does just as well,
+ * and neither needs the other's output to be written first — so they became one
+ * request and stopped costing two waits.
+ */
+export const PLAN_SYSTEM = `You are Lumen's site architect and design director. From one sentence by a small-business owner you produce both the brief and the design system, in a single JSON object.
+
+THE BRIEF
+- Invent a plausible, specific business identity when the user has not given one (real-sounding name, real-sounding details). Never use placeholder names like "Your Business" or "Acme".
+- Choose 3-4 pages maximum, including the homepage. Small businesses do not need more, and every extra page is another minute the owner waits.
+- Every page needs a clear purpose. The homepage needs 6-8 named sections; other pages need 4-6. Name them concretely — "signature dishes card grid", "the room, split with photo panel", "what regulars say", "reserve a table band" — not "features" or "about".
+- Vary the section types across the page so the layout has rhythm rather than a stack of identical blocks.
+- If the business type implies a conversion action (reservations, bookings, appointments, quotes, orders), it must appear in mustHave.
+- Keep tone and colorDirection short and concrete.
+
+THE DESIGN SYSTEM
+You are not choosing a safe default. A generic site is a failure — two Lumen sites must not be mistakable for each other. A candlelit bistro should feel dim, warm and close; a CrossFit gym should feel loud, high-contrast and kinetic; a dental clinic should feel calm, bright and clinical. Commit to a point of view.
+
+- background and surface must differ enough to read as separate layers, and surfaceAlt gives alternating bands so a long page is never one flat colour.
+- accent is the one brand colour. accentSoft is a translucent or tinted version of it for glows, highlights and hovers — never a second brand colour.
+- Ensure text on background, textMuted on background, and accentContrast on accent all clear WCAG AA (4.5:1 for body copy).
+- gradients must be complete, valid CSS values. hero is the large atmospheric treatment behind the opening screen — usually two or three colour stops with a radial or layered linear gradient, never a plain flat fill. accent is a smaller gradient for buttons or highlights. subtle is a barely-there wash for section backgrounds.
+- shadows must be complete, valid CSS box-shadow values. Prefer large, soft, low-opacity shadows over hard dark ones.
+- fonts.scale uses clamp() so type resizes with the viewport — e.g. "clamp(2.5rem, 6vw, 5rem)" for hero. The hero size must be genuinely large.
+- Pick a real Google Fonts pairing with clear contrast between display and body, and give the exact stylesheet href.
+- decor names the decorative language the page will draw in CSS and SVG — for example "soft organic blobs", "thin geometric line work", "layered arcs", "grain and noise over gradient". Choose one that suits the business.
+- spacingScale is 6-7 rem values, smallest first, generous at the top end so sections breathe.
+
+Respond with JSON only:
+{
+  "brief": {
+    "businessName": string,
+    "businessType": string,
+    "tagline": string,
+    "audience": string,
+    "tone": string,
+    "colorDirection": string,
+    "pages": [{ "path": "index.html" | "menu.html" | ..., "title": string, "purpose": string, "sections": string[] }],
+    "mustHave": string[],
+    "seo": { "title": string, "description": string, "keywords": string[] }
+  },
+  "design": {
+    "palette": { "background": hex, "surface": hex, "surfaceAlt": hex, "text": hex, "textMuted": hex, "accent": hex, "accentContrast": hex, "accentSoft": string, "border": string },
+    "fonts": { "display": string, "body": string, "googleFontsHref": string, "scale": { "hero": string, "h2": string, "h3": string, "body": string } },
+    "gradients": { "hero": string, "accent": string, "subtle": string },
+    "shadows": { "sm": string, "md": string, "lg": string },
+    "radius": string,
+    "radiusLarge": string,
+    "spacingScale": string[],
+    "decor": string,
+    "mood": string
+  }
+}
+The first page MUST have path "index.html".`;
+
 export const BRIEF_SYSTEM = `You are Lumen's site architect. You turn one sentence from a small-business owner into a concrete brief for a marketing website.
 
 Rules:
@@ -65,7 +123,6 @@ Technical rules:
 - ONE shared styles.css consumed by every page, driven by CSS custom properties taken from the design system. Never inline a hex value in the HTML.
 - Fully responsive: a real mobile layout at 380px, tablet at 768px, desktop at 1200px+. CSS grid and flex, never fixed pixel widths for layout. Cap readable text at about 65 characters.
 - SEO on every page: unique <title>, <meta name="description">, Open Graph tags, exactly one <h1>, semantic landmarks (header/nav/main/section/footer), descriptive alt text.
-- Also emit sitemap.xml and robots.txt.
 - Any form posts to "#" and is handled by a small JS stub that shows a success message.
 - data-lumen-id="<stable-unique-slug>" on every text block, heading, button, image and section, so Lumen's visual editor can target it.
 - No external tracking, no analytics, no third-party scripts.
@@ -129,10 +186,95 @@ Files to emit, in this order:
 ${brief.pages.map((page) => `- ${page.path} — ${page.title}: ${page.sections.join(', ')}`).join('\n')}
 - styles.css
 - script.js
-- sitemap.xml
-- robots.txt
 
 ${CODE_RULES}`;
+}
+
+/**
+ * Round one: the shared stylesheet, the homepage and the script.
+ *
+ * The whole site used to come from a single completion, which meant the owner
+ * waited for the sum of every page. This call establishes the visual language
+ * and the nav; the remaining pages are then written against it at the same
+ * time, so the wait is the longest page rather than all of them added up.
+ */
+export function buildShellPrompt(brief: SiteBrief, design: DesignSystem): string {
+  const home = brief.pages[0];
+  const others = brief.pages.slice(1);
+
+  return `Build the homepage and the shared stylesheet for the website described below.
+
+BRIEF:
+${JSON.stringify(brief, null, 2)}
+
+DESIGN SYSTEM (use these exact values as CSS custom properties in styles.css):
+${JSON.stringify(design, null, 2)}
+
+Emit exactly these three files, in this order:
+- styles.css — the complete stylesheet for the WHOLE site, including classes the other pages will need: ${others.map((page) => page.title).join(', ') || 'none'}
+- index.html — ${home?.title ?? 'Home'}: ${home?.sections.join(', ') ?? ''}
+- script.js
+
+The nav must link to every page of the site: ${brief.pages.map((page) => page.path).join(', ')}.
+
+${CODE_RULES}`;
+}
+
+/**
+ * Round two, one call per remaining page, all in flight together.
+ *
+ * Each is given the real stylesheet and the real nav from the homepage, so the
+ * pages match rather than each inventing its own interpretation of the design.
+ */
+export function buildPagePrompt(params: {
+  brief: SiteBrief;
+  design: DesignSystem;
+  page: SiteBrief['pages'][number];
+  styles: string;
+  nav: string;
+}): string {
+  return `Build ONE page of an existing website. The stylesheet and navigation already exist — match them exactly.
+
+BUSINESS: ${params.brief.businessName} — ${params.brief.tagline}
+TONE: ${params.brief.tone}
+
+THIS PAGE: ${params.page.path} — ${params.page.title}
+Purpose: ${params.page.purpose}
+Sections: ${params.page.sections.join(', ')}
+
+The site's navigation, to reproduce verbatim inside your header:
+${params.nav}
+
+The site's existing styles.css, whose classes and custom properties you must reuse — do NOT re-emit it, and do NOT invent a second visual language:
+${params.styles}
+
+Emit exactly one file: ${params.page.path}. It links to styles.css and script.js the same way the homepage does.
+
+${CODE_RULES}`;
+}
+
+/**
+ * Deterministic files. Asking a model to write a sitemap is spending seconds
+ * and tokens on something that is a loop over the page list.
+ */
+export function staticSiteFiles(brief: SiteBrief, origin = 'https://example.com'): SiteFile[] {
+  const urls = brief.pages
+    .map((page) => {
+      const path = page.path === 'index.html' ? '' : page.path;
+      return `  <url><loc>${origin}/${path}</loc></url>`;
+    })
+    .join('\n');
+
+  return [
+    {
+      path: 'sitemap.xml',
+      content: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+    },
+    {
+      path: 'robots.txt',
+      content: `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`,
+    },
+  ];
 }
 
 export const EDIT_SYSTEM = `You are Lumen's site editor. The user asks for a change in plain language; you apply it to an existing website as a surgical edit.

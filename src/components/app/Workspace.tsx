@@ -68,6 +68,7 @@ export function Workspace({
   );
   const [stage, setStage] = useState<BuildStageId>('brief');
   const [builtFiles, setBuiltFiles] = useState<string[]>([]);
+  const [percent, setPercent] = useState(2);
   const [error, setError] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
   const [page, setPage] = useState(pages[0] ?? 'index.html');
@@ -117,6 +118,7 @@ export function Workspace({
         setProgress(payload.message ?? payload.stage ?? null);
         if (payload.stage) setStage(payload.stage as BuildStageId);
       }
+      if (typeof payload.percent === 'number') setPercent(payload.percent);
       if (payload.type === 'file' && payload.path) {
         setStage('code');
         setBuiltFiles((current) =>
@@ -468,7 +470,12 @@ export function Workspace({
             stopped ? (
               <StoppedState onRetry={retryBuild} busy={retrying} message={error} />
             ) : (
-              <BuildingStage stage={stage} message={progress} files={builtFiles} />
+              <BuildingStage
+                stage={stage}
+                message={progress}
+                files={builtFiles}
+                percent={percent}
+              />
             )
           )}
         </CodeWindow>

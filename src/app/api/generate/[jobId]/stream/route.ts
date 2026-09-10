@@ -56,7 +56,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
         closed = true;
       });
 
-      let lastMessage = '';
+      // Keyed on everything the client renders, not just the message: with no
+      // progress column the message never changes while the stage does, which
+      // left the build screen frozen on its first line.
+      let lastSent = '';
       let seenFiles = 0;
       let ticks = 0;
 
@@ -76,9 +79,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
           const progress = readProgress(job);
 
           // Only changes are sent, so a slow stage does not spam the client.
-          if (progress.message !== lastMessage) {
-            lastMessage = progress.message;
-            send({ type: 'stage', stage: progress.stage, message: progress.message });
+          const signature = `${progress.stage}|${progress.message}|${progress.percent}`;
+          if (signature !== lastSent) {
+            lastSent = signature;
+            send({
+              type: 'stage',
+              stage: progress.stage,
+              message: progress.message,
+              percent: progress.percent,
+              expected: progress.expected,
+            });
           }
           for (const path of progress.files.slice(seenFiles)) {
             send({ type: 'file', stage: 'code', path, message: `Writing ${path}` });
@@ -86,7 +96,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
           seenFiles = progress.files.length;
 
           if (job.status === 'succeeded') {
-            send({ type: 'done', stage: 'done' });
+            send({ type: 'done', stage: 'done', percent: 100 });
             break;
           }
           if (job.status === 'failed') {
