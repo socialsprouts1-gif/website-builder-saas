@@ -191,31 +191,52 @@ ${CODE_RULES}`;
 }
 
 /**
- * Round one: the shared stylesheet, the homepage and the script.
+ * The stylesheet and the script, alone.
  *
- * The whole site used to come from a single completion, which meant the owner
- * waited for the sum of every page. This call establishes the visual language
- * and the nav; the remaining pages are then written against it at the same
- * time, so the wait is the longest page rather than all of them added up.
+ * This and the homepage used to be one request, which was the largest single
+ * completion in the build and the one most likely to be cut off at the
+ * platform's time limit — losing everything, because nothing is saved until a
+ * step finishes. Split, each half comfortably fits.
  */
-export function buildShellPrompt(brief: SiteBrief, design: DesignSystem): string {
-  const home = brief.pages[0];
-  const others = brief.pages.slice(1);
-
-  return `Build the homepage and the shared stylesheet for the website described below.
+export function buildStylesPrompt(brief: SiteBrief, design: DesignSystem): string {
+  return `Write the complete stylesheet for the website described below, and its small script.
 
 BRIEF:
 ${JSON.stringify(brief, null, 2)}
 
-DESIGN SYSTEM (use these exact values as CSS custom properties in styles.css):
+DESIGN SYSTEM (use these exact values as CSS custom properties):
 ${JSON.stringify(design, null, 2)}
 
-Emit exactly these three files, in this order:
-- styles.css — the complete stylesheet for the WHOLE site, including classes the other pages will need: ${others.map((page) => page.title).join(', ') || 'none'}
-- index.html — ${home?.title ?? 'Home'}: ${home?.sections.join(', ') ?? ''}
-- script.js
+Emit exactly two files, in this order:
+- styles.css — the stylesheet for the WHOLE site. Every page will use it, so include the classes each of these pages needs: ${brief.pages.map((page) => `${page.path} (${page.sections.join(', ')})`).join('; ')}
+- script.js — mobile nav toggle, any small interactions, and a form stub that shows a success message.
+
+${CODE_RULES}`;
+}
+
+/**
+ * The homepage, written against the finished stylesheet.
+ */
+export function buildHomePrompt(brief: SiteBrief, design: DesignSystem, styles: string): string {
+  const home = brief.pages[0];
+
+  return `Write the homepage of the website described below. The stylesheet already exists — use its classes and custom properties, and do NOT re-emit it.
+
+BRIEF:
+${JSON.stringify(brief, null, 2)}
+
+DESIGN SYSTEM:
+${JSON.stringify(design, null, 2)}
+
+THIS PAGE: index.html — ${home?.title ?? 'Home'}
+Sections, in order: ${home?.sections.join(', ') ?? ''}
 
 The nav must link to every page of the site: ${brief.pages.map((page) => page.path).join(', ')}.
+
+The existing styles.css:
+${styles}
+
+Emit exactly one file: index.html. It links to styles.css and script.js.
 
 ${CODE_RULES}`;
 }

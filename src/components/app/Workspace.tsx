@@ -107,9 +107,18 @@ export function Workspace({
     // Ask the server to start it, then watch. Starting is idempotent — the job
     // is claimed with a conditional update — so arriving on this page a second
     // time watches the build already in flight instead of launching another.
-    void fetch(`/api/generate/${initialJobId}/run`, { method: 'POST' }).catch(() => {
-      // The watcher below reports the real state either way.
-    });
+    const nudge = () =>
+      void fetch(`/api/generate/${initialJobId}/run`, { method: 'POST' }).catch(() => {
+        // The watcher below reports the real state either way.
+      });
+
+    nudge();
+
+    // A build advances by one server invocation calling the next. If a link in
+    // that chain is lost the build stops silently, so this asks again every so
+    // often. The server ignores it unless the current step has been quiet
+    // longer than it could possibly still be running.
+    const revive = setInterval(nudge, 90_000);
 
     // The watcher's own request is capped by the platform, so it ends long
     // before a long build does. Reconnecting is free — it re-reads the job row
@@ -144,6 +153,7 @@ export function Workspace({
       }
       if (payload.type === 'done') {
         finished = true;
+        clearInterval(revive);
         setProgress(null);
         setStage('done');
         setPercent(100);
@@ -154,6 +164,7 @@ export function Workspace({
       }
       if (payload.type === 'error') {
         finished = true;
+        clearInterval(revive);
         setError(payload.message ?? 'Generation failed');
         setProgress(null);
         setBusy(false);
@@ -176,6 +187,7 @@ export function Workspace({
     return () => {
       finished = true;
       clearTimeout(reconnect);
+      clearInterval(revive);
       source?.close();
     };
   }, [initialJobId, initialStatus, refreshPreview]);

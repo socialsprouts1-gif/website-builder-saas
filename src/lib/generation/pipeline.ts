@@ -12,7 +12,8 @@ import {
   buildBriefPrompt,
   buildEditPrompt,
   buildPagePrompt,
-  buildShellPrompt,
+  buildHomePrompt,
+  buildStylesPrompt,
   staticSiteFiles,
 } from './prompts';
 import { createVersion, getCurrentFiles } from './storage';
@@ -98,7 +99,7 @@ export interface BuildState {
   pending?: string[];
 }
 
-export type BuildStep = 'plan' | 'shell' | 'pages' | 'persist';
+export type BuildStep = 'plan' | 'styles' | 'home' | 'pages' | 'persist';
 
 export interface StepOutcome {
   state: BuildState;
@@ -113,7 +114,9 @@ export interface StepOutcome {
 /** Which step to run, decided entirely by what the state already contains. */
 export function nextStep(state: BuildState): BuildStep {
   if (!state.plan) return 'plan';
-  if (!state.draft) return 'shell';
+  const draft = state.draft;
+  if (!draft) return 'styles';
+  if (!draft.some((file) => file.path === 'index.html')) return 'home';
   if ((state.pending ?? []).length > 0) return 'pages';
   return 'persist';
 }
@@ -242,24 +245,39 @@ export async function runBuildStep(
 
     return {
       state: { plan },
-      next: 'shell',
+      next: 'styles',
       stage: 'design',
       message: `Designing ${plan.brief.businessName}…`,
-      expected: plan.brief.pages.length + 3,
+      expected: plan.brief.pages.length + 4,
     };
   }
 
   const plan = state.plan;
   if (!plan) throw new Error('The build lost its plan. Start it again.');
 
-  if (step === 'shell') {
-    const shell = await write(buildShellPrompt(plan.brief, plan.design));
-    if (shell.length === 0) {
+  if (step === 'styles') {
+    const written = await write(buildStylesPrompt(plan.brief, plan.design));
+    if (written.length === 0) {
       throw new Error('The model produced no files. Try again, or switch model.');
+    }
+    return {
+      state: { ...state, draft: written },
+      next: 'home',
+      stage: 'code',
+      message: 'Writing the homepage…',
+    };
+  }
+
+  if (step === 'home') {
+    const draft = state.draft ?? [];
+    const styles = draft.find((file) => file.path.endsWith('.css'))?.content ?? '';
+    const written = await write(buildHomePrompt(plan.brief, plan.design, styles));
+    if (!written.some((file) => file.path === 'index.html')) {
+      throw new Error('The model did not produce a homepage. Try again, or switch model.');
     }
     const pending = plan.brief.pages.slice(1).map((page) => page.path);
     return {
-      state: { ...state, draft: shell, pending },
+      state: { ...state, draft: mergeFiles(draft, written), pending },
       next: pending.length > 0 ? 'pages' : 'persist',
       stage: 'code',
       message: pending.length > 0 ? `Writing ${pending.length} more pages…` : 'Saving your site…',

@@ -2,9 +2,10 @@ import { NextResponse, after, type NextRequest } from 'next/server';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { claimJob, runNextStep } from '@/lib/generation/runner';
+import { claimJob, readProgress, runNextStep, stepLooksLost } from '@/lib/generation/runner';
 import type { GenerationJobRow } from '@/lib/database.types';
 import { env } from '@/lib/env';
+import { selfOrigin } from '@/lib/self-origin';
 import { handleRouteError, jsonError } from '@/lib/api';
 
 export const runtime = 'nodejs';
@@ -49,7 +50,27 @@ export async function POST(request: NextRequest, context: { params: Promise<{ jo
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return jsonError('Sign in first', 401);
+
       job = await claimJob(jobId, user.id);
+
+      // Nothing to claim can also mean a chain link was lost — a step that
+      // started, was killed at the platform's ceiling, and told nobody. Only a
+      // step that has been silent longer than it could possibly still be alive
+      // is picked back up, so a slow step is never run twice.
+      if (!job) {
+        const { data: running } = await admin
+          .from('generation_jobs')
+          .select('*')
+          .eq('id', jobId)
+          .eq('user_id', user.id)
+          .eq('status', 'running')
+          .maybeSingle();
+
+        const candidate = (running as GenerationJobRow | null) ?? null;
+        if (candidate && stepLooksLost(readProgress(candidate), candidate.created_at)) {
+          job = candidate;
+        }
+      }
     }
 
     if (!job) {
@@ -65,10 +86,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ jo
       .maybeSingle();
 
     const claimed = job;
+    const origin = selfOrigin(request.headers, request.nextUrl.origin || env.siteUrl);
     after(
       (async () => {
         const { done } = await runNextStep(claimed, project?.business_type ?? null);
-        if (!done) await requestNextStep(jobId);
+        if (!done) await requestNextStep(origin, jobId);
       })(),
     );
 
@@ -97,20 +119,22 @@ function isSignedContinuation(request: NextRequest, jobId: string): boolean {
 }
 
 /**
- * Starts the next invocation without waiting for it. Failing to reach
- * ourselves leaves the job running, which the stale sweep settles rather than
- * leaving the user staring at a build that will never move.
+ * Starts the next invocation. The response is not awaited beyond its headers —
+ * that request runs a whole step of its own — but a failure to even reach
+ * ourselves is worth one retry before leaving the build for the sweep.
  */
-async function requestNextStep(jobId: string): Promise<void> {
+async function requestNextStep(origin: string, jobId: string): Promise<void> {
   const token = continuationToken(jobId);
   if (!token) return;
 
-  try {
-    await fetch(`${env.siteUrl}/api/generate/${jobId}/run`, {
-      method: 'POST',
-      headers: { [CONTINUE_HEADER]: token },
-    });
-  } catch {
-    // The sweep will mark the build stopped, and the user can restart it.
+  const url = `${origin}/api/generate/${jobId}/run`;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(url, { method: 'POST', headers: { [CONTINUE_HEADER]: token } });
+      if (response.ok) return;
+    } catch {
+      // Fall through to the retry.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 }

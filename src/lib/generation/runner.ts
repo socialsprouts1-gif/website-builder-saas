@@ -22,6 +22,8 @@ export interface JobProgress {
   stage: string;
   message: string;
   files: string[];
+  /** When the current step began, so a lost chain link can be spotted. */
+  stepStartedAt?: string;
   /** Files this build will produce in total, known once the plan lands. */
   expected: number;
   /** 0-100, computed here so every watcher shows the same number. */
@@ -84,6 +86,21 @@ export async function claimJob(jobId: string, userId: string): Promise<Generatio
   return (data as GenerationJobRow | null) ?? null;
 }
 
+/**
+ * How long a step may go silent before it is presumed lost.
+ *
+ * A step is capped at 300s by the platform, so anything past that has either
+ * finished — and written its state — or been killed without a word. Six minutes
+ * leaves room for the write itself.
+ */
+export const STEP_TIMEOUT_MS = 6 * 60 * 1000;
+
+/** True when the current step has gone quiet for longer than it could live. */
+export function stepLooksLost(progress: JobProgress, jobCreatedAt: string): boolean {
+  const since = progress.stepStartedAt ?? jobCreatedAt;
+  return Date.now() - new Date(since).getTime() > STEP_TIMEOUT_MS;
+}
+
 /** The build's working state, parked in the job row between steps. */
 export function readBuildState(job: Pick<GenerationJobRow, 'progress'>): BuildState {
   const raw = job.progress as { build?: BuildState } | null;
@@ -98,6 +115,7 @@ export function readProgress(job: Pick<GenerationJobRow, 'progress' | 'stage'>):
     files: Array.isArray(raw?.files) ? raw.files : [],
     expected: typeof raw?.expected === 'number' ? raw.expected : 0,
     percent: 0,
+    stepStartedAt: typeof raw?.stepStartedAt === 'string' ? raw.stepStartedAt : undefined,
   };
   // Recomputed on read rather than trusted from the row, so a build written by
   // an older deployment still reports a sane number.
@@ -121,6 +139,11 @@ export async function runNextStep(
 
   const files = [...before.files];
   let expected = before.expected;
+  const stepStartedAt = new Date().toISOString();
+
+  // Written before any model call, so a step that never reports again can be
+  // told apart from one that is merely slow.
+  await writeState(job.id, { ...before, stepStartedAt, build: state });
 
   const emitFile = (path: string) => {
     if (files.includes(path)) return;
@@ -133,6 +156,7 @@ export async function runNextStep(
       files,
       expected,
       percent: 0,
+      stepStartedAt,
       build: state,
     });
   };
@@ -160,6 +184,7 @@ export async function runNextStep(
       files,
       expected,
       percent: 0,
+      stepStartedAt,
       build: outcome.state,
     });
 
