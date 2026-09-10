@@ -44,6 +44,7 @@ export function Workspace({
   models,
   activeModel,
   initialJobId,
+  jobStartedAt,
 }: {
   projectId: string;
   projectName: string;
@@ -54,6 +55,8 @@ export function Workspace({
   models: { quality: ModelOption | null; fast: ModelOption | null; all: ModelOption[] };
   activeModel: string | null;
   initialJobId: string | null;
+  /** When the build actually began, so the timer survives leaving the page. */
+  jobStartedAt: string | null;
 }) {
   const router = useRouter();
 
@@ -475,6 +478,7 @@ export function Workspace({
                 message={progress}
                 files={builtFiles}
                 percent={percent}
+                startedAt={jobStartedAt}
               />
             )
           )}

@@ -34,21 +34,30 @@ export default async function ProjectWorkspacePage({
     .maybeSingle();
   if (!project) notFound();
 
-  // Coming back from anywhere but the redirect after creation, there is no
-  // ?job= in the URL. The build is still running on the server, so find it and
-  // watch it rather than showing a build screen with nothing behind it.
-  let jobId = job ?? null;
-  if (!jobId && project.status === 'generating') {
-    const { data: live } = await supabase
-      .from('generation_jobs')
-      .select('id')
-      .eq('project_id', id)
-      .in('status', ['queued', 'running'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    jobId = live?.id ?? null;
-  }
+  // The job is looked up either way — by id when the creation redirect named
+  // one, otherwise by finding the live one for this project. Coming back from
+  // anywhere else there is no ?job= in the URL, and a build screen with nothing
+  // behind it is worse than no build screen.
+  //
+  // created_at comes back with it because "how long has this been building" is
+  // a fact about the build, not about how long this tab has been open.
+  const jobQuery = supabase
+    .from('generation_jobs')
+    .select('id, created_at')
+    .eq('project_id', id);
+
+  const { data: liveJob } = job
+    ? await jobQuery.eq('id', job).maybeSingle()
+    : project.status === 'generating'
+      ? await jobQuery
+          .in('status', ['queued', 'running'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
+
+  const jobId = liveJob?.id ?? null;
+  const jobStartedAt = liveJob?.created_at ?? null;
 
   const [{ data: messages }, { data: versions }] = await Promise.all([
     supabase
@@ -87,6 +96,7 @@ export default async function ProjectWorkspacePage({
       models={{ quality: catalog.quality, fast: catalog.fast, all: catalog.all }}
       activeModel={project.model}
       initialJobId={jobId}
+      jobStartedAt={jobStartedAt}
     />
   );
 }

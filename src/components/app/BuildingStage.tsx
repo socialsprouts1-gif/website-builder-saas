@@ -27,12 +27,15 @@ export function BuildingStage({
   message,
   files,
   percent,
+  startedAt,
 }: {
   stage: BuildStageId;
   message: string | null;
   files: string[];
   /** 0-100, computed by the server so every watcher agrees. */
   percent: number;
+  /** When the build began, from the job row. */
+  startedAt?: string | null;
 }) {
   const activeIndex = STEPS.findIndex((step) => step.id === stage);
   // 'persist' and 'done' both sit past the last visible step.
@@ -56,7 +59,7 @@ export function BuildingStage({
             {percent}%
           </p>
         </div>
-        <Elapsed />
+        <Elapsed startedAt={startedAt} />
 
         <ProgressBar percent={percent} />
 
@@ -253,16 +256,26 @@ function FileTicker({ files }: { files: string[] }) {
   );
 }
 
-function Elapsed() {
-  const [start] = useState(() => Date.now());
-  const [now, setNow] = useState(start);
+/**
+ * How long the build has been running — measured from when it started, not
+ * from when this tab opened. The build outlives the page, so a timer that
+ * resets on every visit was reporting the wrong thing entirely.
+ */
+function Elapsed({ startedAt }: { startedAt?: string | null }) {
+  const start = useMemo(() => {
+    const parsed = startedAt ? Date.parse(startedAt) : Number.NaN;
+    // A clock skewed ahead of the server would otherwise show a negative age.
+    return Number.isNaN(parsed) ? Date.now() : Math.min(parsed, Date.now());
+  }, [startedAt]);
+
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const seconds = Math.floor((now - start) / 1000);
+  const seconds = Math.max(0, Math.floor((now - start) / 1000));
   return (
     <p className="mt-1.5 text-[12px] text-ink-muted">
       {seconds < 60 ? `${seconds}s elapsed` : `${Math.floor(seconds / 60)}m ${seconds % 60}s elapsed`}
