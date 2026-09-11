@@ -72,6 +72,8 @@ export function Workspace({
   const [stage, setStage] = useState<BuildStageId>('brief');
   const [builtFiles, setBuiltFiles] = useState<string[]>([]);
   const [percent, setPercent] = useState(2);
+  // Viewable, but the build has not finished adding pages.
+  const [stillAdding, setStillAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
   const [page, setPage] = useState(pages[0] ?? 'index.html');
@@ -85,6 +87,7 @@ export function Workspace({
 
   const logRef = useRef<HTMLDivElement>(null);
   const generationStarted = useRef(false);
+  const publishedSeen = useRef(false);
 
   const scrollLog = useCallback(() => {
     requestAnimationFrame(() => {
@@ -142,6 +145,16 @@ export function Workspace({
         if (payload.stage) setStage(payload.stage as BuildStageId);
       }
       if (typeof payload.percent === 'number') setPercent(payload.percent);
+      // The site is saved and viewable well before the build ends. Swap the
+      // build screen for the real thing the moment there is something to see.
+      // A ref, not state: reading `ready` here would make it a dependency of
+      // this effect, and re-running the effect would restart the watcher.
+      if (payload.published === true && !publishedSeen.current) {
+        publishedSeen.current = true;
+        setReady(true);
+        setStillAdding(true);
+        refreshPreview();
+      }
       if (payload.type === 'file' && payload.path) {
         setStage('code');
         setBuiltFiles((current) =>
@@ -159,6 +172,7 @@ export function Workspace({
         setPercent(100);
         setBusy(false);
         setReady(true);
+        setStillAdding(false);
         source.close();
         refreshPreview();
       }
@@ -453,6 +467,12 @@ export function Workspace({
               </span>
             ) : (
             <>
+              {stillAdding ? (
+                <span className="flex items-center gap-2 rounded-pill border border-accent/30 bg-accent-soft px-2.5 py-1 text-[10.5px] uppercase tracking-[0.14em] text-accent">
+                  <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" />
+                  {progress ?? 'Adding pages'}
+                </span>
+              ) : null}
               <select
                 value={page}
                 onChange={(event) => setPage(event.target.value)}

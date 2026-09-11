@@ -87,9 +87,11 @@ export interface BuildState {
   draft?: SiteFile[];
   /** Page paths still to write. */
   pending?: string[];
+  /** Whether the site has been saved and is already viewable. */
+  published?: boolean;
 }
 
-export type BuildStep = 'plan' | 'styles' | 'pages' | 'persist';
+export type BuildStep = 'plan' | 'styles' | 'home' | 'publish' | 'page';
 
 export interface StepOutcome {
   state: BuildState;
@@ -99,14 +101,25 @@ export interface StepOutcome {
   message: string;
   expected?: number;
   versionId?: string;
+  /** True once the site is saved and can be viewed, build still running. */
+  published?: boolean;
 }
 
-/** Which step to run, decided entirely by what the state already contains. */
-export function nextStep(state: BuildState): BuildStep {
+/**
+ * Which step to run, decided entirely by what the state already contains.
+ *
+ * The homepage is published the moment it exists. Waiting for every page before
+ * showing anything meant a site nobody could look at for the whole build; now
+ * the shape of it arrives in three model calls and the rest fills in behind.
+ */
+export function nextStep(state: BuildState): BuildStep | null {
   if (!state.plan) return 'plan';
-  if (!state.draft) return 'styles';
-  if ((state.pending ?? []).length > 0) return 'pages';
-  return 'persist';
+  const draft = state.draft;
+  if (!draft) return 'styles';
+  if (!draft.some((file) => file.path === 'index.html')) return 'home';
+  if (!state.published) return 'publish';
+  if ((state.pending ?? []).length > 0) return 'page';
+  return null;
 }
 
 interface StepContext {
@@ -262,45 +275,88 @@ export async function runBuildStep(
     if (written.length === 0) {
       throw new Error('The model produced no files. Try again, or switch model.');
     }
-    // Every page, homepage included, goes into the same parallel batch.
     return {
-      state: { ...state, draft: written, pending: plan.brief.pages.map((page) => page.path) },
-      next: 'pages',
+      state: { ...state, draft: written, pending: plan.brief.pages.slice(1).map((p) => p.path) },
+      next: 'home',
       stage: 'code',
-      message: `Writing ${plan.brief.pages.length} pages…`,
+      message: 'Writing the homepage…',
     };
   }
 
-  if (step === 'pages') {
+  if (step === 'home') {
     const draft = state.draft ?? [];
-    const pending = state.pending ?? [];
     const styles = draft.find((file) => file.path.endsWith('.css'))?.content ?? '';
-
-    // Concurrent on purpose: the wait becomes the slowest page rather than the
-    // sum of all of them. One page failing does not lose the others — it is
-    // simply missing, and the site still saves.
-    const results = await Promise.allSettled(
-      pending.map((path) => {
-        const page = plan.brief.pages.find((candidate) => candidate.path === path);
-        if (!page) return Promise.resolve<SiteFile[]>([]);
-        return write(buildPagePrompt({ brief: plan.brief, design: plan.design, page, styles }));
-      }),
+    const home = plan.brief.pages[0];
+    const written = await write(
+      buildPagePrompt({ brief: plan.brief, design: plan.design, page: home, styles }),
     );
-    const written = results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
     if (!written.some((file) => file.path === 'index.html')) {
       throw new Error('The model did not produce a homepage. Try again, or switch model.');
     }
-
     return {
-      state: { ...state, draft: mergeFiles(draft, written), pending: [] },
-      next: 'persist',
+      state: { ...state, draft: mergeFiles(draft, written) },
+      next: 'publish',
       stage: 'persist',
       message: 'Saving your site…',
     };
   }
 
-  // persist
-  const files = mergeFiles(state.draft ?? [], staticSiteFiles(plan.brief));
+  if (step === 'publish') {
+    // The site goes live here, with one page. Everything after this is an
+    // addition to a site the owner can already look at and edit.
+    const version = await saveSite(input, plan, state.draft ?? []);
+    const pending = state.pending ?? [];
+    return {
+      state: { ...state, published: true },
+      next: pending.length > 0 ? 'page' : null,
+      stage: pending.length > 0 ? 'code' : 'done',
+      message:
+        pending.length > 0
+          ? `Your homepage is ready — adding ${pending.length} more page${pending.length > 1 ? 's' : ''}…`
+          : 'Your site is ready.',
+      versionId: version,
+      published: true,
+    };
+  }
+
+  if (step === 'page') {
+    const draft = state.draft ?? [];
+    const pending = state.pending ?? [];
+    const path = pending[0];
+    const styles = draft.find((file) => file.path.endsWith('.css'))?.content ?? '';
+    const page = plan.brief.pages.find((candidate) => candidate.path === path);
+
+    // One page per invocation, in order. Firing them all at once looks faster
+    // and is not, on a key whose tokens-per-minute allowance they all share.
+    const written = page
+      ? await write(buildPagePrompt({ brief: plan.brief, design: plan.design, page, styles }))
+      : [];
+
+    const merged = mergeFiles(draft, written);
+    const rest = pending.slice(1);
+    // Saved after every page, so the site grows while it is being looked at.
+    const version = await saveSite(input, plan, merged);
+
+    return {
+      state: { ...state, draft: merged, pending: rest },
+      next: rest.length > 0 ? 'page' : null,
+      stage: rest.length > 0 ? 'code' : 'done',
+      message: rest.length > 0 ? `Adding ${rest.length} more page${rest.length > 1 ? 's' : ''}…` : 'Your site is ready.',
+      versionId: version,
+      published: true,
+    };
+  }
+
+  throw new Error(`Unknown build step: ${step}`);
+}
+
+/** Saves the files as the project's current version and marks it viewable. */
+async function saveSite(
+  input: GenerationInput,
+  plan: { brief: SiteBrief; design: DesignSystem },
+  draft: SiteFile[],
+): Promise<string> {
+  const files = mergeFiles(draft, staticSiteFiles(plan.brief));
   if (files.length === 0) throw new Error('The model produced no files. Try again, or switch model.');
 
   const version = await createVersion({
@@ -316,20 +372,13 @@ export async function runBuildStep(
       name: plan.brief.businessName,
       description: plan.brief.tagline,
       business_type: plan.brief.businessType,
-      model: session.model,
       design_system: plan.design as never,
       status: 'ready',
       current_version_id: version.id,
     })
     .eq('id', input.projectId);
 
-  return {
-    state: { ...state, draft: files, pending: [] },
-    next: null,
-    stage: 'done',
-    message: 'Your site is ready.',
-    versionId: version.id,
-  };
+  return version.id;
 }
 
 export interface EditResult {

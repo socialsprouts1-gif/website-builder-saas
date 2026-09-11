@@ -24,6 +24,8 @@ export interface JobProgress {
   files: string[];
   /** When the current step began, so a lost chain link can be spotted. */
   stepStartedAt?: string;
+  /** True once the site is viewable, even while more pages are being added. */
+  published?: boolean;
   /** Files this build will produce in total, known once the plan lands. */
   expected: number;
   /** 0-100, computed here so every watcher shows the same number. */
@@ -116,6 +118,7 @@ export function readProgress(job: Pick<GenerationJobRow, 'progress' | 'stage'>):
     expected: typeof raw?.expected === 'number' ? raw.expected : 0,
     percent: 0,
     stepStartedAt: typeof raw?.stepStartedAt === 'string' ? raw.stepStartedAt : undefined,
+    published: raw?.published === true,
   };
   // Recomputed on read rather than trusted from the row, so a build written by
   // an older deployment still reports a sane number.
@@ -135,7 +138,8 @@ export async function runNextStep(
   const admin = createAdminClient();
   const before = readProgress(job);
   const state = readBuildState(job);
-  const step: BuildStep = nextStep(state);
+  const step = nextStep(state);
+  if (!step) return { done: true, failed: false };
 
   const files = [...before.files];
   let expected = before.expected;
@@ -195,6 +199,7 @@ export async function runNextStep(
       expected,
       percent: 0,
       stepStartedAt,
+      published: outcome.published,
       build: outcome.state,
     });
 

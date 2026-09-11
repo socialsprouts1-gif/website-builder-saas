@@ -80,7 +80,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
           const progress = readProgress(job);
 
           // Only changes are sent, so a slow stage does not spam the client.
-          const signature = `${progress.stage}|${progress.message}|${progress.percent}`;
+          const signature = `${progress.stage}|${progress.message}|${progress.percent}|${progress.published}`;
           if (signature !== lastSent) {
             lastSent = signature;
             send({
@@ -89,6 +89,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
               message: progress.message,
               percent: progress.percent,
               expected: progress.expected,
+              published: progress.published,
             });
           }
           for (const path of progress.files.slice(seenFiles)) {
@@ -108,7 +109,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
           // A build whose chain broke has nothing left to move it. The watcher
           // is the only thing looking, so it is the thing that settles it —
           // otherwise the screen sits on a build that will never finish.
-          const abandoned = await reapJob({ id: jobId, createdAt: job.created_at, projectId: job.project_id });
+          const abandoned = await reapJob({
+            id: jobId,
+            createdAt: job.created_at,
+            projectId: job.project_id,
+            progress: job.progress,
+            stage: job.stage,
+          });
           if (abandoned) {
             send({ type: 'error', stage: 'failed', message: abandoned });
             break;
