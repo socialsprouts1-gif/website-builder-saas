@@ -152,7 +152,10 @@ export async function getKeyStatus(userId: string) {
 }
 
 export function openaiFor(apiKey: string): OpenAI {
-  return new OpenAI({ apiKey, maxRetries: 2, timeout: 180_000 });
+  // Retries are handled by callWithRetry so each wait can be reported; leaving
+  // them on here would multiply the delay and hide it. The timeout is the
+  // longest a single streamed completion should ever legitimately take.
+  return new OpenAI({ apiKey, maxRetries: 0, timeout: 120_000 });
 }
 
 /** One cheap, harmless call to prove a pasted key works before we store it. */

@@ -2,6 +2,7 @@ import 'server-only';
 import { openaiFor, resolveApiKey, type KeySource } from '@/lib/openai/client';
 import { getModelCatalog, resolveModel } from '@/lib/openai/models';
 import { recordUsage } from '@/lib/usage';
+import { callWithRetry } from '@/lib/openai/retry';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { GenerationJobRow } from '@/lib/database.types';
 import { StreamingFileParser, mergeFiles } from './parser';
@@ -111,6 +112,8 @@ export function nextStep(state: BuildState): BuildStep {
 interface StepContext {
   input: GenerationInput;
   emitFile: (path: string) => void;
+  /** Says what is happening during a wait, so a retry is not a silent stall. */
+  say?: (message: string) => void;
 }
 
 /** Everything a step needs from the account: a key, a catalog, a client. */
@@ -134,7 +137,12 @@ export async function runBuildStep(
   state: BuildState,
   context: StepContext,
 ): Promise<StepOutcome> {
-  const { input, emitFile } = context;
+  const { input, emitFile, say } = context;
+
+  // Every retry is announced. A throttled key waiting on its limit looks
+  // exactly like a hang otherwise, which is what made a slow build unreadable.
+  const onWait = (notice: { message: string; waitMs: number }) =>
+    say?.(`${notice.message} (${Math.round(notice.waitMs / 1000)}s)`);
   const session = await openSession(input);
   const { client, catalog, model, source } = session;
 
@@ -157,15 +165,17 @@ export async function runBuildStep(
   /** One code-writing request. Files are reported as the parser finds them. */
   const write = async (prompt: string): Promise<SiteFile[]> => {
     const parser = new StreamingFileParser(emitFile);
-    const stream = await client.chat.completions.create({
-      model,
-      stream: true,
-      stream_options: { include_usage: true },
-      messages: [
-        { role: 'system', content: CODE_AUTHOR },
-        { role: 'user', content: prompt },
-      ],
-    });
+    const stream = await callWithRetry(async () => {
+      return client.chat.completions.create({
+        model,
+        stream: true,
+        stream_options: { include_usage: true },
+        messages: [
+          { role: 'system', content: CODE_AUTHOR },
+          { role: 'user', content: prompt },
+        ],
+      });
+    }, onWait);
 
     let usage: { prompt_tokens?: number; completion_tokens?: number } | undefined;
     for await (const chunk of stream) {
@@ -179,21 +189,24 @@ export async function runBuildStep(
 
   if (step === 'plan') {
     let extraction: ScreenshotExtraction | null = null;
-    if (input.screenshotDataUrl) {
-      const vision = await client.chat.completions.create({
-        model: catalog.vision,
-        messages: [
-          { role: 'system', content: VISION_SYSTEM },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: 'Extract the structure of this page.' },
-              { type: 'image_url', image_url: { url: input.screenshotDataUrl, detail: 'high' } },
-            ],
-          },
-        ],
-        response_format: { type: 'json_object' },
-      });
+    const screenshot = input.screenshotDataUrl;
+    if (screenshot) {
+      const vision = await callWithRetry(async () => {
+        return client.chat.completions.create({
+          model: catalog.vision,
+          messages: [
+            { role: 'system', content: VISION_SYSTEM },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: 'Extract the structure of this page.' },
+                { type: 'image_url', image_url: { url: screenshot, detail: 'high' } },
+              ],
+            },
+          ],
+          response_format: { type: 'json_object' },
+        });
+      }, onWait);
       await spend(vision.usage, 'vision', catalog.vision);
       extraction = parseJson<ScreenshotExtraction>(
         vision.choices[0]?.message?.content ?? '',
@@ -205,21 +218,23 @@ export async function runBuildStep(
     // planning steps producing a page of JSON, and the big model bought
     // nothing here except another wait.
     const planModel = catalog.fast?.id ?? model;
-    const response = await client.chat.completions.create({
-      model: planModel,
-      messages: [
-        { role: 'system', content: PLAN_SYSTEM },
-        {
-          role: 'user',
-          content: buildBriefPrompt({
-            prompt: input.prompt,
-            businessType: input.businessType,
-            extraction,
-          }),
-        },
-      ],
-      response_format: { type: 'json_object' },
-    });
+    const response = await callWithRetry(async () => {
+      return client.chat.completions.create({
+        model: planModel,
+        messages: [
+          { role: 'system', content: PLAN_SYSTEM },
+          {
+            role: 'user',
+            content: buildBriefPrompt({
+              prompt: input.prompt,
+              businessType: input.businessType,
+              extraction,
+            }),
+          },
+        ],
+        response_format: { type: 'json_object' },
+      });
+    }, onWait);
     await spend(response.usage, 'generation', planModel);
 
     const plan = parseJson<{ brief: SiteBrief; design: DesignSystem }>(
@@ -358,7 +373,8 @@ export async function runChatEdit(params: {
     .order('created_at', { ascending: true })
     .limit(20);
 
-  const stream = await client.chat.completions.create({
+  const stream = await callWithRetry(async () => {
+    return client.chat.completions.create({
     model,
     stream: true,
     stream_options: { include_usage: true },
@@ -374,6 +390,7 @@ export async function runChatEdit(params: {
         }),
       },
     ],
+    });
   });
 
   const parser = new StreamingFileParser();

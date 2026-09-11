@@ -174,6 +174,16 @@ export async function runNextStep(
         inputMode: job.input_mode,
       },
       emitFile,
+      say: (message: string) => {
+        void writeState(job.id, {
+          ...before,
+          message,
+          files,
+          expected,
+          stepStartedAt,
+          build: state,
+        });
+      },
     });
 
     if (typeof outcome.expected === 'number') expected = outcome.expected;
