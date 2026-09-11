@@ -16,6 +16,7 @@ const GROUPS: { title: string; items: { href: string; label: string }[] }[] = [
     items: [
       { href: '/app', label: 'My sites' },
       { href: '/app/new', label: 'New site' },
+      { href: '/app/google', label: 'From Google' },
       { href: '/templates', label: 'Templates' },
     ],
   },

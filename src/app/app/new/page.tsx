@@ -40,6 +40,13 @@ export default async function NewSitePage() {
           Describe it, upload a screenshot, or say it out loud. Same generator, three ways in.
         </p>
         <p className="mt-3 text-[13px] text-ink-muted">
+          Already on Google?{' '}
+          <Link href="/app/google" className="text-accent hover:underline">
+            Build from your listing
+          </Link>{' '}
+          — name, hours, photos and reviews, already filled in.
+        </p>
+        <p className="mt-2 text-[13px] text-ink-muted">
           Not sure what to ask for?{' '}
           <Link href="/ideas" className="text-accent hover:underline">
             See what a site for your kind of business looks like

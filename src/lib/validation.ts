@@ -6,7 +6,9 @@ export const createProjectSchema = z.object({
   prompt: z.string().trim().min(3, 'Tell Lumen a little more.').max(2000),
   category: z.string().max(64).nullable().optional(),
   model: z.string().max(120).nullable().optional(),
-  inputMode: z.enum(['prompt', 'screenshot', 'voice', 'template']).default('prompt'),
+  inputMode: z.enum(['prompt', 'screenshot', 'voice', 'template', 'google']).default('prompt'),
+  /** A Google listing to build from, resolved server-side before generating. */
+  googleUrl: z.string().trim().max(2000).nullable().optional(),
   screenshotDataUrl: z
     .string()
     .regex(/^data:image\/(png|jpe?g|webp|gif);base64,/, 'Unsupported image type')

@@ -10,6 +10,8 @@ import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/err
 import { getAllowance } from '@/lib/allowance';
 import { ensureUserProfile } from '@/lib/profile';
 import { applyAnswers } from '@/lib/generation/interview';
+import { lookupPlace } from '@/lib/google/places';
+import { seedFromPlace } from '@/lib/google/seed';
 
 export const runtime = 'nodejs';
 
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // The interview answers become part of the brief rather than a separate
     // input, so every downstream stage sees them without changing shape.
-    const brief = applyAnswers(body.prompt, body.answers ?? []);
+    let brief = applyAnswers(body.prompt, body.answers ?? []);
 
     // projects.user_id references public.users; make sure that row exists
     // before inserting, rather than failing on the constraint.
@@ -78,6 +80,24 @@ export async function POST(request: NextRequest) {
       return jsonError(projectError?.message ?? 'Could not create project', 500);
     }
 
+    // A Google listing is resolved and imported here, before the job is queued,
+    // so the build starts from real facts and real photographs rather than
+    // inventing a business that already exists.
+    if (body.inputMode === 'google' && body.googleUrl) {
+      const place = await lookupPlace(body.googleUrl);
+      if (!place) {
+        await admin.from('projects').delete().eq('id', project.id);
+        return jsonError('That Google listing could not be read. Check the link and try again.', 422);
+      }
+      const seeded = await seedFromPlace(project.id, place);
+      brief = `${brief}\n\n${seeded.brief}`;
+
+      await admin
+        .from('projects')
+        .update({ name: place.name, description: place.summary ?? place.category })
+        .eq('id', project.id);
+    }
+
     let screenshotUrl: string | null = null;
     if (body.screenshotDataUrl) {
       const [meta, base64] = body.screenshotDataUrl.split(',');
@@ -104,7 +124,10 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         status: 'queued',
         stage: 'queued',
-        input_mode: body.inputMode,
+        // generation_input_mode has no 'google' value, and adding one would
+        // mean another migration for something nothing downstream reads. The
+        // listing's facts are in the brief, which is what actually matters.
+        input_mode: body.inputMode === 'google' ? 'prompt' : body.inputMode,
         prompt_text: brief,
         screenshot_url: screenshotUrl,
         model_used: body.model ?? null,

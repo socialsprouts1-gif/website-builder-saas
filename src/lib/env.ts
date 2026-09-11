@@ -91,6 +91,9 @@ export const env = {
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean),
 
+  /** Google Places (New). Used to read a business's own listing. */
+  googlePlacesKey: read('GOOGLE_PLACES_API_KEY'),
+
   connectors: {
     github: { id: read('GITHUB_CLIENT_ID'), secret: read('GITHUB_CLIENT_SECRET') },
     google: { id: read('GOOGLE_CLIENT_ID'), secret: read('GOOGLE_CLIENT_SECRET') },
