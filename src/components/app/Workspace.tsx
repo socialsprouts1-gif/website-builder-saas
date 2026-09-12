@@ -11,6 +11,8 @@ import { VisualEditorPanel } from '@/components/app/VisualEditorPanel';
 import { BuildingStage, type BuildStageId } from '@/components/app/BuildingStage';
 import { PublishButton } from '@/components/app/PublishButton';
 import { NextSteps } from '@/components/app/NextSteps';
+import { ConnectFlow } from '@/components/app/ConnectFlow';
+import { detectConnectIntent, type ConnectIntent } from '@/lib/connectors/intent';
 import type { ModelOption } from '@/lib/openai/models';
 
 export interface WorkspaceMessage {
@@ -93,6 +95,8 @@ export function Workspace({
   // Shown once, when a build finishes, and reopenable from the header.
   const [nextSteps, setNextSteps] = useState(false);
   const [publishSignal, setPublishSignal] = useState(0);
+  // A "connect X" typed at the chat box opens a form, not a site edit.
+  const [connect, setConnect] = useState<{ intent: ConnectIntent; message: string } | null>(null);
 
   const logRef = useRef<HTMLDivElement>(null);
   const generationStarted = useRef(false);
@@ -232,9 +236,30 @@ export function Workspace({
   }, [initialJobId, initialStatus, projectId, refreshPreview]);
 
   // ---- chat iteration -------------------------------------------------------
-  async function sendMessage(text: string, source: 'chat' | 'voice' = 'chat') {
+  async function sendMessage(
+    text: string,
+    source: 'chat' | 'voice' = 'chat',
+    options: { allowConnect?: boolean } = {},
+  ) {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
+
+    // "Connect a payment gateway" is not a change to the HTML, and handing it
+    // to the editor got a fake Pay button written into the page. It opens the
+    // guided form instead — which always offers to fall through to an edit, so
+    // reading a request wrong costs one click.
+    if (options.allowConnect !== false) {
+      const intent = detectConnectIntent(trimmed);
+      if (intent) {
+        setInput('');
+        setMessages((current) => [
+          ...current,
+          { id: `local-${Date.now()}`, role: 'user', content: trimmed },
+        ]);
+        setConnect({ intent, message: trimmed });
+        return;
+      }
+    }
 
     setError(null);
     setBusy(true);
@@ -381,6 +406,19 @@ export function Workspace({
                   {message.content}
                 </div>
               ))}
+
+              {connect ? (
+                <ConnectFlow
+                  projectId={projectId}
+                  intent={connect.intent}
+                  onDismiss={() => setConnect(null)}
+                  onEditInstead={() => {
+                    const message = connect.message;
+                    setConnect(null);
+                    void sendMessage(message, 'chat', { allowConnect: false });
+                  }}
+                />
+              ) : null}
 
               {progress ? (
                 <div className="mr-4 space-y-2.5 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">

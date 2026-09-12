@@ -48,15 +48,21 @@ export function PromptBar({
   }
 
   return (
+    // The controls sit under the box, never beside it.
+    //
+    // They used to move alongside at the `sm` breakpoint, which is measured
+    // against the window — and the workspace composer lives in a ~450px column
+    // inside a wide window. The language picker, the mic and Send took the
+    // width and the textarea was left about four characters across, wrapping
+    // mid-word down the side of the pane.
     <div
       className={cn(
         'flex flex-col gap-2 rounded-[20px] border bg-raised px-4 py-3 transition',
-        'sm:flex-row sm:items-end sm:gap-3',
         focused ? 'border-accent/35' : 'border-hairline',
         className,
       )}
     >
-      <div className="flex flex-1 items-start gap-3">
+      <div className="flex w-full min-w-0 items-start gap-3">
         <SparkleIcon />
         <textarea
           ref={textareaRef}
@@ -75,7 +81,7 @@ export function PromptBar({
         />
       </div>
 
-      <div className="flex items-center justify-end gap-2 sm:gap-3">
+      <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2">
         {allowVoice ? (
           <MicButton
             onSessionStart={() => {
