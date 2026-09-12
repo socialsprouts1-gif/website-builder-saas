@@ -134,17 +134,38 @@ export function ChatbotBuilder({
       ) : null}
 
       {snippet ? (
-        <div className="space-y-2 rounded-card border border-hairline bg-raised p-4">
-          <p className="text-[13px] text-ink-primary">Paste this into any site</p>
-          <p className="text-[12px] text-ink-muted">
-            Works on your Lumen site and on any existing site you already have.
+        <div className="space-y-3 rounded-card border border-hairline bg-raised p-4">
+          <p className="text-[13px] text-ink-primary">
+            {isActive ? 'It is already on your website' : 'Switch it on to put it on your website'}
           </p>
-          <pre className="mt-1 overflow-x-auto rounded-[8px] border border-hairline bg-[var(--bg-base-deep)] p-3 font-mono text-[11.5px] text-ink-secondary">
-            {snippet}
-          </pre>
-          <Button size="sm" variant="secondary" onClick={copySnippet}>
-            {copied ? 'Copied' : 'Copy snippet'}
-          </Button>
+          <p className="text-[12.5px] leading-relaxed text-ink-muted">
+            {isActive
+              ? 'Lumen puts the chat bubble on your site for you — on the preview and on your published address. There is nothing to paste and no code to touch.'
+              : 'Tick “Assistant is live on the site” above and save. Lumen adds the chat bubble to your site itself.'}
+          </p>
+
+          {/* The snippet is still here for a site hosted somewhere else, but it
+              is not the instruction any more — it was the only thing on offer,
+              and pasting a script tag is not something to ask of someone who
+              came here to avoid code. */}
+          <details className="group">
+            <summary className="cursor-pointer list-none text-[12px] text-ink-muted transition hover:text-ink-secondary">
+              <span className="group-open:hidden">Have another website? Add it there too →</span>
+              <span className="hidden group-open:inline">Adding it to another website</span>
+            </summary>
+            <div className="mt-3 space-y-2">
+              <p className="text-[12px] text-ink-muted">
+                Paste this once before the closing &lt;/body&gt; tag of any site you already have —
+                WordPress, Wix, Shopify, anything.
+              </p>
+              <pre className="overflow-x-auto rounded-[8px] border border-hairline bg-[var(--bg-base-deep)] p-3 font-mono text-[11.5px] text-ink-secondary">
+                {snippet}
+              </pre>
+              <Button size="sm" variant="secondary" onClick={copySnippet}>
+                {copied ? 'Copied' : 'Copy snippet'}
+              </Button>
+            </div>
+          </details>
         </div>
       ) : null}
     </div>

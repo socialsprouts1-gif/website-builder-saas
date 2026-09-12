@@ -19,12 +19,15 @@ export function PublishButton({
   initialSlug,
   initialPublished,
   onPublished,
+  openSignal = 0,
 }: {
   projectId: string;
   suggestedName: string;
   initialSlug: string | null;
   initialPublished: boolean;
   onPublished?: (url: string) => void;
+  /** Bump to open the panel from elsewhere, such as the finished-site prompt. */
+  openSignal?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [slug, setSlug] = useState(initialSlug ?? normaliseSlug(suggestedName));
@@ -44,6 +47,10 @@ export function PublishButton({
   // constant: the same app answers on a preview URL and on its own domain, and
   // a link that points at the wrong one is worse than no link.
   useEffect(() => setOrigin(window.location.origin), []);
+
+  useEffect(() => {
+    if (openSignal > 0) setOpen(true);
+  }, [openSignal]);
 
   useEffect(() => {
     if (!open) return;

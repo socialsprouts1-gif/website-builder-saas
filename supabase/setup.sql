@@ -649,3 +649,10 @@ drop policy if exists "published projects are public" on public.projects;
 create policy "published projects are public"
   on public.projects for select
   using (published_at is not null);
+
+-- ==========================================================
+-- 0009_payment_link.sql
+-- ==========================================================
+
+alter table public.projects add column if not exists payment_url text;
+alter table public.projects add column if not exists payment_label text;

@@ -10,6 +10,7 @@ import { cn } from '@/components/ui/cn';
 import { VisualEditorPanel } from '@/components/app/VisualEditorPanel';
 import { BuildingStage, type BuildStageId } from '@/components/app/BuildingStage';
 import { PublishButton } from '@/components/app/PublishButton';
+import { NextSteps } from '@/components/app/NextSteps';
 import type { ModelOption } from '@/lib/openai/models';
 
 export interface WorkspaceMessage {
@@ -89,6 +90,9 @@ export function Workspace({
   // building.
   const [stopped, setStopped] = useState(initialStatus === 'failed' && !initialJobId);
   const [retrying, setRetrying] = useState(false);
+  // Shown once, when a build finishes, and reopenable from the header.
+  const [nextSteps, setNextSteps] = useState(false);
+  const [publishSignal, setPublishSignal] = useState(0);
 
   const logRef = useRef<HTMLDivElement>(null);
   const generationStarted = useRef(false);
@@ -189,6 +193,13 @@ export function Workspace({
         setStillAdding(false);
         source.close();
         refreshPreview();
+        // What you can do with a finished site is worth saying once, here,
+        // rather than leaving it behind tabs named after features.
+        try {
+          if (!localStorage.getItem(`lumen-next-steps-${projectId}`)) setNextSteps(true);
+        } catch {
+          setNextSteps(true);
+        }
       }
       if (payload.type === 'error') {
         finished = true;
@@ -218,7 +229,7 @@ export function Workspace({
       clearInterval(revive);
       source?.close();
     };
-  }, [initialJobId, initialStatus, refreshPreview]);
+  }, [initialJobId, initialStatus, projectId, refreshPreview]);
 
   // ---- chat iteration -------------------------------------------------------
   async function sendMessage(text: string, source: 'chat' | 'voice' = 'chat') {
@@ -522,11 +533,19 @@ export function Workspace({
               >
                 open ↗
               </a>
+              <button
+                type="button"
+                onClick={() => setNextSteps(true)}
+                className="text-[11px] text-ink-muted transition hover:text-ink-primary"
+              >
+                what next?
+              </button>
               <PublishButton
                 projectId={projectId}
                 suggestedName={projectName}
                 initialSlug={publicSlug}
                 initialPublished={published}
+                openSignal={publishSignal}
               />
             </>
             )
@@ -558,6 +577,20 @@ export function Workspace({
           )}
         </CodeWindow>
       </div>
+
+      <NextSteps
+        projectId={projectId}
+        open={nextSteps}
+        onClose={() => {
+          setNextSteps(false);
+          try {
+            localStorage.setItem(`lumen-next-steps-${projectId}`, '1');
+          } catch {
+            // A browser that will not remember it shows it once more. Harmless.
+          }
+        }}
+        onPublish={() => setPublishSignal((value) => value + 1)}
+      />
     </div>
   );
 }

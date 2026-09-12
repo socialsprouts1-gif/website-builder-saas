@@ -7,6 +7,14 @@ import { baseSlug, slugCandidate } from '@/lib/publish';
 
 export const runtime = 'nodejs';
 
+/**
+ * Publishing needs three columns that arrive in migration 0008. Naming the file
+ * and where it goes is the whole remedy, so the message carries it — a database
+ * error nobody can act on is how this looked before.
+ */
+const SETUP_NEEDED =
+  'This database is missing the publishing columns. Open supabase/setup.sql from the repo, paste the whole file into the Supabase SQL editor (Dashboard → SQL Editor → New query) and run it. It is safe to re-run.';
+
 const bodySchema = z.object({
   action: z.enum(['publish', 'unpublish', 'rename']).default('publish'),
   slug: z.string().trim().max(60).optional(),
@@ -30,18 +38,31 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!user) return jsonError('Sign in first', 401);
 
     // RLS scopes this to the caller, so a hit proves ownership.
+    //
+    // Deliberately does not ask for the publish columns. They arrive in
+    // migration 0008, and on a database that has not run it this select fails
+    // as a whole — which reported "Project not found" for a project that was
+    // right there on screen, and sent everyone looking in the wrong place.
     const { data: project } = await supabase
       .from('projects')
-      .select('id, name, slug, status, public_slug')
+      .select('id, name, slug, status')
       .eq('id', id)
       .maybeSingle();
     if (!project) return jsonError('Project not found', 404);
+
+    // Asked for separately and allowed to fail, for the same reason.
+    const { data: current } = await supabase
+      .from('projects')
+      .select('public_slug')
+      .eq('id', id)
+      .maybeSingle();
 
     const body = bodySchema.parse(await request.json().catch(() => ({})));
     const admin = createAdminClient();
 
     if (body.action === 'unpublish') {
-      await admin.from('projects').update({ published_at: null }).eq('id', id);
+      const { error } = await admin.from('projects').update({ published_at: null }).eq('id', id);
+      if (error) return jsonError(SETUP_NEEDED, 503);
       return NextResponse.json({ published: false });
     }
 
@@ -49,7 +70,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return jsonError('Wait for the site to finish building before publishing it.', 409);
     }
 
-    const wanted = baseSlug(body.slug ?? project.public_slug ?? project.name ?? project.slug);
+    const wanted = baseSlug(body.slug ?? current?.public_slug ?? project.name ?? project.slug);
     if (!wanted) return jsonError('Choose an address with some letters in it.', 422);
 
     const slug = await claimSlug(id, wanted);
@@ -60,14 +81,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .update({ public_slug: slug, published_at: new Date().toISOString() })
       .eq('id', id);
 
-    if (error) {
-      // The publish columns arrive in migration 0008; say so rather than
-      // failing with a database error nobody can act on.
-      return jsonError(
-        'This database has not been set up for publishing yet — run supabase/setup.sql.',
-        503,
-      );
-    }
+    if (error) return jsonError(SETUP_NEEDED, 503);
 
     return NextResponse.json({ published: true, slug });
   } catch (cause) {

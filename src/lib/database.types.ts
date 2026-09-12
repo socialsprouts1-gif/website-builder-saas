@@ -43,6 +43,8 @@ export type ProjectRow = {
   published_at: string | null;
   public_slug: string | null;
   favicon_url: string | null;
+  payment_url: string | null;
+  payment_label: string | null;
   created_at: string;
   updated_at: string;
 }

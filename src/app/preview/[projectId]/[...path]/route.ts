@@ -7,6 +7,7 @@ import { EDITOR_BRIDGE } from '@/lib/generation/editor-bridge';
 import { isSupabaseConfigured } from '@/lib/env';
 import { selfOrigin } from '@/lib/self-origin';
 import { pendingPage } from '@/lib/generation/kit/placeholder';
+import { decorate, loadSiteExtras } from '@/lib/site-extras';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,9 @@ function previewCsp(origin: string): string {
     `style-src 'unsafe-inline' ${origin} https://fonts.googleapis.com`,
     'font-src https://fonts.gstatic.com data:',
     `img-src ${origin} https: data:`,
+    // The site assistant talks back to Lumen. Without this the widget appears
+    // and then fails silently on the first message.
+    `connect-src ${origin}`,
     "form-action 'none'",
     "base-uri 'none'",
     "frame-ancestors 'self'",
@@ -125,7 +129,19 @@ export async function GET(
   // Visual-edit mode injects the postMessage bridge. The iframe stays sandboxed
   // without allow-same-origin, so this is the only channel between the two.
   const editorMode = request.nextUrl.searchParams.get('editor') === '1';
-  const html = extension === 'html' ? inlineAssets(file.content, files) : file.content;
+
+  // The assistant rides along on the preview too, so "live on the site" can be
+  // seen rather than taken on trust. Not in visual-edit mode: a floating bubble
+  // over the page being edited is something to click by accident.
+  const html =
+    extension === 'html'
+      ? decorate(
+          inlineAssets(file.content, files),
+          // Not in visual-edit mode: a floating bubble over the page being
+          // edited is something to click by accident.
+          await loadSiteExtras(projectId, { chatbot: !editorMode }),
+        )
+      : file.content;
   const body =
     editorMode && extension === 'html'
       ? html.includes('</body>')

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentFiles } from '@/lib/generation/storage';
 import { pendingPage } from '@/lib/generation/kit/placeholder';
+import { decorate, loadSiteExtras } from '@/lib/site-extras';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -101,10 +102,16 @@ export async function GET(
   const extension = file.path.split('.').pop()?.toLowerCase() ?? 'html';
   const isHtml = extension === 'html';
 
-  return new Response(isHtml ? withFavicon(file.content, project.favicon_url) : file.content, {
+  const body = isHtml
+    ? decorate(withFavicon(file.content, project.favicon_url), await loadSiteExtras(project.id))
+    : file.content;
+
+  return new Response(body, {
     headers: {
       'content-type': TYPES[extension] ?? 'text/plain; charset=utf-8',
-      'cache-control': 'public, max-age=60, s-maxage=300',
+      // Short, because switching the assistant on or off has to show up without
+      // waiting for a cache to age out.
+      'cache-control': isHtml ? 'public, max-age=30, s-maxage=60' : 'public, max-age=300, s-maxage=600',
       'x-content-type-options': 'nosniff',
       'x-frame-options': 'SAMEORIGIN',
       'referrer-policy': 'strict-origin-when-cross-origin',
@@ -124,6 +131,8 @@ const HTML_CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   'font-src https://fonts.gstatic.com',
   "script-src 'self'",
+  // The site assistant posts back to Lumen from the page it is on.
+  "connect-src 'self'",
   "form-action 'none'",
   "frame-ancestors 'self'",
   "base-uri 'none'",
