@@ -6,16 +6,14 @@ import { callWithRetry } from '@/lib/openai/retry';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { GenerationJobRow } from '@/lib/database.types';
 import { StreamingFileParser, mergeFiles } from './parser';
-import {
-  EDIT_SYSTEM,
-  PLAN_SYSTEM,
-  VISION_SYSTEM,
-  buildBriefPrompt,
-  buildEditPrompt,
-  buildPagePrompt,
-  buildStylesPrompt,
-  staticSiteFiles,
-} from './prompts';
+import { EDIT_SYSTEM, VISION_SYSTEM, buildBriefPrompt, buildEditPrompt, staticSiteFiles } from './prompts';
+import { PLAN_SYSTEM, SECTION_SYSTEM, buildPlanPrompt, buildSectionPrompt } from './kit/prompts';
+import { normaliseTokens, type DesignTokens } from './kit/tokens';
+import { renderStylesheet } from './kit/stylesheet';
+import { renderPage, SITE_SCRIPT, type SiteSpec } from './kit/page';
+import { hasContent, parseSection } from './kit/parse';
+import type { Section, SectionKind } from './kit/sections';
+import { DEFAULT_VERTICAL, VERTICALS, matchVertical, type Vertical } from './verticals';
 import { createVersion, getCurrentFiles } from './storage';
 import type {
   DesignSystem,
@@ -81,17 +79,27 @@ export interface GenerationInput {
  * It is now four steps, each its own invocation with its own full budget, and
  * this is what one hands the next.
  */
+export interface SitePlan {
+  businessName: string;
+  tagline: string;
+  audience: string;
+  seoDescription: string;
+  contact: { address?: string; phone?: string; email?: string };
+  tokens: DesignTokens;
+  verticalSlug: string;
+}
+
 export interface BuildState {
-  plan?: { brief: SiteBrief; design: DesignSystem };
-  /** Files written so far, carried forward until the last step saves them. */
-  draft?: SiteFile[];
-  /** Page paths still to write. */
-  pending?: string[];
+  plan?: SitePlan;
+  /** Sections written so far, keyed by "<page path>#<index>". */
+  sections?: Record<string, Section>;
+  /** Sections still to write, in order. */
+  queue?: { page: string; index: number; kind: SectionKind }[];
   /** Whether the site has been saved and is already viewable. */
   published?: boolean;
 }
 
-export type BuildStep = 'plan' | 'styles' | 'home' | 'publish' | 'page';
+export type BuildStep = 'plan' | 'section' | 'publish';
 
 export interface StepOutcome {
   state: BuildState;
@@ -108,19 +116,29 @@ export interface StepOutcome {
 /**
  * Which step to run, decided entirely by what the state already contains.
  *
- * The homepage is published the moment it exists. Waiting for every page before
- * showing anything meant a site nobody could look at for the whole build; now
- * the shape of it arrives in three model calls and the rest fills in behind.
+ * Sections are written one at a time. The site is published as soon as the
+ * homepage's sections exist, so there is something to look at while the rest
+ * of the pages fill in behind.
  */
 export function nextStep(state: BuildState): BuildStep | null {
   if (!state.plan) return 'plan';
-  const draft = state.draft;
-  if (!draft) return 'styles';
-  if (!draft.some((file) => file.path === 'index.html')) return 'home';
-  if (!state.published) return 'publish';
-  if ((state.pending ?? []).length > 0) return 'page';
-  return null;
+
+  const queue = state.queue ?? [];
+  const homeLeft = queue.some((entry) => entry.page === 'index.html');
+
+  if (!state.published) return homeLeft ? 'section' : 'publish';
+  return queue.length > 0 ? 'section' : null;
 }
+
+/** The plan's sitemap, from the vertical it was matched to. */
+function verticalOf(state: BuildState): Vertical {
+  const slug = state.plan?.verticalSlug;
+  return (slug && VERTICAL_BY_SLUG[slug]) || DEFAULT_VERTICAL;
+}
+
+const VERTICAL_BY_SLUG: Record<string, Vertical> = Object.fromEntries(
+  [...VERTICALS, DEFAULT_VERTICAL].map((vertical) => [vertical.slug, vertical]),
+);
 
 interface StepContext {
   input: GenerationInput;
@@ -175,29 +193,25 @@ export async function runBuildStep(
     });
   };
 
-  /** One code-writing request. Files are reported as the parser finds them. */
-  const write = async (prompt: string): Promise<SiteFile[]> => {
-    const parser = new StreamingFileParser(emitFile);
-    const stream = await callWithRetry(async () => {
+  /** One JSON request. Everything the model returns is parsed, never rendered. */
+  const ask = async (system: string, user: string): Promise<unknown> => {
+    const response = await callWithRetry(async () => {
       return client.chat.completions.create({
         model,
-        stream: true,
-        stream_options: { include_usage: true },
         messages: [
-          { role: 'system', content: CODE_AUTHOR },
-          { role: 'user', content: prompt },
+          { role: 'system', content: system },
+          { role: 'user', content: user },
         ],
+        response_format: { type: 'json_object' },
       });
     }, onWait);
+    await spend(response.usage, 'generation', model);
 
-    let usage: { prompt_tokens?: number; completion_tokens?: number } | undefined;
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) parser.push(delta);
-      if (chunk.usage) usage = chunk.usage;
+    try {
+      return JSON.parse(response.choices[0]?.message?.content ?? '{}');
+    } catch {
+      return {};
     }
-    await spend(usage, 'generation', model);
-    return parser.finish();
   };
 
   if (step === 'plan') {
@@ -227,9 +241,11 @@ export async function runBuildStep(
       );
     }
 
-    // Brief and design system in one request, on the fast model. They are
-    // planning steps producing a page of JSON, and the big model bought
-    // nothing here except another wait.
+    // The sitemap comes from the vertical, not the model: what a salon site is
+    // made of is knowledge, not a judgement call to be re-made every time.
+    const vertical = matchVertical(`${input.businessType ?? ''} ${input.prompt}`);
+    const sitemap = vertical.pages.map((page) => ({ path: page.path, title: page.title }));
+
     const planModel = catalog.fast?.id ?? model;
     const response = await callWithRetry(async () => {
       return client.chat.completions.create({
@@ -238,11 +254,9 @@ export async function runBuildStep(
           { role: 'system', content: PLAN_SYSTEM },
           {
             role: 'user',
-            content: buildBriefPrompt({
-              prompt: input.prompt,
-              businessType: input.businessType,
-              extraction,
-            }),
+            content: `${buildPlanPrompt({ prompt: input.prompt, vertical, sitemap })}\n\n${buildBriefPrompt(
+              { prompt: input.prompt, businessType: input.businessType, extraction },
+            )}`,
           },
         ],
         response_format: { type: 'json_object' },
@@ -250,129 +264,185 @@ export async function runBuildStep(
     }, onWait);
     await spend(response.usage, 'generation', planModel);
 
-    const plan = parseJson<{ brief: SiteBrief; design: DesignSystem }>(
-      response.choices[0]?.message?.content ?? '',
-      'site plan',
-    );
-    if (!plan?.brief?.pages?.length) {
-      throw new Error('The model returned a plan with no pages. Try again.');
+    let raw: Record<string, unknown> = {};
+    try {
+      raw = JSON.parse(response.choices[0]?.message?.content ?? '{}');
+    } catch {
+      raw = {};
     }
 
+    const contact = (raw.contact ?? {}) as Record<string, unknown>;
+    const str = (value: unknown, fallback = '') =>
+      typeof value === 'string' && value.trim() ? value.trim().slice(0, 300) : fallback;
+
+    const plan: SitePlan = {
+      businessName: str(raw.businessName, 'Your business'),
+      tagline: str(raw.tagline, vertical.label),
+      audience: str(raw.audience, 'Local customers'),
+      seoDescription: str(raw.seoDescription, str(raw.tagline, vertical.label)),
+      contact: {
+        address: str(contact.address) || undefined,
+        phone: str(contact.phone) || undefined,
+        email: str(contact.email) || undefined,
+      },
+      tokens: normaliseTokens(raw.tokens),
+      verticalSlug: vertical.slug,
+    };
+
+    const queue = vertical.pages.flatMap((page) =>
+      page.sections.map((kind, index) => ({ page: page.path, index, kind })),
+    );
+
     return {
-      state: { plan },
-      next: 'styles',
+      state: { plan, sections: {}, queue },
+      next: 'section',
       stage: 'design',
-      message: `Designing ${plan.brief.businessName}…`,
-      expected: plan.brief.pages.length + 4,
+      message: `Designing ${plan.businessName}…`,
+      expected: queue.length,
     };
   }
 
   const plan = state.plan;
   if (!plan) throw new Error('The build lost its plan. Start it again.');
+  const vertical = verticalOf(state);
 
-  if (step === 'styles') {
-    const written = await write(buildStylesPrompt(plan.brief, plan.design));
-    if (written.length === 0) {
-      throw new Error('The model produced no files. Try again, or switch model.');
-    }
-    return {
-      state: { ...state, draft: written, pending: plan.brief.pages.slice(1).map((p) => p.path) },
-      next: 'home',
-      stage: 'code',
-      message: 'Writing the homepage…',
-    };
-  }
+  if (step === 'section') {
+    const queue = state.queue ?? [];
+    const job = queue[0];
+    if (!job) throw new Error('Nothing left to write.');
 
-  if (step === 'home') {
-    const draft = state.draft ?? [];
-    const styles = draft.find((file) => file.path.endsWith('.css'))?.content ?? '';
-    const home = plan.brief.pages[0];
-    const written = await write(
-      buildPagePrompt({ brief: plan.brief, design: plan.design, page: home, styles }),
+    const page = vertical.pages.find((candidate) => candidate.path === job.page);
+    const key = `${job.page}#${job.index}`;
+
+    const content = await ask(
+      SECTION_SYSTEM,
+      buildSectionPrompt({
+        kind: job.kind,
+        business: plan.businessName,
+        tagline: plan.tagline,
+        audience: plan.audience,
+        vertical,
+        pageTitle: page?.title ?? 'Home',
+        brief: input.prompt,
+        sitemap: vertical.pages.map((entry) => ({ path: entry.path, title: entry.title })),
+      }),
     );
-    if (!written.some((file) => file.path === 'index.html')) {
-      throw new Error('The model did not produce a homepage. Try again, or switch model.');
+
+    const section = parseSection(job.kind, `${job.kind}-${job.index + 1}`, content);
+    const rest = queue.slice(1);
+    const sections = { ...(state.sections ?? {}) };
+    if (hasContent(section)) sections[key] = section;
+
+    emitFile(`${job.page} · ${job.kind}`);
+
+    const homeLeft = rest.some((entry) => entry.page === 'index.html');
+    const nextState: BuildState = { ...state, sections, queue: rest };
+
+    // Once the homepage is written the site can be looked at, so it is, and
+    // the remaining pages arrive on a site that already exists.
+    if (!state.published && !homeLeft) {
+      return {
+        state: nextState,
+        next: 'publish',
+        stage: 'persist',
+        message: 'Saving your site…',
+      };
     }
+
     return {
-      state: { ...state, draft: mergeFiles(draft, written) },
-      next: 'publish',
-      stage: 'persist',
-      message: 'Saving your site…',
+      state: nextState,
+      next: rest.length > 0 ? 'section' : 'publish',
+      stage: 'code',
+      message: rest.length > 0 ? `Writing the ${rest[0].kind} section…` : 'Saving your site…',
     };
   }
 
-  if (step === 'publish') {
-    // The site goes live here, with one page. Everything after this is an
-    // addition to a site the owner can already look at and edit.
-    const version = await saveSite(input, plan, state.draft ?? []);
-    const pending = state.pending ?? [];
-    return {
-      state: { ...state, published: true },
-      next: pending.length > 0 ? 'page' : null,
-      stage: pending.length > 0 ? 'code' : 'done',
-      message:
-        pending.length > 0
-          ? `Your homepage is ready — adding ${pending.length} more page${pending.length > 1 ? 's' : ''}…`
-          : 'Your site is ready.',
-      versionId: version,
-      published: true,
-    };
-  }
+  // publish
+  const version = await saveSite(input, plan, vertical, state.sections ?? {});
+  const remaining = (state.queue ?? []).length;
 
-  if (step === 'page') {
-    const draft = state.draft ?? [];
-    const pending = state.pending ?? [];
-    const path = pending[0];
-    const styles = draft.find((file) => file.path.endsWith('.css'))?.content ?? '';
-    const page = plan.brief.pages.find((candidate) => candidate.path === path);
-
-    // One page per invocation, in order. Firing them all at once looks faster
-    // and is not, on a key whose tokens-per-minute allowance they all share.
-    const written = page
-      ? await write(buildPagePrompt({ brief: plan.brief, design: plan.design, page, styles }))
-      : [];
-
-    const merged = mergeFiles(draft, written);
-    const rest = pending.slice(1);
-    // Saved after every page, so the site grows while it is being looked at.
-    const version = await saveSite(input, plan, merged);
-
-    return {
-      state: { ...state, draft: merged, pending: rest },
-      next: rest.length > 0 ? 'page' : null,
-      stage: rest.length > 0 ? 'code' : 'done',
-      message: rest.length > 0 ? `Adding ${rest.length} more page${rest.length > 1 ? 's' : ''}…` : 'Your site is ready.',
-      versionId: version,
-      published: true,
-    };
-  }
-
-  throw new Error(`Unknown build step: ${step}`);
+  return {
+    state: { ...state, published: true },
+    next: remaining > 0 ? 'section' : null,
+    stage: remaining > 0 ? 'code' : 'done',
+    message:
+      remaining > 0
+        ? `Your homepage is ready — writing ${remaining} more section${remaining > 1 ? 's' : ''}…`
+        : 'Your site is ready.',
+    versionId: version,
+    published: true,
+  };
 }
 
-/** Saves the files as the project's current version and marks it viewable. */
+/**
+ * Renders the sections written so far into real files and saves them.
+ *
+ * Called after the homepage and again after every page, so the site on screen
+ * is always the site as it currently stands rather than a snapshot from the end.
+ */
 async function saveSite(
   input: GenerationInput,
-  plan: { brief: SiteBrief; design: DesignSystem },
-  draft: SiteFile[],
+  plan: SitePlan,
+  vertical: Vertical,
+  sections: Record<string, Section>,
 ): Promise<string> {
-  const files = mergeFiles(draft, staticSiteFiles(plan.brief));
-  if (files.length === 0) throw new Error('The model produced no files. Try again, or switch model.');
+  const sitemap = vertical.pages.map((page) => ({ path: page.path, title: page.title }));
+
+  const site: SiteSpec = {
+    businessName: plan.businessName,
+    tagline: plan.tagline,
+    pages: sitemap,
+    contact: plan.contact,
+    tokens: plan.tokens,
+  };
+
+  const files: SiteFile[] = [
+    { path: 'styles.css', content: renderStylesheet(plan.tokens) },
+    { path: 'script.js', content: SITE_SCRIPT },
+  ];
+
+  for (const page of vertical.pages) {
+    const written = page.sections
+      .map((_, index) => sections[`${page.path}#${index}`])
+      .filter((section): section is Section => Boolean(section));
+
+    // A page with nothing on it yet is not written at all — a nav link to a
+    // blank page is worse than a nav link that arrives a minute later.
+    if (written.length === 0) continue;
+
+    files.push({
+      path: page.path,
+      content: renderPage(site, {
+        path: page.path,
+        title: page.path === 'index.html' ? `${plan.businessName} — ${plan.tagline}` : `${page.title} — ${plan.businessName}`,
+        description: plan.seoDescription,
+        sections: written,
+      }),
+    });
+  }
+
+  const brief = {
+    businessName: plan.businessName,
+    pages: sitemap.map((page) => ({ path: page.path, title: page.title, purpose: '', sections: [] })),
+  } as unknown as SiteBrief;
+
+  const complete = mergeFiles(files, staticSiteFiles(brief));
+  if (complete.length === 0) throw new Error('Nothing was written. Try again, or switch model.');
 
   const version = await createVersion({
     projectId: input.projectId,
-    files,
+    files: complete,
     source: input.inputMode === 'screenshot' ? 'screenshot' : 'initial',
-    designSystem: plan.design,
+    designSystem: plan.tokens as never,
   });
 
   await createAdminClient()
     .from('projects')
     .update({
-      name: plan.brief.businessName,
-      description: plan.brief.tagline,
-      business_type: plan.brief.businessType,
-      design_system: plan.design as never,
+      name: plan.businessName,
+      description: plan.tagline,
+      business_type: vertical.label,
+      design_system: plan.tokens as never,
       status: 'ready',
       current_version_id: version.id,
     })
