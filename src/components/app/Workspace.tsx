@@ -117,11 +117,12 @@ export function Workspace({
 
     nudge();
 
-    // A build advances by one server invocation calling the next. If a link in
-    // that chain is lost the build stops silently, so this asks again every so
-    // often. The server ignores it unless the current step has been quiet
-    // longer than it could possibly still be running.
-    const revive = setInterval(nudge, 90_000);
+    // A build advances by one server invocation calling the next, and that
+    // call can be refused — by Deployment Protection on a preview URL, for
+    // one. So the browser asks again regularly. The server ignores it unless
+    // the current step really has gone quiet, and picking a live step back up
+    // costs one duplicated call rather than a wrong result.
+    const revive = setInterval(nudge, 30_000);
 
     // The watcher's own request is capped by the platform, so it ends long
     // before a long build does. Reconnecting is free — it re-reads the job row

@@ -56,9 +56,16 @@ export async function reapJob(job: {
 
   // Naming the step it died on is what turns a report of "it stopped" into
   // something anyone can act on.
-  const message = job.stage
-    ? `${ABANDONED_MESSAGE} It was on "${job.stage}" with no progress for ${Math.round(silentFor / 60_000)} minutes.`
-    : ABANDONED_MESSAGE;
+  const note = (job.progress as { chainNote?: string } | null)?.chainNote;
+  const message = [
+    ABANDONED_MESSAGE,
+    job.stage ? `It was on "${job.stage}" with no progress for ${Math.round(silentFor / 60_000)} minutes.` : '',
+    // The chain note is the one thing that explains a build that stopped for a
+    // reason nobody could otherwise see.
+    note ? `The server could not continue it: ${note}.` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const admin = createAdminClient();
   const { data } = await admin

@@ -26,6 +26,8 @@ export interface JobProgress {
   stepStartedAt?: string;
   /** True once the site is viewable, even while more pages are being added. */
   published?: boolean;
+  /** Why the build could not continue itself, when that happened. */
+  chainNote?: string;
   /** Files this build will produce in total, known once the plan lands. */
   expected: number;
   /** 0-100, computed here so every watcher shows the same number. */
@@ -91,11 +93,13 @@ export async function claimJob(jobId: string, userId: string): Promise<Generatio
 /**
  * How long a step may go silent before it is presumed lost.
  *
- * A step is capped at 300s by the platform, so anything past that has either
- * finished — and written its state — or been killed without a word. Six minutes
- * leaves room for the write itself.
+ * A step is one small JSON call now, not a whole page of HTML, so ninety
+ * seconds of silence means something has gone wrong rather than that the model
+ * is being thorough. Picking a live step back up costs one duplicated call and
+ * nothing else — both writers compute the same remaining queue — where waiting
+ * six minutes cost the user six minutes.
  */
-export const STEP_TIMEOUT_MS = 6 * 60 * 1000;
+export const STEP_TIMEOUT_MS = 90 * 1000;
 
 /** True when the current step has gone quiet for longer than it could live. */
 export function stepLooksLost(progress: JobProgress, jobCreatedAt: string): boolean {
@@ -119,6 +123,7 @@ export function readProgress(job: Pick<GenerationJobRow, 'progress' | 'stage'>):
     percent: 0,
     stepStartedAt: typeof raw?.stepStartedAt === 'string' ? raw.stepStartedAt : undefined,
     published: raw?.published === true,
+    chainNote: typeof raw?.chainNote === 'string' ? raw.chainNote : undefined,
   };
   // Recomputed on read rather than trusted from the row, so a build written by
   // an older deployment still reports a sane number.

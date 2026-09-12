@@ -2,12 +2,22 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { uploadAsset } from '@/lib/generation/storage';
 import { handleRouteError, jsonError } from '@/lib/api';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const MAX_BYTES = 8 * 1024 * 1024;
-const ALLOWED = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']);
+const ALLOWED = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  // Favicons are still handed over as .ico more often than not.
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+]);
 
 /**
  * Upload an image into the project's asset bucket and hand back a public URL
@@ -41,6 +51,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       body: await file.arrayBuffer(),
       contentType: file.type,
     });
+
+    // A favicon is an asset that the project also remembers, so published
+    // pages can carry it without rebuilding the site.
+    if (form.get('kind') === 'favicon') {
+      await createAdminClient().from('projects').update({ favicon_url: url }).eq('id', projectId);
+    }
 
     return NextResponse.json({ url, name: safeName });
   } catch (cause) {

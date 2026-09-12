@@ -39,6 +39,10 @@ export type ProjectRow = {
   vercel_project_name: string | null;
   deploy_url: string | null;
   custom_domain: string | null;
+  /** Set when the site has a public address on Lumen. */
+  published_at: string | null;
+  public_slug: string | null;
+  favicon_url: string | null;
   created_at: string;
   updated_at: string;
 }
