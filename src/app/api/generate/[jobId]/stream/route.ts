@@ -80,7 +80,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
           const progress = readProgress(job);
 
           // Only changes are sent, so a slow stage does not spam the client.
-          const signature = `${progress.stage}|${progress.message}|${progress.percent}|${progress.published}`;
+          const signature = `${progress.stage}|${progress.message}|${progress.percent}|${progress.published}|${progress.saved}`;
           if (signature !== lastSent) {
             lastSent = signature;
             send({
@@ -90,6 +90,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
               percent: progress.percent,
               expected: progress.expected,
               published: progress.published,
+              saved: progress.saved,
             });
           }
           for (const path of progress.files.slice(seenFiles)) {

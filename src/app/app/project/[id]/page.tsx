@@ -74,6 +74,15 @@ export default async function ProjectWorkspacePage({
       .limit(30),
   ]);
 
+  // Asked for separately, and allowed to fail: these columns arrive in
+  // migration 0008, and a database that has not run it yet should still open
+  // the workspace rather than error on a select.
+  const { data: publishState } = await supabase
+    .from('projects')
+    .select('public_slug, published_at')
+    .eq('id', id)
+    .maybeSingle();
+
   const files = await getCurrentFiles(id).catch(() => []);
   const pages = files.filter((file) => file.path.endsWith('.html')).map((file) => file.path);
 
@@ -97,6 +106,8 @@ export default async function ProjectWorkspacePage({
       activeModel={project.model}
       initialJobId={jobId}
       jobStartedAt={jobStartedAt}
+      publicSlug={publishState?.public_slug ?? null}
+      published={Boolean(publishState?.published_at)}
     />
   );
 }

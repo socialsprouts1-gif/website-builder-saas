@@ -28,6 +28,8 @@ export interface JobProgress {
   published?: boolean;
   /** Why the build could not continue itself, when that happened. */
   chainNote?: string;
+  /** How many pages have been rendered into files so far. */
+  saved: number;
   /** Files this build will produce in total, known once the plan lands. */
   expected: number;
   /** 0-100, computed here so every watcher shows the same number. */
@@ -40,6 +42,7 @@ const EMPTY: JobProgress = {
   files: [],
   expected: 0,
   percent: 2,
+  saved: 0,
 };
 
 /**
@@ -120,6 +123,7 @@ export function readProgress(job: Pick<GenerationJobRow, 'progress' | 'stage'>):
     message: raw?.message ?? EMPTY.message,
     files: Array.isArray(raw?.files) ? raw.files : [],
     expected: typeof raw?.expected === 'number' ? raw.expected : 0,
+    saved: typeof raw?.saved === 'number' ? raw.saved : 0,
     percent: 0,
     stepStartedAt: typeof raw?.stepStartedAt === 'string' ? raw.stepStartedAt : undefined,
     published: raw?.published === true,
@@ -160,6 +164,7 @@ export async function runNextStep(
     // Fire and forget: a file line arriving late is better than the build
     // waiting on a database write to report it.
     void writeState(job.id, {
+      ...before,
       stage: 'code',
       message: `Writing ${path}`,
       files,
@@ -198,13 +203,18 @@ export async function runNextStep(
     if (typeof outcome.expected === 'number') expected = outcome.expected;
 
     await writeState(job.id, {
+      ...before,
       stage: outcome.stage,
       message: outcome.message,
       files,
       expected,
       percent: 0,
       stepStartedAt,
-      published: outcome.published,
+      published: outcome.published ?? before.published,
+      // Every save bumps this, which is how the watching tab knows a new page
+      // exists and reloads the preview instead of showing the first save until
+      // the build ends.
+      saved: outcome.state.savedPages?.length ?? before.saved,
       build: outcome.state,
     });
 

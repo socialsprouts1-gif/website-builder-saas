@@ -97,6 +97,8 @@ export interface BuildState {
   queue?: { page: string; index: number; kind: SectionKind }[];
   /** Whether the site has been saved and is already viewable. */
   published?: boolean;
+  /** Pages already rendered into files, so a finished page is saved once. */
+  savedPages?: string[];
 }
 
 export type BuildStep = 'plan' | 'section' | 'publish';
@@ -124,10 +126,23 @@ export function nextStep(state: BuildState): BuildStep | null {
   if (!state.plan) return 'plan';
 
   const queue = state.queue ?? [];
-  const homeLeft = queue.some((entry) => entry.page === 'index.html');
 
-  if (!state.published) return homeLeft ? 'section' : 'publish';
-  return queue.length > 0 ? 'section' : null;
+  // A page is finished when every section that was queued for it has been
+  // written. Saving is driven by that, not by where the queue happens to be:
+  // the previous rule stopped at "published and nothing queued" and so threw
+  // away every page written after the homepage. Those sections were generated,
+  // paid for, and never rendered into a file, which is why a site arrived with
+  // its About and Services links pointing at nothing.
+  const pending = new Set(queue.map((entry) => entry.page));
+  const saved = new Set(state.savedPages ?? []);
+  const finished = new Set(
+    Object.keys(state.sections ?? {}).map((key) => key.slice(0, key.lastIndexOf('#'))),
+  );
+
+  const unsaved = [...finished].some((page) => !pending.has(page) && !saved.has(page));
+
+  if (queue.length === 0) return unsaved || !state.published ? 'publish' : null;
+  return unsaved ? 'publish' : 'section';
 }
 
 /** The plan's sitemap, from the vertical it was matched to. */
@@ -335,41 +350,38 @@ export async function runBuildStep(
 
     emitFile(`${job.page} · ${job.kind}`);
 
-    const homeLeft = rest.some((entry) => entry.page === 'index.html');
     const nextState: BuildState = { ...state, sections, queue: rest };
 
-    // Once the homepage is written the site can be looked at, so it is, and
-    // the remaining pages arrive on a site that already exists.
-    if (!state.published && !homeLeft) {
-      return {
-        state: nextState,
-        next: 'publish',
-        stage: 'persist',
-        message: 'Saving your site…',
-      };
-    }
+    // What happens next is decided in exactly one place, by nextStep, so the
+    // step that runs and the step the runner expects can never disagree. They
+    // used to, and the disagreement is what silently ended builds one page in.
+    const next = nextStep(nextState);
 
     return {
       state: nextState,
-      next: rest.length > 0 ? 'section' : 'publish',
-      stage: 'code',
-      message: rest.length > 0 ? `Writing the ${rest[0].kind} section…` : 'Saving your site…',
+      next,
+      stage: next === 'publish' ? 'persist' : 'code',
+      message:
+        next === 'publish'
+          ? 'Saving what is written so far…'
+          : `Writing the ${rest[0]?.kind ?? 'next'} section…`,
     };
   }
 
   // publish
-  const version = await saveSite(input, plan, vertical, state.sections ?? {});
+  const { versionId, pages } = await saveSite(input, plan, vertical, state.sections ?? {});
+  const nextState: BuildState = { ...state, published: true, savedPages: pages };
   const remaining = (state.queue ?? []).length;
 
   return {
-    state: { ...state, published: true },
-    next: remaining > 0 ? 'section' : null,
+    state: nextState,
+    next: nextStep(nextState),
     stage: remaining > 0 ? 'code' : 'done',
     message:
       remaining > 0
-        ? `Your homepage is ready — writing ${remaining} more section${remaining > 1 ? 's' : ''}…`
+        ? `${pages.length} page${pages.length === 1 ? '' : 's'} live — writing ${remaining} more section${remaining > 1 ? 's' : ''}…`
         : 'Your site is ready.',
-    versionId: version,
+    versionId,
     published: true,
   };
 }
@@ -385,13 +397,19 @@ async function saveSite(
   plan: SitePlan,
   vertical: Vertical,
   sections: Record<string, Section>,
-): Promise<string> {
-  const sitemap = vertical.pages.map((page) => ({ path: page.path, title: page.title }));
+): Promise<{ versionId: string; pages: string[] }> {
+  // Only pages that actually have content are linked. A nav entry to a page
+  // that does not exist yet is a dead link on a site someone is about to show
+  // a customer; the link appears on the next save, a minute later, with the
+  // page behind it.
+  const written = vertical.pages.filter((page) =>
+    page.sections.some((_, index) => sections[`${page.path}#${index}`]),
+  );
 
   const site: SiteSpec = {
     businessName: plan.businessName,
     tagline: plan.tagline,
-    pages: sitemap,
+    pages: written.map((page) => ({ path: page.path, title: page.title })),
     contact: plan.contact,
     tokens: plan.tokens,
   };
@@ -401,14 +419,10 @@ async function saveSite(
     { path: 'script.js', content: SITE_SCRIPT },
   ];
 
-  for (const page of vertical.pages) {
-    const written = page.sections
+  for (const page of written) {
+    const body = page.sections
       .map((_, index) => sections[`${page.path}#${index}`])
       .filter((section): section is Section => Boolean(section));
-
-    // A page with nothing on it yet is not written at all — a nav link to a
-    // blank page is worse than a nav link that arrives a minute later.
-    if (written.length === 0) continue;
 
     files.push({
       path: page.path,
@@ -416,14 +430,14 @@ async function saveSite(
         path: page.path,
         title: page.path === 'index.html' ? `${plan.businessName} — ${plan.tagline}` : `${page.title} — ${plan.businessName}`,
         description: plan.seoDescription,
-        sections: written,
+        sections: body,
       }),
     });
   }
 
   const brief = {
     businessName: plan.businessName,
-    pages: sitemap.map((page) => ({ path: page.path, title: page.title, purpose: '', sections: [] })),
+    pages: written.map((page) => ({ path: page.path, title: page.title, purpose: '', sections: [] })),
   } as unknown as SiteBrief;
 
   const complete = mergeFiles(files, staticSiteFiles(brief));
@@ -448,7 +462,7 @@ async function saveSite(
     })
     .eq('id', input.projectId);
 
-  return version.id;
+  return { versionId: version.id, pages: written.map((page) => page.path) };
 }
 
 export interface EditResult {

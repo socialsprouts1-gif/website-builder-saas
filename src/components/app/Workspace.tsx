@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/components/ui/cn';
 import { VisualEditorPanel } from '@/components/app/VisualEditorPanel';
 import { BuildingStage, type BuildStageId } from '@/components/app/BuildingStage';
+import { PublishButton } from '@/components/app/PublishButton';
 import type { ModelOption } from '@/lib/openai/models';
 
 export interface WorkspaceMessage {
@@ -45,6 +46,8 @@ export function Workspace({
   activeModel,
   initialJobId,
   jobStartedAt,
+  publicSlug,
+  published,
 }: {
   projectId: string;
   projectName: string;
@@ -57,6 +60,8 @@ export function Workspace({
   initialJobId: string | null;
   /** When the build actually began, so the timer survives leaving the page. */
   jobStartedAt: string | null;
+  publicSlug: string | null;
+  published: boolean;
 }) {
   const router = useRouter();
 
@@ -88,6 +93,8 @@ export function Workspace({
   const logRef = useRef<HTMLDivElement>(null);
   const generationStarted = useRef(false);
   const publishedSeen = useRef(false);
+  // How many pages the build had saved last time the preview was reloaded.
+  const savedSeen = useRef(0);
 
   const scrollLog = useCallback(() => {
     requestAnimationFrame(() => {
@@ -154,6 +161,12 @@ export function Workspace({
         publishedSeen.current = true;
         setReady(true);
         setStillAdding(true);
+      }
+      // Pages are saved as they finish, not all at the end. Each save is a new
+      // page in the switcher and a fuller nav in the preview, so reload on the
+      // count going up rather than once at the start and once at the end.
+      if (typeof payload.saved === 'number' && payload.saved > savedSeen.current) {
+        savedSeen.current = payload.saved;
         refreshPreview();
       }
       if (payload.type === 'file' && payload.path) {
@@ -509,6 +522,12 @@ export function Workspace({
               >
                 open ↗
               </a>
+              <PublishButton
+                projectId={projectId}
+                suggestedName={projectName}
+                initialSlug={publicSlug}
+                initialPublished={published}
+              />
             </>
             )
           }
