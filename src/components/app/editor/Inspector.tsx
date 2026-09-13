@@ -13,6 +13,8 @@ export interface Selection {
   text: string;
   src: string | null;
   alt: string | null;
+  /** A picture inside this element, when it is a section rather than an image. */
+  image?: { lumenId: string; src: string | null } | null;
   style: {
     fontSize: string;
     fontWeight: string;
@@ -58,7 +60,8 @@ export function Inspector({
   palette: PaletteToken[];
   onText: (value: string) => void;
   onStyle: (styles: Record<string, string>) => void;
-  onImage: (src: string, alt?: string) => void;
+  /** Targets the element itself, or a picture inside it when one is named. */
+  onImage: (src: string, alt?: string, lumenId?: string) => void;
   onRemove: () => void;
   onDuplicate: () => void;
 }) {
@@ -75,13 +78,18 @@ export function Inspector({
       const response = await fetch(`/api/projects/${projectId}/assets`, { method: 'POST', body: form });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? 'Upload failed');
-      onImage(payload.url, file.name.replace(/\.[^.]+$/, ''));
+      onImage(payload.url, file.name.replace(/\.[^.]+$/, ''), target ?? undefined);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Upload failed');
     } finally {
       setUploading(false);
     }
   }
+
+  // Either the selected element is the picture, or it is a section with one in
+  // it. Both can be swapped from here.
+  const target = selection?.kind === 'image' ? selection.lumenId : (selection?.image?.lumenId ?? null);
+  const currentSrc = selection?.kind === 'image' ? selection.src : (selection?.image?.src ?? null);
 
   if (!selection) {
     return (
@@ -98,9 +106,9 @@ export function Inspector({
       <div>
         <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Selected</p>
         <p className="mt-1 truncate text-[13px] text-ink-primary">{selection.label}</p>
-        <p className="mt-0.5 font-mono text-[10.5px] text-ink-muted">
-          &lt;{selection.tag}&gt; · {selection.lumenId}
-        </p>
+        {/* The tag and the internal id were on this line. Neither is anything
+            the owner of a hair salon needs, or can do anything with. */}
+        <p className="mt-0.5 text-[11px] text-ink-muted">{describeKind(selection)}</p>
       </div>
 
       {selection.kind === 'text' ? (
@@ -114,14 +122,14 @@ export function Inspector({
         </Field>
       ) : null}
 
-      {selection.kind === 'image' ? (
+      {target ? (
         <div className="space-y-3">
-          <Field label="Image">
+          <Field label={selection.kind === 'image' ? 'Picture' : 'Picture in this section'}>
             <Input
-              defaultValue={selection.src ?? ''}
-              key={`${selection.lumenId}-src`}
+              defaultValue={currentSrc ?? ''}
+              key={`${target}-src`}
               placeholder="https://…"
-              onChange={(event) => onImage(event.target.value)}
+              onChange={(event) => onImage(event.target.value, undefined, target)}
             />
           </Field>
           <Button
@@ -221,6 +229,18 @@ export function Inspector({
       {error ? <p className="text-[12px] text-[#e5735a]">{error}</p> : null}
     </div>
   );
+}
+
+/** What the selected thing is, in words rather than in markup. */
+function describeKind(selection: Selection): string {
+  if (selection.kind === 'image') return 'Picture';
+  if (selection.kind === 'text') {
+    if (/^h[1-6]$/.test(selection.tag)) return 'Heading';
+    if (selection.tag === 'a') return 'Link';
+    if (selection.tag === 'li') return 'List item';
+    return 'Text';
+  }
+  return selection.image ? 'Section with a picture' : 'Section';
 }
 
 function ColourRow({

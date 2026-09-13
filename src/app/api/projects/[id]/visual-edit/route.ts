@@ -36,7 +36,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         edits.push(edit as VisualEdit);
         continue;
       }
-      const html = renderBlock(edit.blockId);
+      const html = renderBlock(edit.blockId, {
+        imageUrl: edit.imageUrl,
+        videoUrl: edit.videoUrl,
+      });
       if (!html) return jsonError(`Unknown block: ${edit.blockId}`, 422);
       edits.push({ kind: 'insert', afterLumenId: edit.afterLumenId, html });
     }
@@ -51,9 +54,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         applied += result.applied;
         return { ...file, content: result.html };
       }
-      // Token edits also rewrite the shared stylesheet so they persist site-wide.
+      // Token edits rewrite the shared stylesheet so they persist site-wide —
+      // and since the generator moved its palette out of the page and into
+      // styles.css, that is usually the only place they land. Not counting them
+      // is why changing a colour came back as "could not locate those elements".
       if (file.path.endsWith('.css') && edits.some((edit) => edit.kind === 'token')) {
-        return { ...file, content: applyTokenEditsToCss(file.content, edits) };
+        const content = applyTokenEditsToCss(file.content, edits);
+        if (content !== file.content) applied += 1;
+        return { ...file, content };
       }
       return file;
     });

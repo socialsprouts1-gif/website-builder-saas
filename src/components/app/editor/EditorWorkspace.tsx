@@ -8,7 +8,10 @@ import { Select } from '@/components/ui/Field';
 import { cn } from '@/components/ui/cn';
 import { LayersPanel, type OutlineBlock } from './LayersPanel';
 import { Inspector, type PaletteToken, type Selection } from './Inspector';
+import { ThemePanel } from './ThemePanel';
+import { AddSection } from './AddSection';
 import { describeEdit, type ClientVisualEdit } from '@/lib/generation/html-edit';
+import { pageLabel } from '@/lib/pages';
 
 type Viewport = 'desktop' | 'tablet' | 'mobile';
 const WIDTHS: Record<Viewport, string> = { desktop: '100%', tablet: '820px', mobile: '390px' };
@@ -17,6 +20,9 @@ export interface BlockMenuItem {
   id: string;
   name: string;
   description: string;
+  group: 'Text' | 'Media' | 'Layout' | 'Action';
+  /** What must be collected before it can be inserted. */
+  needs: 'image' | 'video' | null;
 }
 
 /**
@@ -49,6 +55,7 @@ export function EditorWorkspace({
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showBlocks, setShowBlocks] = useState(false);
+  const [rail, setRail] = useState<'sections' | 'theme'>('sections');
   const [frameKey, setFrameKey] = useState(0);
   const [awaitingOutline, setAwaitingOutline] = useState(true);
 
@@ -131,10 +138,11 @@ export function EditorWorkspace({
     setSelection({ ...selection });
   }
 
-  function editImage(src: string, alt?: string) {
-    if (!selection || !src) return;
-    queue({ kind: 'image', lumenId: selection.lumenId, src, alt });
-    post({ type: 'preview-image', lumenId: selection.lumenId, value: src });
+  function editImage(src: string, alt?: string, lumenId?: string) {
+    const target = lumenId ?? selection?.lumenId;
+    if (!target || !src) return;
+    queue({ kind: 'image', lumenId: target, src, alt });
+    post({ type: 'preview-image', lumenId: target, value: src });
   }
 
   function move(lumenId: string, direction: 'up' | 'down') {
@@ -155,10 +163,23 @@ export function EditorWorkspace({
     if (selection?.lumenId === lumenId) setSelection(null);
   }
 
-  function addBlock(blockId: string) {
-    queue({ kind: 'insert', afterLumenId: selection?.lumenId ?? null, blockId });
+  function addBlock(blockId: string, options: { imageUrl?: string; videoUrl?: string }) {
+    queue({ kind: 'insert', afterLumenId: selection?.lumenId ?? null, blockId, ...options });
     setShowBlocks(false);
-    setNotice('Block queued. Save to add it to the page.');
+    setNotice('Section queued. Save to put it on the page.');
+  }
+
+  /**
+   * A theme colour. It repaints the whole page instantly through the bridge and
+   * is written into the stylesheet on save, so it holds across every page
+   * rather than on the one element that happened to be selected.
+   */
+  function editToken(name: string, value: string) {
+    queue({ kind: 'token', name, value });
+    post({ type: 'preview-token', name, value });
+    setPalette((current) =>
+      current.map((token) => (token.name === name ? { ...token, value } : token)),
+    );
   }
 
   async function save() {
@@ -202,7 +223,7 @@ export function EditorWorkspace({
           <Select value={page} onChange={(event) => setPage(event.target.value)} className="py-1.5 text-[12.5px]">
             {pages.map((item) => (
               <option key={item} value={item}>
-                {item}
+                {pageLabel(item)}
               </option>
             ))}
           </Select>
@@ -240,34 +261,53 @@ export function EditorWorkspace({
       </div>
 
       <div className="grid min-h-0 lg:grid-cols-[228px_minmax(0,1fr)_280px]">
-        <div className="min-h-0 border-hairline lg:border-r">
-          <LayersPanel
-            blocks={blocks}
-            selected={selection?.lumenId ?? null}
-            onSelect={(lumenId) => post({ type: 'select', lumenId })}
-            onMove={move}
-            onDuplicate={duplicate}
-            onRemove={remove}
-            onAdd={() => setShowBlocks((value) => !value)}
-            loading={awaitingOutline}
-          />
+        <div className="flex min-h-0 flex-col overflow-y-auto border-hairline lg:border-r">
+          {/* Two things live in this rail and they are not the same job:
+              arranging this page, and setting the look of the whole site. */}
+          <div className="flex shrink-0 gap-1 border-b border-hairline p-2">
+            {(['sections', 'theme'] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setRail(item)}
+                className={cn(
+                  'flex-1 rounded-[8px] px-2 py-1.5 text-[11.5px] capitalize transition',
+                  rail === item
+                    ? 'bg-accent-soft text-accent'
+                    : 'text-ink-muted hover:text-ink-primary',
+                )}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
 
-          {showBlocks ? (
-            <div className="border-t border-hairline p-2">
-              <p className="px-2 pb-2 text-[11px] uppercase tracking-[0.14em] text-ink-muted">Add a block</p>
-              {blockMenu.map((block) => (
-                <button
-                  key={block.id}
-                  type="button"
-                  onClick={() => addBlock(block.id)}
-                  className="block w-full rounded-[8px] px-2.5 py-2 text-left transition hover:bg-white/5"
-                >
-                  <span className="block text-[12.5px] text-ink-primary">{block.name}</span>
-                  <span className="block text-[11px] text-ink-muted">{block.description}</span>
-                </button>
-              ))}
-            </div>
-          ) : null}
+          {rail === 'sections' ? (
+            <>
+              <LayersPanel
+                blocks={blocks}
+                selected={selection?.lumenId ?? null}
+                onSelect={(lumenId) => post({ type: 'select', lumenId })}
+                onMove={move}
+                onDuplicate={duplicate}
+                onRemove={remove}
+                onAdd={() => setShowBlocks((value) => !value)}
+                loading={awaitingOutline}
+              />
+
+              {showBlocks ? (
+                <AddSection
+                  blocks={blockMenu}
+                  projectId={projectId}
+                  belowLabel={selection?.label ?? null}
+                  onAdd={addBlock}
+                  onCancel={() => setShowBlocks(false)}
+                />
+              ) : null}
+            </>
+          ) : (
+            <ThemePanel palette={palette} onToken={editToken} loading={awaitingOutline} />
+          )}
         </div>
 
         <div className="flex min-h-0 justify-center overflow-auto bg-[var(--bg-base-deep)] p-4">

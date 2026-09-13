@@ -51,6 +51,7 @@ function previewCsp(origin: string): string {
     // The site assistant talks back to Lumen. Without this the widget appears
     // and then fails silently on the first message.
     `connect-src ${origin}`,
+    'frame-src https://www.youtube-nocookie.com https://player.vimeo.com',
     "form-action 'none'",
     "base-uri 'none'",
     "frame-ancestors 'self'",

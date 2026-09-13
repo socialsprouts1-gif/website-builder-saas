@@ -13,6 +13,7 @@ import { PublishButton } from '@/components/app/PublishButton';
 import { NextSteps } from '@/components/app/NextSteps';
 import { ConnectFlow } from '@/components/app/ConnectFlow';
 import { detectConnectIntent, type ConnectIntent } from '@/lib/connectors/intent';
+import { pageLabel } from '@/lib/pages';
 import type { ModelOption } from '@/lib/openai/models';
 
 export interface WorkspaceMessage {
@@ -546,7 +547,7 @@ export function Workspace({
               >
                 {pages.map((item) => (
                   <option key={item} value={item}>
-                    {item}
+                    {pageLabel(item)}
                   </option>
                 ))}
               </select>

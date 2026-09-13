@@ -132,6 +132,9 @@ const HTML_CSP = [
   "script-src 'self'",
   // The site assistant posts back to Lumen from the page it is on.
   "connect-src 'self'",
+  // Video sections embed one of exactly two hosts; blocks.ts will not write
+  // any other src, and this makes sure nothing else can be framed either.
+  'frame-src https://www.youtube-nocookie.com https://player.vimeo.com',
   "form-action 'none'",
   "frame-ancestors 'self'",
   "base-uri 'none'",

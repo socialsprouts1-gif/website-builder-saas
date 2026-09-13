@@ -14,6 +14,7 @@ import { renderPage, SITE_SCRIPT, type SiteSpec } from './kit/page';
 import { hasContent, parseSection } from './kit/parse';
 import type { Section, SectionKind } from './kit/sections';
 import { DEFAULT_VERTICAL, VERTICALS, matchVertical, type Vertical } from './verticals';
+import { pageLabel } from '@/lib/pages';
 import { createVersion, getCurrentFiles } from './storage';
 import type {
   DesignSystem,
@@ -348,7 +349,7 @@ export async function runBuildStep(
     const sections = { ...(state.sections ?? {}) };
     if (hasContent(section)) sections[key] = section;
 
-    emitFile(`${job.page} · ${job.kind}`);
+    emitFile(`${pageLabel(job.page)} · ${job.kind}`);
 
     const nextState: BuildState = { ...state, sections, queue: rest };
 

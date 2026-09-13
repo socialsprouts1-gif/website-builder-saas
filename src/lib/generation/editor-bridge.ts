@@ -7,7 +7,10 @@
  * by touching it. Previews here are visual only — nothing is persisted until
  * the editor posts the queued edits to the server.
  */
+import { themeColourProbeSource } from '@/lib/theme-tokens';
+
 export const EDITOR_BRIDGE = `<script>(function(){
+  var THEME = ${themeColourProbeSource()};
   var selected = null;
   var HL = '2px solid #d7ff3e';
 
@@ -21,21 +24,23 @@ export const EDITOR_BRIDGE = `<script>(function(){
     return text ? text.slice(0, 42) : tag;
   }
 
-  /** The site's own design tokens, so the editor can offer its real palette. */
+  /**
+   * The site's own palette.
+   *
+   * Each entry is a list of candidate property names — the current one and the
+   * one older sites use — and the page answers with whichever it actually
+   * defines. Asking for a fixed set of names is how the editor ended up
+   * offering a palette the page had never heard of.
+   */
   function tokens(){
     var cs = getComputedStyle(document.documentElement);
-    var body = getComputedStyle(document.body);
-    var wanted = [
-      ['--color-text', 'Text', body.color],
-      ['--color-text-muted', 'Muted', ''],
-      ['--color-accent', 'Accent', ''],
-      ['--color-surface', 'Surface', ''],
-      ['--color-background', 'Background', body.backgroundColor]
-    ];
     var out = [];
-    for (var i = 0; i < wanted.length; i++) {
-      var value = cs.getPropertyValue(wanted[i][0]).trim() || wanted[i][2];
-      if (value) out.push({ name: wanted[i][0], label: wanted[i][1], value: value });
+    for (var i = 0; i < THEME.length; i++) {
+      var names = THEME[i][0];
+      for (var n = 0; n < names.length; n++) {
+        var value = cs.getPropertyValue(names[n]).trim();
+        if (value) { out.push({ name: names[n], label: THEME[i][1], value: value }); break; }
+      }
     }
     return out;
   }
@@ -58,16 +63,27 @@ export const EDITOR_BRIDGE = `<script>(function(){
     };
   }
 
+  /** The first picture inside a section, so a section can offer to swap it. */
+  function innerImage(el){
+    if (el.tagName.toLowerCase() === 'img') return null;
+    var img = el.querySelector && el.querySelector('img[data-lumen-id]');
+    return img ? { lumenId: img.getAttribute('data-lumen-id'), src: img.getAttribute('src') } : null;
+  }
+
   function describe(el){
     var r = el.getBoundingClientRect();
+    var isImage = el.tagName.toLowerCase() === 'img';
     return {
       lumenId: el.getAttribute('data-lumen-id'),
       tag: el.tagName.toLowerCase(),
       kind: kindOf(el),
       label: label(el),
       text: el.children.length === 0 ? (el.textContent || '').trim() : '',
-      src: el.tagName.toLowerCase() === 'img' ? el.getAttribute('src') : null,
-      alt: el.tagName.toLowerCase() === 'img' ? el.getAttribute('alt') : null,
+      src: isImage ? el.getAttribute('src') : null,
+      alt: isImage ? el.getAttribute('alt') : null,
+      // Selecting a section and wanting to change its picture is the common
+      // case; making someone click the picture itself first was busywork.
+      image: innerImage(el),
       style: computed(el),
       rect: { top: r.top, left: r.left, width: r.width, height: r.height }
     };

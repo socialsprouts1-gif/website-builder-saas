@@ -82,6 +82,10 @@ export const visualEditSchema = z.object({
           kind: z.literal('insert'),
           afterLumenId: lumenId.nullable(),
           blockId: z.string().min(1).max(60),
+          // Never markup: a picture the user uploaded, or a link the server
+          // turns into an embed itself.
+          imageUrl: z.string().url().max(2000).optional(),
+          videoUrl: z.string().url().max(2000).optional(),
         }),
         z.object({ kind: z.literal('token'), name: z.string().min(1).max(80), value: styleValue.min(1) }),
       ]),

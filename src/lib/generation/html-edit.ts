@@ -34,7 +34,13 @@ export type VisualEdit =
  */
 export type ClientVisualEdit =
   | Exclude<VisualEdit, { kind: 'insert' }>
-  | { kind: 'insert'; afterLumenId: string | null; blockId: string };
+  | {
+      kind: 'insert';
+      afterLumenId: string | null;
+      blockId: string;
+      imageUrl?: string;
+      videoUrl?: string;
+    };
 
 function escapeText(value: string): string {
   return value.replace(/[&<>]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[character]!);
