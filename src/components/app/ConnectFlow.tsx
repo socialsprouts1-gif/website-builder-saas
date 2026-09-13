@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConnectorMark } from '@/components/app/ConnectorMark';
+import { ChatbotSetup } from '@/components/app/ChatbotSetup';
 import { BUILT_IN_PROVIDERS, type ConnectIntent } from '@/lib/connectors/intent';
 import { DEFAULT_PAY_LABEL, normalisePaymentUrl } from '@/lib/payments';
 import type { ConnectorCard } from '@/lib/connectors/registry';
@@ -36,11 +37,13 @@ const BUILT_IN: Record<string, { name: string; summary: string }> = {
 
 export function ConnectFlow({
   projectId,
+  businessName,
   intent,
   onDismiss,
   onEditInstead,
 }: {
   projectId: string;
+  businessName: string;
   intent: ConnectIntent;
   onDismiss: () => void;
   /** "No, I meant change the website" — hands the message back to the editor. */
@@ -170,6 +173,7 @@ export function ConnectFlow({
       {step.at === 'form' ? (
         <ProviderForm
           projectId={projectId}
+          businessName={businessName}
           provider={step.provider}
           card={byProvider.get(step.provider) ?? null}
           onBack={() => setStep({ at: 'choose' })}
@@ -202,6 +206,7 @@ function currentProvider(step: Step): string {
 
 function ProviderForm({
   projectId,
+  businessName,
   provider,
   card,
   onBack,
@@ -209,6 +214,7 @@ function ProviderForm({
   onNavigate,
 }: {
   projectId: string;
+  businessName: string;
   provider: string;
   card: ConnectorCard | null;
   onBack: () => void;
@@ -229,25 +235,15 @@ function ProviderForm({
     </button>
   );
 
-  // --- the assistant: nothing to paste, just somewhere to go ----------------
+  // --- the assistant: built here, in the conversation ------------------------
   if (provider === BUILT_IN_PROVIDERS.chatbot) {
     return (
-      <div className="mt-3 space-y-3">
-        <p className="text-[12.5px] leading-relaxed text-ink-secondary">
-          It reads your own pages, so there is nothing to train. Give it a name and a greeting, tick
-          “live on the site”, and the bubble appears on your site — Lumen adds it for you.
-        </p>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => onNavigate(`/app/project/${projectId}/chatbot`)}
-            className="lumen-key rounded-pill px-4 py-1.5 text-[12px]"
-          >
-            Set it up
-          </button>
-          {back}
-        </div>
-      </div>
+      <ChatbotSetup
+        projectId={projectId}
+        businessName={businessName}
+        onBack={onBack}
+        onDone={onDone}
+      />
     );
   }
 

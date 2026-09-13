@@ -26,6 +26,16 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
     .eq('project_id', id)
     .maybeSingle();
 
+  // Asked separately and allowed to fail: the error columns arrive in migration
+  // 0010, and the page must open without them.
+  const { data: health } = chatbot
+    ? await supabase
+        .from('chatbots')
+        .select('last_error, last_error_at')
+        .eq('id', chatbot.id)
+        .maybeSingle()
+    : { data: null };
+
   const { data: faqDocument } = chatbot
     ? await supabase
         .from('chatbot_documents')
@@ -50,6 +60,24 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
         </p>
       ) : (
         <Card>
+          {health?.last_error ? (
+            <div className="mb-5 rounded-[12px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3">
+              <p className="text-[12.5px] text-[#e5735a]">
+                The last visitor question could not be answered.
+              </p>
+              {/* The visitor sees something neutral; the person who can fix it
+                  sees what actually happened. */}
+              <p className="mt-1.5 break-words font-mono text-[11px] leading-relaxed text-[#e5735a]/80">
+                {health.last_error}
+              </p>
+              <p className="mt-2 text-[11.5px] text-ink-muted">
+                {health.last_error_at
+                  ? `Last seen ${new Date(health.last_error_at).toLocaleString()}. `
+                  : ''}
+                This clears itself as soon as the assistant answers again.
+              </p>
+            </div>
+          ) : null}
           <ChatbotBuilder
             projectId={project.id}
             siteUrlBase={env.siteUrl}

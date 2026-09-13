@@ -656,3 +656,10 @@ create policy "published projects are public"
 
 alter table public.projects add column if not exists payment_url text;
 alter table public.projects add column if not exists payment_label text;
+
+-- ==========================================================
+-- 0010_chatbot_errors.sql
+-- ==========================================================
+
+alter table public.chatbots add column if not exists last_error text;
+alter table public.chatbots add column if not exists last_error_at timestamptz;

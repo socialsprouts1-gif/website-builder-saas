@@ -98,6 +98,9 @@ export type ChatbotRow = {
   embed_key: string;
   is_active: boolean;
   created_at: string;
+  /** Why the last visitor question could not be answered, for the owner. */
+  last_error: string | null;
+  last_error_at: string | null;
 }
 
 export type ChatbotDocumentRow = {

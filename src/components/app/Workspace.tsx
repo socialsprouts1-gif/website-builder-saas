@@ -412,6 +412,7 @@ export function Workspace({
               {connect ? (
                 <ConnectFlow
                   projectId={projectId}
+                  businessName={projectName}
                   intent={connect.intent}
                   onDismiss={() => setConnect(null)}
                   onEditInstead={() => {

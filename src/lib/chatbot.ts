@@ -183,10 +183,16 @@ export async function answerVisitorQuestion(params: {
 
   const { model } = resolveModel(catalog, catalog.fast?.id ?? null);
 
+  // No temperature and no max_tokens.
+  //
+  // This was the only call in the app that set either, and it was the only
+  // thing that did not work: current models reject a non-default temperature
+  // outright and want max_completion_tokens rather than max_tokens, so every
+  // visitor question failed at the provider and came back as "I am not able to
+  // answer right now". Generation never set them, which is why generation was
+  // fine. Length is held by the system prompt instead.
   const completion = await client.chat.completions.create({
     model,
-    temperature: 0.3,
-    max_tokens: 400,
     messages: [
       {
         role: 'system',

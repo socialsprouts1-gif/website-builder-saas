@@ -116,12 +116,36 @@ export async function POST(request: NextRequest, context: { params: Promise<{ em
       content: result.answer,
     });
 
+    // A bot that is answering again should not keep showing yesterday's fault.
+    await admin
+      .from('chatbots')
+      .update({ last_error: null, last_error_at: null })
+      .eq('id', chatbot.id)
+      .not('last_error', 'is', null);
+
     return NextResponse.json({ answer: result.answer }, { headers: CORS });
-  } catch {
-    // Never surface provider errors or quota details to a public visitor.
+  } catch (cause) {
+    // A visitor never sees a provider error — but the owner has to be able to
+    // find out. Swallowing this entirely is what made a broken assistant
+    // impossible to diagnose from either side.
+    await noteFailure(chatbot.id, cause);
+
     return NextResponse.json(
       { answer: 'Sorry — I am not able to answer right now. Please try again in a moment.' },
       { headers: CORS },
     );
+  }
+}
+
+/** Writes the reason where the Chatbot tab can show it. Never fails the reply. */
+async function noteFailure(chatbotId: string, cause: unknown): Promise<void> {
+  try {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    await createAdminClient()
+      .from('chatbots')
+      .update({ last_error: message.slice(0, 500), last_error_at: new Date().toISOString() })
+      .eq('id', chatbotId);
+  } catch {
+    // Diagnostics must never be the reason a reply fails.
   }
 }
