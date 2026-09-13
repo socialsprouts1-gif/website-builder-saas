@@ -48,6 +48,7 @@ export const EDITOR_BRIDGE = `<script>(function(){
   function kindOf(el){
     var tag = el.tagName.toLowerCase();
     if (tag === 'img') return 'image';
+    if (tag === 'a' || tag === 'button') return 'link';
     if (el.children.length === 0) return 'text';
     return 'block';
   }
@@ -84,6 +85,7 @@ export const EDITOR_BRIDGE = `<script>(function(){
       // Selecting a section and wanting to change its picture is the common
       // case; making someone click the picture itself first was busywork.
       image: innerImage(el),
+      href: el.tagName.toLowerCase() === 'a' ? el.getAttribute('href') : null,
       style: computed(el),
       rect: { top: r.top, left: r.left, width: r.width, height: r.height }
     };
@@ -149,6 +151,31 @@ export const EDITOR_BRIDGE = `<script>(function(){
 
     if (data.type === 'preview-text' && el) el.textContent = data.value;
     if (data.type === 'preview-image' && el) el.setAttribute('src', data.value);
+    if (data.type === 'preview-link' && el) el.setAttribute('href', data.value);
+
+    /**
+     * A new section, shown where it will land.
+     *
+     * The markup comes from the server — the editor asked for it and is only
+     * relaying it — and the same section is rendered again from the same id on
+     * save, so what is previewed is what is kept.
+     */
+    if (data.type === 'preview-insert') {
+      var host = document.createElement('div');
+      host.innerHTML = data.html;
+      var added = host.firstElementChild;
+      if (added) {
+        if (el) el.insertAdjacentElement('afterend', added);
+        else (document.querySelector('main') || document.body).appendChild(added);
+        added.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        clearOutline();
+        selected = added;
+        added.style.setProperty('outline', HL);
+        send('outline', outline());
+        send('select', describe(added));
+      }
+      return;
+    }
 
     if (data.type === 'preview-style' && el) {
       for (var prop in data.styles) {
@@ -159,6 +186,20 @@ export const EDITOR_BRIDGE = `<script>(function(){
 
     if (data.type === 'preview-token') {
       document.documentElement.style.setProperty('--' + String(data.name).replace(/^--/, ''), data.value);
+    }
+
+    // Swapping the family without loading it shows a fallback, which makes a
+    // perfectly good choice look broken.
+    if (data.type === 'preview-font-link') {
+      var link = document.querySelector('link[data-lumen-font]');
+      if (!link) {
+        link = document.createElement('link');
+        link.setAttribute('rel', 'stylesheet');
+        link.setAttribute('data-lumen-font', '');
+        document.head.appendChild(link);
+      }
+      link.setAttribute('href', data.href);
+      return;
     }
 
     if (data.type === 'preview-move' && el) {

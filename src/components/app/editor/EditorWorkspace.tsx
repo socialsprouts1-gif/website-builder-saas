@@ -163,10 +163,51 @@ export function EditorWorkspace({
     if (selection?.lumenId === lumenId) setSelection(null);
   }
 
-  function addBlock(blockId: string, options: { imageUrl?: string; videoUrl?: string }) {
-    queue({ kind: 'insert', afterLumenId: selection?.lumenId ?? null, blockId, ...options });
+  /**
+   * Adds a section and shows it straight away.
+   *
+   * The markup is fetched from the server rather than written here — the browser
+   * never authors what ends up in a published site — and the save renders the
+   * same section again from the same id and uid, so what you see before saving
+   * is what you keep. It used to change nothing until Save, which read as
+   * nothing having happened at all.
+   */
+  async function addBlock(blockId: string, options: { imageUrl?: string; videoUrl?: string }) {
+    const uid = Math.random().toString(36).slice(2, 8).replace(/[^a-z0-9]/g, '0');
+    const afterLumenId = selection?.lumenId ?? null;
+
+    queue({ kind: 'insert', afterLumenId, blockId, uid, ...options });
     setShowBlocks(false);
-    setNotice('Section queued. Save to put it on the page.');
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}/blocks`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ blockId, uid, ...options }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? 'Could not draw that section');
+      post({ type: 'preview-insert', lumenId: afterLumenId, html: payload.html });
+      setNotice('Section added. Edit it here, then Save.');
+    } catch (cause) {
+      // The edit is still queued, so Save will produce it either way.
+      setNotice('Section queued. Save to put it on the page.');
+      setError(cause instanceof Error ? cause.message : null);
+    }
+  }
+
+  function editLink(href: string) {
+    if (!selection) return;
+    queue({ kind: 'link', lumenId: selection.lumenId, href });
+    post({ type: 'preview-link', lumenId: selection.lumenId, value: href });
+    setSelection({ ...selection, href });
+  }
+
+  function editFont(role: 'display' | 'body', family: string, googleHref: string | null) {
+    queue({ kind: 'font', role, family, googleHref });
+    post({ type: 'preview-token', name: role === 'display' ? '--font-display' : '--font-body', value: family });
+    if (googleHref) post({ type: 'preview-font-link', href: googleHref });
   }
 
   /**
@@ -306,7 +347,12 @@ export function EditorWorkspace({
               ) : null}
             </>
           ) : (
-            <ThemePanel palette={palette} onToken={editToken} loading={awaitingOutline} />
+            <ThemePanel
+              palette={palette}
+              onToken={editToken}
+              onFont={editFont}
+              loading={awaitingOutline}
+            />
           )}
         </div>
 
@@ -329,9 +375,11 @@ export function EditorWorkspace({
             selection={selection}
             projectId={projectId}
             palette={palette}
+            pages={pages}
             onText={editText}
             onStyle={editStyle}
             onImage={editImage}
+            onLink={editLink}
             onRemove={() => selection && remove(selection.lumenId)}
             onDuplicate={() => selection && duplicate(selection.lumenId)}
           />

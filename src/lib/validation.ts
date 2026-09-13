@@ -82,12 +82,33 @@ export const visualEditSchema = z.object({
           kind: z.literal('insert'),
           afterLumenId: lumenId.nullable(),
           blockId: z.string().min(1).max(60),
+          uid: z.string().regex(/^[a-z0-9]{4,12}$/),
           // Never markup: a picture the user uploaded, or a link the server
           // turns into an embed itself.
           imageUrl: z.string().url().max(2000).optional(),
           videoUrl: z.string().url().max(2000).optional(),
         }),
         z.object({ kind: z.literal('token'), name: z.string().min(1).max(80), value: styleValue.min(1) }),
+        // A destination is either another page of this site or an absolute
+        // link. Anything else — javascript:, data: — is refused outright.
+        z.object({
+          kind: z.literal('link'),
+          lumenId,
+          href: z
+            .string()
+            .trim()
+            .max(2000)
+            .refine(
+              (value) => /^(https:\/\/|mailto:|tel:|#|[\w-]+\.html(#[\w-]+)?$)/i.test(value),
+              'That is not a destination a link can point at.',
+            ),
+        }),
+        z.object({
+          kind: z.literal('font'),
+          role: z.enum(['display', 'body']),
+          family: z.string().min(1).max(200),
+          googleHref: z.string().url().max(400).nullable(),
+        }),
       ]),
     )
     .min(1)

@@ -4,17 +4,20 @@ import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { cn } from '@/components/ui/cn';
+import { pageLabel } from '@/lib/pages';
 
 export interface Selection {
   lumenId: string;
   tag: string;
-  kind: 'text' | 'image' | 'block';
+  kind: 'text' | 'image' | 'block' | 'link';
   label: string;
   text: string;
   src: string | null;
   alt: string | null;
   /** A picture inside this element, when it is a section rather than an image. */
   image?: { lumenId: string; src: string | null } | null;
+  /** Where a link or button currently points. */
+  href?: string | null;
   style: {
     fontSize: string;
     fontWeight: string;
@@ -49,19 +52,24 @@ export function Inspector({
   selection,
   projectId,
   palette,
+  pages,
   onText,
   onStyle,
   onImage,
+  onLink,
   onRemove,
   onDuplicate,
 }: {
   selection: Selection | null;
   projectId: string;
   palette: PaletteToken[];
+  /** The site's own pages, so a button can point at one without typing a path. */
+  pages: string[];
   onText: (value: string) => void;
   onStyle: (styles: Record<string, string>) => void;
   /** Targets the element itself, or a picture inside it when one is named. */
   onImage: (src: string, alt?: string, lumenId?: string) => void;
+  onLink: (href: string) => void;
   onRemove: () => void;
   onDuplicate: () => void;
 }) {
@@ -111,15 +119,24 @@ export function Inspector({
         <p className="mt-0.5 text-[11px] text-ink-muted">{describeKind(selection)}</p>
       </div>
 
-      {selection.kind === 'text' ? (
-        <Field label="Text">
+      {selection.kind === 'text' || selection.kind === 'link' ? (
+        <Field label={selection.kind === 'link' ? 'Button text' : 'Text'}>
           <Textarea
-            rows={3}
+            rows={selection.kind === 'link' ? 2 : 3}
             defaultValue={selection.text}
             key={selection.lumenId}
             onChange={(event) => onText(event.target.value)}
           />
         </Field>
+      ) : null}
+
+      {selection.kind === 'link' ? (
+        <LinkTarget
+          key={`${selection.lumenId}-href`}
+          href={selection.href ?? ''}
+          pages={pages}
+          onChange={onLink}
+        />
       ) : null}
 
       {target ? (
@@ -231,9 +248,73 @@ export function Inspector({
   );
 }
 
+/**
+ * Where a button goes.
+ *
+ * The common answer is another page of this site, so those are the options;
+ * anything else is typed in full. A button whose text you can change but whose
+ * destination you cannot is half a button.
+ */
+function LinkTarget({
+  href,
+  pages,
+  onChange,
+}: {
+  href: string;
+  pages: string[];
+  onChange: (href: string) => void;
+}) {
+  const known = pages.includes(href);
+  const [custom, setCustom] = useState(!known && href !== '');
+  const [value, setValue] = useState(href);
+
+  return (
+    <div className="space-y-2">
+      <Field label="Where it goes">
+        <Select
+          value={custom ? '__custom' : href}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (next === '__custom') {
+              setCustom(true);
+              return;
+            }
+            setCustom(false);
+            onChange(next);
+          }}
+        >
+          {!known && !custom ? <option value={href}>{href || 'Nowhere yet'}</option> : null}
+          {pages.map((page) => (
+            <option key={page} value={page}>
+              {pageLabel(page)} page
+            </option>
+          ))}
+          <option value="__custom">Somewhere else…</option>
+        </Select>
+      </Field>
+
+      {custom ? (
+        <Input
+          value={value}
+          placeholder="https://wa.me/919876543210"
+          spellCheck={false}
+          onChange={(event) => {
+            setValue(event.target.value);
+            const next = event.target.value.trim();
+            // Only committed once it is something a browser can follow, so a
+            // half-typed address never lands in the page.
+            if (/^(https:\/\/|mailto:|tel:|#)/i.test(next)) onChange(next);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 /** What the selected thing is, in words rather than in markup. */
 function describeKind(selection: Selection): string {
   if (selection.kind === 'image') return 'Picture';
+  if (selection.kind === 'link') return selection.tag === 'button' ? 'Button' : 'Link or button';
   if (selection.kind === 'text') {
     if (/^h[1-6]$/.test(selection.tag)) return 'Heading';
     if (selection.tag === 'a') return 'Link';

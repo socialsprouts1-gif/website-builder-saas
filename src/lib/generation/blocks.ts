@@ -31,6 +31,12 @@ export type BlockNeeds = 'image' | 'video' | null;
 export interface BlockOptions {
   imageUrl?: string;
   videoUrl?: string;
+  /**
+   * Supplied by the editor so the section it previewed and the section it saves
+   * carry identical element ids. Without it the server rolled a new one on each
+   * render and the preview was a different section from the one that landed.
+   */
+  uid?: string;
 }
 
 export interface BlockDefinition {
@@ -270,10 +276,13 @@ export const BLOCKS: BlockDefinition[] = [
   },
 ];
 
+const UID = /^[a-z0-9]{4,12}$/;
+
 export function renderBlock(blockId: string, options: BlockOptions = {}): string | null {
   const block = BLOCKS.find((candidate) => candidate.id === blockId);
   if (!block) return null;
-  return block.html(Math.random().toString(36).slice(2, 8), options);
+  const uid = options.uid && UID.test(options.uid) ? options.uid : Math.random().toString(36).slice(2, 8);
+  return block.html(uid, options);
 }
 
 /** Safe to hand to the client — no markup, just the menu. */

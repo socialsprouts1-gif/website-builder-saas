@@ -25,7 +25,9 @@ export type VisualEdit =
   | { kind: 'move'; lumenId: string; direction: 'up' | 'down' }
   | { kind: 'duplicate'; lumenId: string }
   | { kind: 'insert'; afterLumenId: string | null; html: string }
-  | { kind: 'token'; name: string; value: string };
+  | { kind: 'token'; name: string; value: string }
+  | { kind: 'link'; lumenId: string; href: string }
+  | { kind: 'font'; role: 'display' | 'body'; family: string; googleHref: string | null };
 
 /**
  * What the editor sends. Identical to VisualEdit except that an insert names a
@@ -38,6 +40,12 @@ export type ClientVisualEdit =
       kind: 'insert';
       afterLumenId: string | null;
       blockId: string;
+      /**
+       * Chosen in the browser so the section previewed and the section saved
+       * carry the same element ids — otherwise what you edited before saving is
+       * not what you are editing after.
+       */
+      uid: string;
       imageUrl?: string;
       videoUrl?: string;
     };
@@ -101,6 +109,22 @@ export function applyVisualEdits(html: string, edits: VisualEdit[]): { html: str
       continue;
     }
 
+    if (edit.kind === 'font') {
+      // The family lives in the stylesheet; the link that loads it lives in the
+      // page. Changing one without the other is how a site quietly falls back
+      // to a default serif, so both move together.
+      const property = edit.role === 'display' ? '--font-display' : '--font-body';
+      const declaration = new RegExp(`(${property}\\s*:\\s*)([^;]+)(;)`, 'g');
+      const retyped = output.replace(declaration, `$1${edit.family}$3`);
+      if (retyped !== output) applied += 1;
+      output = retyped;
+
+      const linked = applyFontLink(output, edit.googleHref);
+      if (linked !== output) applied += 1;
+      output = linked;
+      continue;
+    }
+
     const tree = parseElements(output);
 
     if (edit.kind === 'insert') {
@@ -122,6 +146,13 @@ export function applyVisualEdits(html: string, edits: VisualEdit[]): { html: str
 
     const node = findByLumenId(tree, edit.lumenId);
     if (!node) continue;
+
+    if (edit.kind === 'link') {
+      const openTag = output.slice(node.openStart, node.openEnd);
+      output = spliceRange(output, node.openStart, node.openEnd, setAttribute(openTag, 'href', edit.href));
+      applied += 1;
+      continue;
+    }
 
     if (edit.kind === 'remove') {
       output = spliceRange(output, node.openStart, node.selfClosing ? node.openEnd : node.closeEnd, '');
@@ -191,17 +222,29 @@ export function applyVisualEdits(html: string, edits: VisualEdit[]): { html: str
 export function describeEdit(edit: VisualEdit | ClientVisualEdit): string {
   switch (edit.kind) {
     case 'token':
-      return `theme --${edit.name} → ${edit.value}`;
+      // The name already carries its dashes; printing another pair produced
+      // "theme ----ink", which reads like a bug because it looked like one.
+      return `Theme · ${edit.name.replace(/^-+/, '').replace(/-/g, ' ')} → ${edit.value}`;
+    case 'font':
+      return `${edit.role === 'display' ? 'Heading' : 'Body'} font → ${edit.family.split(',')[0].replace(/"/g, '')}`;
     case 'insert':
-      return `add ${'blockId' in edit ? edit.blockId : 'block'}${
-        edit.afterLumenId ? ` after ${edit.afterLumenId}` : ''
-      }`;
+      return `Added a ${'blockId' in edit ? edit.blockId.replace(/-/g, ' ') : 'section'} section`;
     case 'move':
-      return `move ${edit.lumenId} ${edit.direction}`;
+      return `Moved a section ${edit.direction}`;
     case 'style':
-      return `style ${edit.lumenId} · ${Object.keys(edit.styles).join(', ')}`;
+      return `Restyled ${Object.keys(edit.styles).join(', ')}`;
+    case 'link':
+      return `Link now goes to ${edit.href}`;
+    case 'text':
+      return `Reworded “${edit.value.slice(0, 28)}${edit.value.length > 28 ? '…' : ''}”`;
+    case 'image':
+      return 'Swapped a picture';
+    case 'duplicate':
+      return 'Duplicated a section';
+    case 'remove':
+      return 'Deleted a section';
     default:
-      return `${edit.kind} ${edit.lumenId}`;
+      return 'Change';
   }
 }
 
@@ -214,13 +257,43 @@ function withFreshIds(fragment: string): string {
   );
 }
 
-/** Token edits also rewrite the shared stylesheet so they persist site-wide. */
+/**
+ * Points the page's webfont link at a new stylesheet, adds one when there is
+ * none, and removes it when the chosen family needs no loading.
+ */
+export function applyFontLink(html: string, googleHref: string | null): string {
+  const existing = /<link\b[^>]*fonts\.googleapis\.com[^>]*>/i;
+
+  if (!googleHref) return html.replace(existing, '');
+  if (existing.test(html)) {
+    return html.replace(existing, `<link rel="stylesheet" href="${escapeAttribute(googleHref)}" />`);
+  }
+  return html.replace(
+    /<\/head>/i,
+    `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n<link rel="stylesheet" href="${escapeAttribute(googleHref)}" />\n</head>`,
+  );
+}
+
+/**
+ * Theme edits rewrite the shared stylesheet so they persist site-wide.
+ *
+ * Both kinds land here: a token is one declaration, and a font is the same
+ * thing under a fixed name. The font's <link> is handled in the HTML pass —
+ * the family and the loader are two halves of one change.
+ */
 export function applyTokenEditsToCss(css: string, edits: VisualEdit[]): string {
   let output = css;
+
+  const rewrite = (name: string, value: string) => {
+    const pattern = new RegExp(`(--${name.replace(/^--/, '')}\\s*:\\s*)([^;]+)(;)`, 'g');
+    output = output.replace(pattern, `$1${value}$3`);
+  };
+
   for (const edit of edits) {
-    if (edit.kind !== 'token') continue;
-    const pattern = new RegExp(`(--${edit.name.replace(/^--/, '')}\\s*:\\s*)([^;]+)(;)`, 'g');
-    output = output.replace(pattern, `$1${edit.value}$3`);
+    if (edit.kind === 'token') rewrite(edit.name, edit.value);
+    if (edit.kind === 'font') {
+      rewrite(edit.role === 'display' ? '--font-display' : '--font-body', edit.family);
+    }
   }
   return output;
 }
