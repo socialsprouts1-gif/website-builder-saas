@@ -100,6 +100,10 @@ export function Workspace({
   const [publishSignal, setPublishSignal] = useState(0);
   // A "connect X" typed at the chat box opens a form, not a site edit.
   const [connect, setConnect] = useState<{ intent: ConnectIntent; message: string } | null>(null);
+  // A message that only mentioned an integration. The edit still runs; this is
+  // the offer underneath it, so a missed guess costs a click rather than a
+  // rewritten site.
+  const [suggest, setSuggest] = useState<{ intent: ConnectIntent; message: string } | null>(null);
 
   const logRef = useRef<HTMLDivElement>(null);
   const generationStarted = useRef(false);
@@ -253,7 +257,7 @@ export function Workspace({
     // reading a request wrong costs one click.
     if (options.allowConnect !== false) {
       const intent = detectConnectIntent(trimmed);
-      if (intent) {
+      if (intent?.confidence === 'high') {
         setInput('');
         setMessages((current) => [
           ...current,
@@ -262,6 +266,7 @@ export function Workspace({
         setConnect({ intent, message: trimmed });
         return;
       }
+      setSuggest(intent ? { intent, message: trimmed } : null);
     }
 
     setError(null);
@@ -409,6 +414,20 @@ export function Workspace({
                   {message.content}
                 </div>
               ))}
+
+              {suggest && !connect ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConnect(suggest);
+                    setSuggest(null);
+                  }}
+                  className="lumen-raise w-full rounded-[12px] border border-accent/30 px-3.5 py-2.5 text-left text-[12px] leading-relaxed text-ink-secondary"
+                >
+                  Did you want to set that up rather than change the page?{' '}
+                  <span className="text-accent">Do it properly →</span>
+                </button>
+              ) : null}
 
               {connect ? (
                 <ConnectFlow

@@ -26,6 +26,15 @@ export interface ConnectIntent {
   title: string;
   /** Provider ids to offer first, in order. */
   providers: string[];
+  /**
+   * How sure this is.
+   *
+   * "high" reads as an instruction and opens the card instead of editing the
+   * site. "low" only mentions the topic, so the edit runs as asked and the card
+   * is offered underneath — a missed guess should cost a click, not five
+   * rewritten files, and a wrong guess should not hijack a sentence.
+   */
+  confidence: 'high' | 'low';
 }
 
 /**
@@ -93,9 +102,15 @@ const RULES: Rule[] = [
   },
 ];
 
-/** The words that make a sentence a request to wire something up. */
+/**
+ * The words that make a sentence a request to wire something up.
+ *
+ * "Create a chatbot for this website" missed every one of these and went to the
+ * site editor, which rewrote five files trying to draw a chat bubble into the
+ * HTML. People say create, build, make, put, want — not "integrate".
+ */
 const ACTION =
-  /\b(connect|connecting|integrate|integration|integrations|set ?up|setup|add|enable|link|hook ?up|configure|wire|accept|start taking)\b/i;
+  /\b(connect|connecting|integrate|integrations?|set ?up|setup|add|create|build|make|put|install|embed|enable|activate|turn on|switch on|link|hook ?up|configure|wire|accept|start taking|give me|want|need)\b/i;
 
 /**
  * The same request phrased as a question. People do not say "connect Razorpay"
@@ -116,17 +131,23 @@ const ABOUT_THE_PAGE =
 export function detectConnectIntent(message: string): ConnectIntent | null {
   const text = message.trim();
   if (!text || text.length > 400) return null;
+  // A sentence about the page is an edit, whatever words it happens to contain.
   if (ABOUT_THE_PAGE.test(text)) return null;
 
   for (const rule of RULES) {
     if (!rule.topic.test(text)) continue;
 
     // Either it reads as an instruction to connect something, or it is short
-    // enough to be someone simply naming the thing ("razorpay", "add chatbot").
+    // enough to be someone simply naming the thing ("razorpay", "chatbot").
     const wordCount = text.split(/\s+/).length;
-    if (!ACTION.test(text) && !ASKING.test(text) && wordCount > 4) continue;
+    const instruction = ACTION.test(text) || ASKING.test(text) || wordCount <= 6;
 
-    return { group: rule.group, title: rule.title, providers: rule.providers };
+    return {
+      group: rule.group,
+      title: rule.title,
+      providers: rule.providers,
+      confidence: instruction ? 'high' : 'low',
+    };
   }
 
   return null;
