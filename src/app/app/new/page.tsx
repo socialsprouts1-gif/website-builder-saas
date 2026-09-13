@@ -4,14 +4,31 @@ import { NewSiteForm } from '@/components/app/NewSiteForm';
 import { Badge } from '@/components/ui/Badge';
 import { CreditMeter } from '@/components/app/CreditMeter';
 import { requireUser } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
 import { getKeyStatus, resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
 
 export const metadata = { title: 'New site' };
 export const dynamic = 'force-dynamic';
 
-export default async function NewSitePage() {
+export default async function NewSitePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
   const user = await requireUser();
+  const { category } = await searchParams;
+
+  // Remembered here rather than in onboarding, so the choice survives coming
+  // back later without onboarding needing an action that can fail invisibly.
+  if (category && /^[a-z-]{2,40}$/.test(category) && category !== user.profile?.onboarding_business_type) {
+    const supabase = await createClient();
+    await supabase
+      .from('users')
+      .update({ onboarding_business_type: category })
+      .eq('id', user.id)
+      .then(() => undefined, () => undefined);
+  }
 
   // The picker is seeded from the live model list where a key is available, and
   // from the fallback catalog otherwise — never a hardcoded dropdown.
@@ -94,7 +111,7 @@ export default async function NewSitePage() {
         <NewSiteForm
           models={{ quality: catalog.quality, fast: catalog.fast, all: catalog.all }}
           defaultModel={user.profile?.default_model ?? null}
-          defaultCategory={user.profile?.onboarding_business_type ?? null}
+          defaultCategory={category ?? user.profile?.onboarding_business_type ?? null}
         />
       </Suspense>
     </div>
