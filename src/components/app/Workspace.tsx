@@ -51,6 +51,7 @@ export function Workspace({
   jobStartedAt,
   publicSlug,
   published,
+  favicon,
 }: {
   projectId: string;
   projectName: string;
@@ -65,6 +66,7 @@ export function Workspace({
   jobStartedAt: string | null;
   publicSlug: string | null;
   published: boolean;
+  favicon: string | null;
 }) {
   const router = useRouter();
 
@@ -583,6 +585,7 @@ export function Workspace({
                 suggestedName={projectName}
                 initialSlug={publicSlug}
                 initialPublished={published}
+                initialFavicon={favicon}
                 openSignal={publishSignal}
               />
             </>

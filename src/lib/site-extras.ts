@@ -54,3 +54,32 @@ async function loadPaymentLink(
 export function decorate(html: string, extras: SiteExtras): string {
   return withChatbot(withPayButton(html, extras.paymentUrl, extras.paymentLabel), extras.chatbotKey);
 }
+
+/**
+ * Rewrites a page's own relative links so it works at /s/<slug> as well as
+ * /s/<slug>/.
+ *
+ * A generated page refers to itself the way a folder of files does —
+ * `styles.css`, `about.html` — which a browser resolves against the directory
+ * of the current URL. At /s/neurachat that directory is /s/, so the stylesheet
+ * 404s and every nav link goes nowhere.
+ *
+ * Redirecting to the trailing slash was the obvious fix and was wrong: Next
+ * strips trailing slashes by default, so the two redirects fought each other
+ * and the published site died with ERR_TOO_MANY_REDIRECTS. Making the links
+ * absolute settles it in the page itself, with nothing to bounce against.
+ *
+ * Only bare relative paths are touched. Anything with a scheme, a leading
+ * slash, or a fragment already means what it says.
+ */
+export function absolutise(html: string, prefix: string): string {
+  return html.replace(
+    /\b(href|src)=("|')([^"'>]*)\2/gi,
+    (whole: string, attribute: string, quote: string, value: string) => {
+      const target = value.trim();
+      if (!target) return whole;
+      if (/^([a-z][a-z0-9+.-]*:|\/\/|\/|#|\?)/i.test(target)) return whole;
+      return `${attribute}=${quote}${prefix}${target.replace(/^\.\//, '')}${quote}`;
+    },
+  );
+}

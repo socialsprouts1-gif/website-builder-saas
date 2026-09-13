@@ -96,7 +96,7 @@ export function ConnectFlow({
   }
 
   return (
-    <div className="rounded-[14px] border border-accent/30 bg-accent-soft/40 p-4">
+    <div className="lumen-panel rounded-[16px] border border-accent/25 p-4">
       <div className="flex items-start justify-between gap-3">
         <p className="text-[13.5px] text-ink-primary">
           {step.at === 'choose' ? intent.title : describe(currentProvider(step)).name}
@@ -124,7 +124,7 @@ export function ConnectFlow({
                     key={provider}
                     type="button"
                     onClick={() => setStep({ at: 'form', provider })}
-                    className="flex w-full items-center gap-3 rounded-[10px] border border-hairline bg-raised p-3 text-left transition hover:border-accent/40"
+                    className="lumen-raise flex w-full items-center gap-3 rounded-[12px] border border-hairline p-3 text-left hover:border-accent/40"
                   >
                     <ConnectorMark provider={provider} name={info.name} connected={info.connected} />
                     <span className="min-w-0 flex-1">
@@ -184,7 +184,7 @@ export function ConnectFlow({
           <button
             type="button"
             onClick={onDismiss}
-            className="mt-3 rounded-pill bg-accent px-4 py-1.5 text-[12px] text-[#12140b] transition hover:brightness-110"
+            className="lumen-key mt-3 rounded-pill px-4 py-1.5 text-[12px]"
           >
             Done
           </button>
@@ -241,7 +241,7 @@ function ProviderForm({
           <button
             type="button"
             onClick={() => onNavigate(`/app/project/${projectId}/chatbot`)}
-            className="rounded-pill bg-accent px-4 py-1.5 text-[12px] text-[#12140b] transition hover:brightness-110"
+            className="lumen-key rounded-pill px-4 py-1.5 text-[12px]"
           >
             Set it up
           </button>
@@ -297,7 +297,7 @@ function ProviderForm({
                 setBusy(false);
               }
             }}
-            className="rounded-pill bg-accent px-4 py-1.5 text-[12px] text-[#12140b] transition hover:brightness-110 disabled:opacity-40"
+            className="lumen-key rounded-pill px-4 py-1.5 text-[12px] disabled:opacity-40"
           >
             {busy ? 'Saving…' : 'Add the button'}
           </button>
@@ -328,7 +328,7 @@ function ProviderForm({
         <button
           type="button"
           onClick={() => onNavigate(`/api/connectors/${card.provider}/oauth`)}
-          className="w-full rounded-pill bg-accent px-4 py-2 text-[12.5px] text-[#12140b] transition hover:brightness-110"
+          className="lumen-key w-full rounded-pill px-4 py-2 text-[12.5px]"
         >
           Connect with {card.name}
         </button>
@@ -384,7 +384,7 @@ function ProviderForm({
                 setBusy(false);
               }
             }}
-            className="rounded-pill bg-accent px-4 py-1.5 text-[12px] text-[#12140b] transition hover:brightness-110 disabled:opacity-40"
+            className="lumen-key rounded-pill px-4 py-1.5 text-[12px] disabled:opacity-40"
           >
             {busy ? 'Connecting…' : 'Connect'}
           </button>
@@ -422,7 +422,7 @@ function FlowField({
         type={secret ? 'password' : 'text'}
         autoComplete={secret ? 'off' : undefined}
         spellCheck={false}
-        className="w-full rounded-[8px] border border-hairline bg-[var(--bg-base-deep)] px-3 py-2 text-[13px] text-ink-primary outline-none focus:border-accent/50"
+        className="lumen-well w-full rounded-[10px] border border-hairline px-3 py-2 text-[13px] text-ink-primary outline-none focus:border-accent/50"
       />
       {hint ? <span className="mt-1 block text-[11px] text-ink-muted">{hint}</span> : null}
     </label>

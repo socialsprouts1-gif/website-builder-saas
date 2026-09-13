@@ -79,7 +79,7 @@ export default async function ProjectWorkspacePage({
   // the workspace rather than error on a select.
   const { data: publishState } = await supabase
     .from('projects')
-    .select('public_slug, published_at')
+    .select('public_slug, published_at, favicon_url')
     .eq('id', id)
     .maybeSingle();
 
@@ -108,6 +108,7 @@ export default async function ProjectWorkspacePage({
       jobStartedAt={jobStartedAt}
       publicSlug={publishState?.public_slug ?? null}
       published={Boolean(publishState?.published_at)}
+      favicon={publishState?.favicon_url ?? null}
     />
   );
 }

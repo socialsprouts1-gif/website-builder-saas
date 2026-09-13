@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentFiles } from '@/lib/generation/storage';
 import { pendingPage } from '@/lib/generation/kit/placeholder';
-import { decorate, loadSiteExtras } from '@/lib/site-extras';
+import { absolutise, decorate, loadSiteExtras } from '@/lib/site-extras';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,16 +40,6 @@ export async function GET(
 ) {
   const { slug, path } = await context.params;
 
-  // /s/hairtie and /s/hairtie/ are not the same address to a browser: on the
-  // first, the page's own `styles.css` resolves to /s/styles.css and 404s, and
-  // the site renders as unstyled text. The trailing slash is not cosmetic, so
-  // the bare form redirects to it rather than serving a broken page.
-  if ((path ?? []).length === 0 && !request.nextUrl.pathname.endsWith('/')) {
-    const target = new URL(request.nextUrl);
-    target.pathname = `${target.pathname}/`;
-    return Response.redirect(target, 308);
-  }
-
   const admin = createAdminClient();
   const { data: project } = await admin
     .from('projects')
@@ -59,6 +49,10 @@ export async function GET(
     .maybeSingle();
 
   if (!project) return new Response('Not found', { status: 404 });
+
+  // Every link the page makes to itself hangs off this, so it holds whether the
+  // address was typed with a trailing slash or without one.
+  const base = `/s/${encodeURIComponent(slug)}/`;
 
   const requested = (path ?? []).join('/') || 'index.html';
   // No traversal, no absolute paths: only files this project actually has.
@@ -84,8 +78,10 @@ export async function GET(
         label: 'Coming soon',
         heading: 'This page is on its way',
         message: 'It is being put together right now. Everything else on the site is ready.',
-        homeHref: files.some((candidate) => candidate.path === 'index.html') ? './' : undefined,
-        stylesheet: files.some((candidate) => candidate.path === 'styles.css') ? 'styles.css' : null,
+        homeHref: files.some((candidate) => candidate.path === 'index.html') ? base : undefined,
+        stylesheet: files.some((candidate) => candidate.path === 'styles.css')
+          ? `${base}styles.css`
+          : null,
       }),
       {
         status: 404,
@@ -103,7 +99,10 @@ export async function GET(
   const isHtml = extension === 'html';
 
   const body = isHtml
-    ? decorate(withFavicon(file.content, project.favicon_url), await loadSiteExtras(project.id))
+    ? decorate(
+        absolutise(withFavicon(file.content, project.favicon_url), base),
+        await loadSiteExtras(project.id),
+      )
     : file.content;
 
   return new Response(body, {
