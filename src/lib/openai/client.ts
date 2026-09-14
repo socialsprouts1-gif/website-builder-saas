@@ -1,6 +1,6 @@
 import 'server-only';
 import OpenAI from 'openai';
-import { env, CREDIT_COST, type CreditedEvent } from '@/lib/env';
+import { env, CREDIT_COST, WELCOME_CREDITS, type CreditedEvent } from '@/lib/env';
 import { getAllowance } from '@/lib/allowance';
 import { decryptSecret } from '@/lib/crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -18,7 +18,7 @@ export class NoKeyAvailableError extends Error {
   constructor(public readonly reason: 'not_configured' | 'quota_exhausted') {
     super(
       reason === 'quota_exhausted'
-        ? "You have used today's credits. They reset at midnight UTC — upgrade for a much larger daily allowance, or add your own OpenAI key for no limit at all."
+        ? "You have used your welcome credits and today's allowance. More free credits arrive at midnight UTC — or add your own OpenAI key and there is no limit at all."
         : 'No OpenAI key is configured. Add your own key in Settings → API keys to start generating.',
     );
     this.name = 'NoKeyAvailableError';
@@ -62,6 +62,41 @@ async function platformCreditsUsedToday(userId: string): Promise<number> {
 }
 
 /**
+ * Everything this account has ever spent on the shared key.
+ *
+ * The welcome grant is derived from this rather than stored as a balance: there
+ * is no column to keep in step, no double-spend to guard against, and a refund
+ * is a deleted row. Free accounts have a handful of rows, so the read is cheap.
+ */
+async function platformCreditsUsedEver(userId: string): Promise<number> {
+  const supabase = createAdminClient();
+
+  const { data } = await supabase
+    .from('usage_events')
+    .select('event_type')
+    .eq('user_id', userId)
+    .eq('key_source', 'platform')
+    .limit(5000);
+
+  return (data ?? []).reduce(
+    (total, row) => total + (CREDIT_COST[row.event_type as CreditedEvent] ?? 0),
+    0,
+  );
+}
+
+/** Welcome grant left, and today's allowance left, as two separate pots. */
+async function pots(userId: string, dailyCredits: number) {
+  const [usedToday, usedEver] = await Promise.all([
+    platformCreditsUsedToday(userId),
+    platformCreditsUsedEver(userId),
+  ]);
+
+  const welcome = Math.max(0, WELCOME_CREDITS - usedEver);
+  const today = Math.max(0, dailyCredits - usedToday);
+  return { usedToday, usedEver, welcome, today, total: welcome + today };
+}
+
+/**
  * BYOK first — unlimited, billed to the user's own OpenAI account — and only
  * then Lumen's pooled key, for as many credits as the day has left.
  *
@@ -100,13 +135,15 @@ export async function resolveApiKey(
     return { apiKey: env.openai.platformKey, source: 'platform', creditsRemaining: Infinity };
   }
 
-  const used = await platformCreditsUsedToday(userId);
-  const remaining = Math.max(0, allowance.dailyCredits - used);
+  // The welcome grant is spent first and never refills; the daily allowance is
+  // what is left after it. A new account therefore has enough to finish a site
+  // rather than enough to start one.
+  const { total } = await pots(userId, allowance.dailyCredits);
 
   // Refuse when the call would overdraw, not merely when the balance is zero.
-  if (remaining < CREDIT_COST[intent]) throw new NoKeyAvailableError('quota_exhausted');
+  if (total < CREDIT_COST[intent]) throw new NoKeyAvailableError('quota_exhausted');
 
-  return { apiKey: env.openai.platformKey, source: 'platform', creditsRemaining: remaining };
+  return { apiKey: env.openai.platformKey, source: 'platform', creditsRemaining: total };
 }
 
 /**
@@ -132,10 +169,10 @@ export async function getKeyStatus(userId: string) {
     .eq('is_active', true)
     .maybeSingle();
 
-  const [used, allowance] = await Promise.all([
-    platformCreditsUsedToday(userId),
-    getAllowance(userId),
-  ]);
+  const allowance = await getAllowance(userId);
+  const balance = allowance.unlimited
+    ? { usedToday: 0, welcome: 0, today: allowance.dailyCredits, total: allowance.dailyCredits }
+    : await pots(userId, allowance.dailyCredits);
 
   return {
     hasOwnKey: Boolean(keyRow),
@@ -144,9 +181,12 @@ export async function getKeyStatus(userId: string) {
     platformConfigured: Boolean(env.openai.platformKey),
     tier: allowance.tier,
     unlimited: allowance.unlimited,
-    creditsUsed: used,
+    creditsUsed: balance.usedToday,
     creditsLimit: allowance.dailyCredits,
-    creditsRemaining: Math.max(0, allowance.dailyCredits - used),
+    /** Grant left. Shown separately because it does not come back tomorrow. */
+    welcomeRemaining: balance.welcome,
+    welcomeTotal: WELCOME_CREDITS,
+    creditsRemaining: balance.total,
     resetsAt: creditsResetAt().toISOString(),
   };
 }

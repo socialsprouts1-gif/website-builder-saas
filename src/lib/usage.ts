@@ -31,6 +31,7 @@ export async function recordUsage(params: {
   projectId?: string | null;
   eventType:
     | 'generation'
+    | 'section'
     | 'chat_edit'
     | 'vision'
     | 'transcription'

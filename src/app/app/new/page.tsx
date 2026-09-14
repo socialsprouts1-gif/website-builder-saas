@@ -4,6 +4,7 @@ import { NewSiteForm } from '@/components/app/NewSiteForm';
 import { Badge } from '@/components/ui/Badge';
 import { CreditMeter } from '@/components/app/CreditMeter';
 import { requireUser } from '@/lib/auth';
+import { CREDIT_COST } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { getKeyStatus, resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
@@ -42,7 +43,9 @@ export default async function NewSitePage({
 
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
   const outOfQuota = keyStatus
-    ? !keyStatus.hasOwnKey && !keyStatus.unlimited && keyStatus.creditsRemaining < 3
+    ? !keyStatus.hasOwnKey &&
+      !keyStatus.unlimited &&
+      keyStatus.creditsRemaining < CREDIT_COST.generation
     : false;
   const noKeyAtAll = keyStatus ? !keyStatus.hasOwnKey && !keyStatus.platformConfigured : false;
 
@@ -84,7 +87,8 @@ export default async function NewSitePage({
             </>
           ) : (
             <>
-              You do not have enough credits left today for a new site (a build costs 3).{' '}
+              You do not have enough credits left for a new site (a build costs{' '}
+              {CREDIT_COST.generation}).{' '}
               <Link href="/app/settings/api-keys" className="text-accent hover:underline">
                 Add your own OpenAI key
               </Link>{' '}
@@ -100,6 +104,8 @@ export default async function NewSitePage({
             resetsAt={keyStatus.resetsAt}
             hasOwnKey={keyStatus.hasOwnKey}
             platformConfigured={keyStatus.platformConfigured}
+            welcomeRemaining={keyStatus.welcomeRemaining}
+            welcomeTotal={keyStatus.welcomeTotal}
             tier={keyStatus.tier}
             unlimited={keyStatus.unlimited}
             variant="panel"

@@ -1,5 +1,6 @@
 import 'server-only';
 import { openaiFor, resolveApiKey, type KeySource } from '@/lib/openai/client';
+import type { CreditedEvent } from '@/lib/env';
 import { getModelCatalog, resolveModel } from '@/lib/openai/models';
 import { recordUsage } from '@/lib/usage';
 import { callWithRetry } from '@/lib/openai/retry';
@@ -163,11 +164,18 @@ interface StepContext {
   say?: (message: string) => void;
 }
 
-/** Everything a step needs from the account: a key, a catalog, a client. */
-async function openSession(input: GenerationInput) {
+/**
+ * Everything a step needs from the account: a key, a catalog, a client.
+ *
+ * The intent is what this step is about to spend. A build is priced once, at
+ * its first step; the dozen section calls that follow cost nothing, because
+ * that first charge already paid for them. Charging each one as a full
+ * generation is what emptied a new account three calls into its first site.
+ */
+async function openSession(input: GenerationInput, intent: CreditedEvent) {
   const { apiKey, source } = await resolveApiKey(
     input.userId,
-    input.screenshotDataUrl ? 'vision' : 'generation',
+    input.screenshotDataUrl && intent === 'generation' ? 'vision' : intent,
   );
   const catalog = await getModelCatalog(apiKey);
   const { model, substituted } = resolveModel(catalog, input.requestedModel);
@@ -190,12 +198,13 @@ export async function runBuildStep(
   // exactly like a hang otherwise, which is what made a slow build unreadable.
   const onWait = (notice: { message: string; waitMs: number }) =>
     say?.(`${notice.message} (${Math.round(notice.waitMs / 1000)}s)`);
-  const session = await openSession(input);
+  // 'plan' is the whole build's charge; everything after it rides on it.
+  const session = await openSession(input, step === 'plan' ? 'generation' : 'section');
   const { client, catalog, model, source } = session;
 
   const spend = async (
     usage: { prompt_tokens?: number; completion_tokens?: number } | undefined,
-    eventType: 'generation' | 'vision',
+    eventType: 'generation' | 'section' | 'vision',
     usedModel: string,
   ) => {
     await recordUsage({
@@ -221,7 +230,8 @@ export async function runBuildStep(
         response_format: { type: 'json_object' },
       });
     }, onWait);
-    await spend(response.usage, 'generation', model);
+    // Recorded for the spend report, priced at nothing: see openSession.
+    await spend(response.usage, 'section', model);
 
     try {
       return JSON.parse(response.choices[0]?.message?.content ?? '{}');

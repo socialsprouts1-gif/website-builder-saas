@@ -116,6 +116,16 @@ export const isPlatformKeyConfigured = Boolean(env.openai.platformKey);
 export const DAILY_PLATFORM_CREDITS = 10;
 
 /**
+ * Credits a new account gets once, on top of the daily allowance.
+ *
+ * A daily bucket that resets is the wrong shape for someone who has just signed
+ * up: they want to build one site now, look at it, change their mind twice, and
+ * publish it. This is enough for roughly ten sites and the edits around them,
+ * it never refills, and it is spent before the daily allowance is touched.
+ */
+export const WELCOME_CREDITS = 50;
+
+/**
  * The paid tier's daily ceiling. High enough that a small business never feels
  * it, finite so one runaway account cannot outspend a ₹500 subscription on the
  * shared key. Users who genuinely want no ceiling add their own OpenAI key.
@@ -130,7 +140,15 @@ export const PRO_DAILY_PLATFORM_CREDITS = 200;
  * and chatbot replies drawing on the platform key without limit.
  */
 export const CREDIT_COST = {
-  generation: 3,
+  // The whole build, charged once when it starts.
+  //
+  // A site used to be one model call; it is now a plan and a dozen or more
+  // section calls, and every one of them was being charged as a full
+  // generation. Ten credits bought three calls, so a new account ran out of
+  // credit part-way through its very first site — before a single page existed.
+  // The sections below are free because this line already paid for them.
+  generation: 5,
+  section: 0,
   vision: 1,
   chat_edit: 1,
   image: 1,
