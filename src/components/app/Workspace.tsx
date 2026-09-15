@@ -106,8 +106,19 @@ export function Workspace({
   const [imagesBusy, setImagesBusy] = useState(false);
   // Something typed or pressed while something else was running, waiting.
   const [queued, setQueued] = useState<{ message: string; label?: string } | null>(null);
-  // What the editor is doing right now, as it does it.
-  const [steps, setSteps] = useState<{ id: string; label: string; done: boolean }[]>([]);
+  /**
+   * What the editor is doing, tied to the message that asked for it.
+   *
+   * Anchored rather than floating. As a card of its own it sat at the end of
+   * the log, so when the edit finished and the summary was appended, the
+   * summary rendered above the steps that produced it — the conversation read
+   * backwards. Now the steps are the reply to the message they belong to and
+   * everything after them is genuinely after them.
+   */
+  const [steps, setSteps] = useState<{
+    anchorId: string;
+    items: { id: string; label: string; done: boolean }[];
+  } | null>(null);
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [ready, setReady] = useState(initialStatus === 'ready');
   // A build that died leaves the project here with nothing running. Without a
@@ -391,9 +402,17 @@ export function Workspace({
     // pictures touches nothing, and the message that places them queues behind
     // whatever is running like any other.
     if (imagesBusy) return;
+    const localId = `local-${Date.now()}`;
     setImagesBusy(true);
     setError(null);
-    setSteps([{ id: 'images', label: 'Making photographs for your site', done: false }]);
+    setMessages((current) => [
+      ...current,
+      { id: localId, role: 'user', content: 'Generate photos for this site' },
+    ]);
+    setSteps({
+      anchorId: localId,
+      items: [{ id: 'images', label: 'Making photographs for your site', done: false }],
+    });
     try {
       const response = await fetch(`/api/projects/${projectId}/images`, { method: 'POST' });
       const payload = await response.json();
@@ -401,11 +420,16 @@ export function Workspace({
 
       setImagesBusy(false);
       setSteps((current) =>
-        current.map((step) =>
-          step.id === 'images'
-            ? { ...step, label: `Made ${payload.images.length} photographs`, done: true }
-            : step,
-        ),
+        current
+          ? {
+              ...current,
+              items: current.items.map((step) =>
+                step.id === 'images'
+                  ? { ...step, label: `Made ${payload.images.length} photographs`, done: true }
+                  : step,
+              ),
+            }
+          : current,
       );
       await sendMessage(payload.instruction, 'chat', {
         allowConnect: false,
@@ -414,7 +438,7 @@ export function Workspace({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not make the images');
       setImagesBusy(false);
-      setSteps([]);
+      setSteps(null);
     }
   }
 
@@ -510,6 +534,9 @@ export function Workspace({
     // Composed once and used for both the bubble and the request, so the
     // history after a reload says exactly what was asked for.
     const composed = withAttachments(trimmed);
+    // The steps hang off this id, so they render with the request rather than
+    // at the bottom of the log.
+    const localId = `local-${Date.now()}`;
 
     setError(null);
     setBusy(true);
@@ -519,9 +546,9 @@ export function Workspace({
       ...current,
       // Pressing a button shows the button's words, not the paragraph of
       // instructions it sends.
-      { id: `local-${Date.now()}`, role: 'user', content: options.label ?? composed },
+      { id: localId, role: 'user', content: options.label ?? composed },
     ]);
-    setSteps([]);
+    setSteps({ anchorId: localId, items: [] });
 
     try {
       const response = await fetch(`/api/projects/${projectId}/chat`, {
@@ -557,8 +584,17 @@ export function Workspace({
           if (payload.type === 'step') {
             setProgress(null);
             setSteps((current) => {
-              const next = current.filter((item) => item.id !== payload.id);
-              return [...next, { id: payload.id, label: payload.label, done: payload.done }];
+              // The parser writes one file at a time, so at most one line can
+              // be in progress. Anything above the newest is finished by
+              // definition — which also means a completion event that never
+              // arrives cannot leave a line spinning forever.
+              const items = (current?.items ?? [])
+                .filter((item) => item.id !== payload.id)
+                .map((item) => ({ ...item, done: true }));
+              return {
+                anchorId: current?.anchorId ?? localId,
+                items: [...items, { id: payload.id, label: payload.label, done: payload.done }],
+              };
             });
           }
           if (payload.type === 'error') throw new Error(payload.message);
@@ -715,16 +751,21 @@ export function Workspace({
           <>
             <div ref={logRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-5">
               {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    'rounded-[12px] px-3.5 py-2.5 text-[13.5px] leading-relaxed',
-                    message.role === 'user'
-                      ? 'ml-8 bg-accent-soft text-ink-primary'
-                      : 'mr-4 border border-hairline bg-raised text-ink-secondary',
-                  )}
-                >
-                  {message.content}
+                <div key={message.id} className="space-y-4">
+                  <div
+                    className={cn(
+                      'rounded-[12px] px-3.5 py-2.5 text-[13.5px] leading-relaxed',
+                      message.role === 'user'
+                        ? 'ml-8 bg-accent-soft text-ink-primary'
+                        : 'mr-4 border border-hairline bg-raised text-ink-secondary',
+                    )}
+                  >
+                    {message.content}
+                  </div>
+
+                  {steps && steps.anchorId === message.id && steps.items.length > 0 ? (
+                    <StepList items={steps.items} />
+                  ) : null}
                 </div>
               ))}
 
@@ -756,26 +797,6 @@ export function Workspace({
                     if (message.trim()) void sendMessage(message, 'chat', { allowConnect: false });
                   }}
                 />
-              ) : null}
-
-              {steps.length > 0 ? (
-                // Shown as it happens rather than summarised afterwards. Each
-                // line is a real event from the parser — a file the model
-                // actually opened — not a script of plausible-sounding stages.
-                <div className="mr-4 space-y-1.5 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
-                  {steps.map((step) => (
-                    <p key={step.id} className="flex items-center gap-2 text-[12.5px]">
-                      {step.done ? (
-                        <span className="text-accent" aria-hidden>
-                          ✓
-                        </span>
-                      ) : (
-                        <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" aria-hidden />
-                      )}
-                      <span className={step.done ? 'text-ink-muted' : 'text-ink-primary'}>{step.label}</span>
-                    </p>
-                  ))}
-                </div>
               ) : null}
 
               {progress ? (
@@ -1134,6 +1155,33 @@ function StoppedState({
       <Button onClick={onRetry} disabled={busy} className="mt-2">
         {busy ? 'Starting…' : 'Build it again'}
       </Button>
+    </div>
+  );
+}
+
+/**
+ * The editor's reply, while it is still writing it.
+ *
+ * Styled like anything else Lumen says — its side of the conversation, under
+ * the message that asked for it — because that is what it is. Every line is a
+ * real event from the streaming parser, so what is on screen is what is
+ * happening, and it stays there afterwards as the record of what was done.
+ */
+function StepList({ items }: { items: { id: string; label: string; done: boolean }[] }) {
+  return (
+    <div className="mr-4 space-y-1.5 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
+      {items.map((step) => (
+        <p key={step.id} className="flex items-center gap-2 text-[12.5px]">
+          {step.done ? (
+            <span className="text-accent" aria-hidden>
+              ✓
+            </span>
+          ) : (
+            <span className="h-1.5 w-1.5 shrink-0 animate-pulse-dot rounded-pill bg-accent" aria-hidden />
+          )}
+          <span className={step.done ? 'text-ink-muted' : 'text-ink-primary'}>{step.label}</span>
+        </p>
+      ))}
     </div>
   );
 }
