@@ -16,13 +16,18 @@ export function BuildSuggestions({
   busy,
   onPick,
   onDismiss,
+  onGenerateImages,
+  imagesBusy,
 }: {
   suggestions: BuildSuggestion[];
   busy: boolean;
   onPick: (suggestion: BuildSuggestion) => void;
   onDismiss: () => void;
+  /** Making photographs is not a chat edit, so it gets its own action. */
+  onGenerateImages?: () => void;
+  imagesBusy?: boolean;
 }) {
-  if (suggestions.length === 0) return null;
+  if (suggestions.length === 0 && !onGenerateImages) return null;
 
   const pages = suggestions.filter((item) => item.kind === 'page');
   const sections = suggestions.filter((item) => item.kind === 'section');
@@ -52,6 +57,28 @@ export function BuildSuggestions({
       ) : null}
       {sections.length > 0 ? (
         <Group title="Add to the site" items={sections} busy={busy} onPick={onPick} />
+      ) : null}
+
+      {onGenerateImages ? (
+        <div>
+          <p className="mb-1.5 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">Pictures</p>
+          <button
+            type="button"
+            disabled={busy || imagesBusy}
+            onClick={onGenerateImages}
+            className="lumen-raise flex w-full items-center gap-3 rounded-[11px] border border-hairline px-3 py-2.5 text-left transition hover:border-accent/40 disabled:opacity-40"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] text-ink-primary">Generate photos for this site</span>
+              <span className="mt-0.5 block text-[11.5px] text-ink-muted">
+                Four made for this business, not stock. Takes about a minute.
+              </span>
+            </span>
+            <span className="shrink-0 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+              {imagesBusy ? '…' : 'Make'}
+            </span>
+          </button>
+        </div>
       ) : null}
     </div>
   );

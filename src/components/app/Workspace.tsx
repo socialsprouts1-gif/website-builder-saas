@@ -103,6 +103,7 @@ export function Workspace({
   const [page, setPage] = useState(initialPages[0] ?? 'index.html');
   const [suggestions, setSuggestions] = useState<BuildSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [imagesBusy, setImagesBusy] = useState(false);
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [ready, setReady] = useState(initialStatus === 'ready');
   // A build that died leaves the project here with nothing running. Without a
@@ -349,6 +350,35 @@ export function Workspace({
     ],
     confidence: 'high',
   };
+
+  /**
+   * Photographs made for this business, then put in the page.
+   *
+   * Two halves, because they are two different things: making the pictures is
+   * slow and costs money, and placing them is an ordinary edit. Doing the
+   * second half through the normal editor is what gives it streaming, a saved
+   * version and an undo, rather than a private path that writes to the site
+   * and that nothing else in the product shares.
+   */
+  async function generateImages() {
+    if (imagesBusy || busy) return;
+    setImagesBusy(true);
+    setError(null);
+    setProgress('Making photographs for your site — about a minute…');
+    try {
+      const response = await fetch(`/api/projects/${projectId}/images`, { method: 'POST' });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? 'Could not make the images');
+
+      setImagesBusy(false);
+      setProgress(null);
+      await sendMessage(payload.instruction, 'chat', { allowConnect: false });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not make the images');
+      setImagesBusy(false);
+      setProgress(null);
+    }
+  }
 
   function attachReference(raw: string) {
     const url = normaliseReference(raw);
@@ -686,6 +716,8 @@ export function Workspace({
                 <BuildSuggestions
                   suggestions={suggestions}
                   busy={busy}
+                  imagesBusy={imagesBusy}
+                  onGenerateImages={() => void generateImages()}
                   onDismiss={() => setShowSuggestions(false)}
                   onPick={(suggestion) => {
                     // Straight to the editor: a suggestion is an ordinary edit,
@@ -755,6 +787,13 @@ export function Workspace({
                     label: 'Add a page',
                     hint: 'Pricing, gallery, anything',
                     onSelect: () => setInput('Add a new page called '),
+                  },
+                  {
+                    id: 'ai-images',
+                    icon: '🎨',
+                    label: 'Generate photos',
+                    hint: 'Made for this business, not stock',
+                    onSelect: () => void generateImages(),
                   },
                   {
                     id: 'ideas',
