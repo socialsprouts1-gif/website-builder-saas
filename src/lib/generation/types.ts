@@ -81,10 +81,28 @@ export interface GenerationEvent {
 }
 
 export interface ScreenshotExtraction {
+  /** What was uploaded: a website, a poster, a visiting card, a post… */
+  kind: string;
   layoutRegions: string[];
   palette: string[];
   typography: string;
   components: string[];
   observedCopyThemes: string[];
   notes: string;
+  /**
+   * The business details printed on the image.
+   *
+   * Only ever used when the owner says the upload is their own — their own
+   * visiting card is the fastest way they will ever type their phone number.
+   * For a design they merely admire, this is read and then thrown away.
+   */
+  details?: {
+    businessName?: string | null;
+    tagline?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+    website?: string | null;
+    services?: string[];
+  };
 }

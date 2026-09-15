@@ -7,7 +7,14 @@ import { callWithRetry } from '@/lib/openai/retry';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { GenerationJobRow } from '@/lib/database.types';
 import { StreamingFileParser, mergeFiles } from './parser';
-import { EDIT_SYSTEM, VISION_SYSTEM, buildBriefPrompt, buildEditPrompt, staticSiteFiles } from './prompts';
+import {
+  EDIT_SYSTEM,
+  OWN_MATERIAL_MARK,
+  VISION_SYSTEM,
+  buildBriefPrompt,
+  buildEditPrompt,
+  staticSiteFiles,
+} from './prompts';
 import { PLAN_SYSTEM, SECTION_SYSTEM, buildPlanPrompt, buildSectionPrompt } from './kit/prompts';
 import { normaliseTokens, type DesignTokens } from './kit/tokens';
 import { renderStylesheet } from './kit/stylesheet';
@@ -298,7 +305,12 @@ export async function runBuildStep(
           {
             role: 'user',
             content: `${buildPlanPrompt({ prompt: input.prompt, vertical, sitemap })}\n\n${buildBriefPrompt(
-              { prompt: input.prompt, businessType: input.businessType, extraction },
+              {
+                prompt: input.prompt,
+                businessType: input.businessType,
+                extraction,
+                ownMaterial: input.prompt.includes(OWN_MATERIAL_MARK),
+              },
             )}`,
           },
         ],

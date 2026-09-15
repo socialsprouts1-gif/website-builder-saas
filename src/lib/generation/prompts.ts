@@ -158,16 +158,30 @@ export function buildBriefPrompt(input: {
   prompt: string;
   businessType?: string | null;
   extraction?: ScreenshotExtraction | null;
+  /** True when the uploaded image belongs to the person building the site. */
+  ownMaterial?: boolean;
 }): string {
   const parts = [`User request: ${input.prompt}`];
   if (input.businessType) parts.push(`Business category the user selected: ${input.businessType}`);
   if (input.extraction) {
+    const { details, ...structure } = input.extraction;
     parts.push(
-      `The user also uploaded a reference screenshot. A vision model extracted this STRUCTURE from it — use it for layout and feel only:
-${JSON.stringify(input.extraction, null, 2)}
-
-Important: build an ORIGINAL site. Do not reuse any business name, logo, or verbatim copy that appeared in the screenshot.`,
+      `The user uploaded an image (${structure.kind || 'reference'}). This was read from it — use it for layout, colour and feel:
+${JSON.stringify(structure, null, 2)}`,
     );
+
+    // Their own visiting card is the fastest way they will ever give us their
+    // phone number. Someone else's site is not.
+    if (input.ownMaterial && details) {
+      parts.push(
+        `The upload is the owner's OWN material, so the details printed on it are their details. Use them exactly — name, phone, address, services — and do not invent alternatives:
+${JSON.stringify(details, null, 2)}`,
+      );
+    } else {
+      parts.push(
+        'The upload is a design the user admires, not their own. Build an ORIGINAL site: do not reuse the business name, the logo, or any verbatim copy from it — only the layout and the feel.',
+      );
+    }
   }
   return parts.join('\n\n');
 }
@@ -330,18 +344,48 @@ ${recent ? `Recent conversation:\n${recent}\n` : ''}
 Change requested: ${input.request}`;
 }
 
-export const VISION_SYSTEM = `You extract STRUCTURE from a screenshot of a website so a new, original site can be built with a similar feel.
+/**
+ * How "this is my own poster" reaches the build.
+ *
+ * The flag has to survive project creation, a queued job row and a later
+ * invocation, and the brief is the one thing that carries all the way through —
+ * every fact a build works from already travels as text in it. So it travels as
+ * a line of text too, one that reads correctly to the model on its own and that
+ * the plan step can also test for exactly.
+ */
+export const OWN_MATERIAL_MARK =
+  "The uploaded image is the owner's own material, not someone else's design.";
 
-Extract only structure and style. Do NOT transcribe the business name, logo text, or full marketing copy — summarise the *themes* of the copy instead. This exists so Lumen can build an original site inspired by a layout, never a copy of someone's site.
+export const VISION_SYSTEM = `You read ONE uploaded image so a website can be built from it.
+
+It is not always a screenshot of a website. It may be a poster, a flyer, a visiting card, an Instagram or WhatsApp post, a menu, a price list, a logo, a shopfront photograph, or a sketch on paper. Say which it is in "kind".
+
+Return two different things, and keep them separate:
+
+1. STRUCTURE AND STYLE — the layout, the colours, the typefaces, the components. This is always usable: nobody owns a two-column layout or a shade of green.
+
+2. DETAILS — the business name, tagline, phone, email, address, website and the services or products named on the image, transcribed exactly as printed. Leave a field null if it is not on the image. Never guess one.
+
+Whether the details get used is decided elsewhere, by whether the person says the image is their own. Your job is to read accurately, not to decide.
 
 Respond with JSON only:
 {
+  "kind": string,
   "layoutRegions": string[],
   "palette": string[],
   "typography": string,
   "components": string[],
   "observedCopyThemes": string[],
-  "notes": string
+  "notes": string,
+  "details": {
+    "businessName": string|null,
+    "tagline": string|null,
+    "phone": string|null,
+    "email": string|null,
+    "address": string|null,
+    "website": string|null,
+    "services": string[]
+  }
 }`;
 
 export function chatbotSystemPrompt(input: {

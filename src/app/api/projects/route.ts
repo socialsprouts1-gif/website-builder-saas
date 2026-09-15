@@ -10,6 +10,7 @@ import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/err
 import { getAllowance } from '@/lib/allowance';
 import { ensureUserProfile } from '@/lib/profile';
 import { applyAnswers } from '@/lib/generation/interview';
+import { OWN_MATERIAL_MARK } from '@/lib/generation/prompts';
 import { lookupPlace } from '@/lib/google/places';
 import { seedFromPlace } from '@/lib/google/seed';
 
@@ -52,6 +53,12 @@ export async function POST(request: NextRequest) {
     // The interview answers become part of the brief rather than a separate
     // input, so every downstream stage sees them without changing shape.
     let brief = applyAnswers(body.prompt, body.answers ?? []);
+
+    // Their own visiting card is the fastest way they will ever give us their
+    // phone number; someone else's website is not theirs to copy. Which of the
+    // two it is decides whether the details read off the image get used, and
+    // only the person uploading it knows.
+    if (body.screenshotIsOwn && body.screenshotDataUrl) brief = `${brief}\n\n${OWN_MATERIAL_MARK}`;
 
     // A logo and photographs are only useful if the brief says what they are.
     // Every section is written from this text, so naming them here is what puts

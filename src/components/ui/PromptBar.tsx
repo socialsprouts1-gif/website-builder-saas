@@ -52,6 +52,7 @@ export function PromptBar({
   onAttachReference,
   onRemoveAttachment,
   menuExtras = [],
+  allowEmpty = false,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -75,6 +76,14 @@ export function PromptBar({
   onRemoveAttachment?: (id: string) => void;
   /** Extra entries under the file ones, separated by a rule. */
   menuExtras?: PromptMenuItem[];
+  /**
+   * Submit with nothing typed.
+   *
+   * Uploading a poster and being told to describe it as well is asking for the
+   * work twice. When there is something to go on other than words, the button
+   * works.
+   */
+  allowEmpty?: boolean;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +93,11 @@ export function PromptBar({
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [reference, setReference] = useState('');
   const canAttach = Boolean(onAttachFiles) || menuExtras.length > 0;
+  // Something to act on: words, or a file that finished uploading.
+  const canSubmit =
+    value.trim().length > 0 ||
+    allowEmpty ||
+    attachments.some((item) => item.url && !item.error);
   // What was already typed when dictation started. Live results replace only
   // the spoken part, so a half-written sentence is not eaten by the mic.
   const spokenBaseRef = useRef<string | null>(null);
@@ -91,7 +105,7 @@ export function PromptBar({
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      if (!disabled && value.trim()) onSubmit();
+      if (!disabled && canSubmit) onSubmit();
     }
   }
 
@@ -332,7 +346,7 @@ export function PromptBar({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={disabled || busy || !value.trim()}
+          disabled={disabled || busy || !canSubmit}
           className="inline-flex h-9 shrink-0 items-center gap-2 rounded-pill bg-accent px-4 text-[13px] font-medium text-accent-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? 'Working…' : submitLabel}

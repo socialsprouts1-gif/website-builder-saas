@@ -17,6 +17,8 @@ export const createProjectSchema = z.object({
       website: z.string().trim().max(300).optional(),
     })
     .optional(),
+  /** True when the uploaded image is the owner's own poster, card or post. */
+  screenshotIsOwn: z.boolean().optional(),
   screenshotDataUrl: z
     .string()
     .regex(/^data:image\/(png|jpe?g|webp|gif);base64,/, 'Unsupported image type')

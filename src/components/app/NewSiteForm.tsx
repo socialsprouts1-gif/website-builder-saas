@@ -18,8 +18,30 @@ type Mode = 'describe' | 'screenshot' | 'speak';
 
 const MODES: { id: Mode; label: string; hint: string }[] = [
   { id: 'describe', label: 'Describe it', hint: 'One sentence about the business is enough.' },
-  { id: 'screenshot', label: 'Upload a screenshot', hint: 'A site you like, a Figma export, even a sketch on paper.' },
+  {
+    id: 'screenshot',
+    label: 'Upload a picture',
+    hint: 'Anything with your business on it. Typing is optional.',
+  },
   { id: 'speak', label: 'Speak it', hint: 'Hold the mic and talk. Lumen transcribes as you go.' },
+];
+
+/**
+ * What counts as "a picture", shown rather than described.
+ *
+ * It was called "Upload a screenshot" and people uploaded screenshots of
+ * websites, which is the one case where nothing on the image can be used. A
+ * visiting card or a shop poster is the fastest anyone will ever hand over
+ * their own phone number and price list.
+ */
+const UPLOADS = [
+  'Your visiting card',
+  'A poster or flyer',
+  'An Instagram post',
+  'Your menu or price list',
+  'A photo of your shop',
+  'A website you like',
+  'A sketch on paper',
 ];
 
 const MAX_SCREENSHOT_BYTES = 6 * 1024 * 1024;
@@ -40,6 +62,10 @@ export function NewSiteForm({
   const [prompt, setPrompt] = useState('');
   const [category, setCategory] = useState<string | null>(defaultCategory);
   const [screenshot, setScreenshot] = useState<{ dataUrl: string; name: string } | null>(null);
+  // Whose material it is. It decides whether the name and phone number printed
+  // on the image get used or deliberately thrown away, so it is asked rather
+  // than assumed — and "mine" is the common case.
+  const [ownMaterial, setOwnMaterial] = useState(true);
   // The fast model is the default for a first build. The biggest model writes
   // a slightly better page and takes several times as long to do it, which is
   // the wrong trade when someone is watching a progress bar — and the whole
@@ -148,7 +174,13 @@ export function NewSiteForm({
   const videoUrls = ready.filter((item) => item.kind === 'video').map((item) => item.url!);
   const referenceUrls = ready.filter((item) => item.kind === 'reference').map((item) => item.url!);
 
-  const brief = prompt.trim() || 'Build a site based on this screenshot.';
+  const brief =
+    prompt.trim() ||
+    (mode === 'screenshot'
+      ? ownMaterial
+        ? 'Build a website for the business on this image, using the details printed on it.'
+        : 'Build an original website with the layout and feel of this image.'
+      : 'Build a site based on this screenshot.');
 
   /**
    * Step one: ask Lumen what it needs to know. If the questions cannot be
@@ -200,6 +232,7 @@ export function NewSiteForm({
           model: model || null,
           inputMode: mode === 'screenshot' ? 'screenshot' : mode === 'speak' ? 'voice' : 'prompt',
           screenshotDataUrl: mode === 'screenshot' ? screenshot?.dataUrl : null,
+          screenshotIsOwn: mode === 'screenshot' ? ownMaterial : undefined,
           assets: { logoUrl, imageUrls, videoUrls, referenceUrls },
           answers,
         }),
@@ -266,6 +299,18 @@ export function NewSiteForm({
 
       {mode === 'screenshot' ? (
         <div className="space-y-4">
+          {/* Shown, not explained. The list is the feature. */}
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {UPLOADS.map((item) => (
+              <span
+                key={item}
+                className="rounded-pill border border-hairline px-3 py-1.5 text-[11.5px] text-ink-muted"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+
           <div
             onDragOver={(event) => {
               event.preventDefault();
@@ -295,6 +340,35 @@ export function NewSiteForm({
                 <Button variant="ghost" size="sm" onClick={() => setScreenshot(null)}>
                   Remove
                 </Button>
+
+                <div className="flex flex-wrap justify-center gap-1.5 pt-1">
+                  {[
+                    { own: true, label: 'This is mine', hint: 'Use the details on it' },
+                    { own: false, label: 'A design I like', hint: 'Copy the look only' },
+                  ].map((option) => (
+                    <button
+                      key={option.label}
+                      type="button"
+                      onClick={() => setOwnMaterial(option.own)}
+                      className={cn(
+                        'rounded-pill border px-3.5 py-2 text-left transition',
+                        ownMaterial === option.own
+                          ? 'border-accent/50 bg-accent-soft'
+                          : 'border-hairline hover:border-white/20',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'block text-[12.5px]',
+                          ownMaterial === option.own ? 'text-accent' : 'text-ink-secondary',
+                        )}
+                      >
+                        {option.label}
+                      </span>
+                      <span className="block text-[11px] text-ink-muted">{option.hint}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -317,9 +391,9 @@ export function NewSiteForm({
           </div>
 
           <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[12px] leading-relaxed text-ink-muted">
-            Lumen builds a new, original site inspired by the visual structure of your upload. It does not
-            copy or redistribute another business&apos;s content, images or branding — no logo, business name
-            or verbatim copy is carried over.
+            {ownMaterial
+              ? 'Lumen reads the business name, phone number, address and anything else printed on your image and builds the site around them — so a visiting card is often all it needs. Upload only material that is yours.'
+              : 'Lumen builds a new, original site inspired by the visual structure of your upload. It does not copy or redistribute another business’s content, images or branding — no logo, business name or verbatim copy is carried over.'}
           </p>
         </div>
       ) : null}
@@ -333,11 +407,12 @@ export function NewSiteForm({
         allowVoice
         placeholder={
           mode === 'screenshot'
-            ? 'Optional: “build this but for my dental clinic, keep the layout, change the content”'
+            ? 'Optional — press Continue and Lumen reads the picture'
             : mode === 'speak'
               ? 'Tap the mic and describe your business out loud…'
               : 'A candlelit French bistro with online reservations…'
         }
+        allowEmpty={mode === 'screenshot' && Boolean(screenshot)}
         submitLabel={asking ? 'Thinking…' : 'Continue'}
         attachments={attachments}
         onAttachFiles={attachFiles}
