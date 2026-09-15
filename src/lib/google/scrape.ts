@@ -156,14 +156,82 @@ export function metaTag(html: string, key: string): string | null {
   return null;
 }
 
+/**
+ * Names that are Google's, not the business's.
+ *
+ * A share link does not always land on a listing — it can land on a search
+ * results page, whose title is simply "Google Search". Taken at face value that
+ * produced a site for a business called Google Search, which is worse than
+ * admitting the listing could not be read.
+ */
+const NOT_A_BUSINESS =
+  /^(google|google maps|google search|google images|google my business|maps|search|untitled|error|sign in|before you continue)$/i;
+
 /** "Business Name - Google Maps" is the page title, not the business name. */
 export function cleanName(raw: string | null): string | null {
   if (!raw) return null;
   const name = raw
-    .replace(/\s*[-–—]\s*Google\s*(Maps|Search)?\s*$/i, '')
-    .replace(/^Google Maps$/i, '')
+    .replace(/\s*[-–—|]\s*Google\s*(Maps|Search|Images)?\s*$/i, '')
+    .replace(/\s+/g, ' ')
     .trim();
-  return name || null;
+  if (!name || name.length > 120) return null;
+  return NOT_A_BUSINESS.test(name) ? null : name;
+}
+
+/** A query or a path segment, as a business name rather than a URL fragment. */
+function tidyLinkName(raw: string): string | null {
+  let value = raw;
+  try {
+    value = decodeURIComponent(raw.replace(/\+/g, ' '));
+  } catch {
+    value = raw.replace(/\+/g, ' ');
+  }
+
+  value = value.replace(/\s+/g, ' ').trim();
+  if (!value || value.length > 80) return null;
+  // Coordinates, ids and raw links are not names.
+  if (/^[-\d.,\s]+$/.test(value)) return null;
+  if (/^(place_id|cid|ftid|data)\s*[:=]/i.test(value)) return null;
+  if (/https?:\/\//i.test(value)) return null;
+  if (!/[a-z]/i.test(value)) return null;
+
+  // A typed search is usually all lower case; a name is not.
+  if (value === value.toLowerCase()) {
+    value = value.replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+  }
+  return NOT_A_BUSINESS.test(value) ? null : value;
+}
+
+/**
+ * The business name carried by the link itself.
+ *
+ * Maps place links spell it in the path (/maps/place/Sharma+Dental+Clinic/…)
+ * and a share link that resolves to a search keeps it in ?q=. Both survive the
+ * markup changing underneath, which is exactly when the other extractors stop
+ * finding anything.
+ */
+export function nameFromUrl(url: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+
+  const place = /\/maps\/place\/([^/@?#]+)/.exec(parsed.pathname);
+  if (place) {
+    const fromPath = tidyLinkName(place[1]);
+    if (fromPath) return fromPath;
+  }
+
+  for (const key of ['q', 'query', 'text']) {
+    const value = parsed.searchParams.get(key);
+    if (!value) continue;
+    const fromQuery = tidyLinkName(value);
+    if (fromQuery) return fromQuery;
+  }
+
+  return null;
 }
 
 /**
@@ -176,7 +244,11 @@ export function splitDescription(description: string | null): {
   category: string | null;
   address: string | null;
 } {
-  if (!description) return { rating: null, category: null, address: null };
+  // Google's own boilerplate, served when the link lands on a search page
+  // rather than a listing. It is not this business's address.
+  if (!description || /search the world's information|google llc/i.test(description)) {
+    return { rating: null, category: null, address: null };
+  }
 
   const parts = description
     .split('·')
@@ -355,9 +427,10 @@ export function parseListing(html: string, sourceUrl: string): PlaceProfile | nu
   const fromDescription = splitDescription(description);
 
   const name =
-    jsonLd.name ??
+    cleanName(jsonLd.name ?? null) ??
     cleanName(metaTag(html, 'og:title')) ??
-    cleanName(/<title>([^<]{1,200})<\/title>/i.exec(html)?.[1] ?? null);
+    cleanName(/<title>([^<]{1,200})<\/title>/i.exec(html)?.[1] ?? null) ??
+    nameFromUrl(sourceUrl);
 
   if (!name) return null;
 

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Badge } from '@/components/ui/Badge';
-import { cn } from '@/components/ui/cn';
 
 interface PlaceReview {
   author: string;
@@ -40,9 +39,12 @@ interface PlaceProfile {
 /**
  * Build a site from a business's own Google listing.
  *
- * Two steps on purpose: find the listing, then confirm it is the right one.
- * A chain has forty branches with the same name, and building the wrong shop's
- * website is a worse outcome than one extra click.
+ * Paste the link, check it found the right place, build. The middle step is a
+ * glance, not a form: a chain has forty branches with the same name and
+ * building the wrong shop's website is worse than one extra click, but that is
+ * all it is there for. Corrections sit behind a disclosure because most
+ * listings need none, and a screen that opens with empty fields reads as "fill
+ * this in first" — on a page whose entire promise is that you do not have to.
  */
 export function GoogleImport() {
   const router = useRouter();
@@ -51,8 +53,11 @@ export function GoogleImport() {
   const [looking, setLooking] = useState(false);
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fixing, setFixing] = useState(false);
   // What the owner typed over the top of what was found.
   const [fixes, setFixes] = useState<Record<string, string>>({});
+
+  const value = (key: 'name' | 'address' | 'phone') => fixes[key] ?? place?.[key] ?? '';
 
   async function find() {
     if (!url.trim()) return;
@@ -60,6 +65,7 @@ export function GoogleImport() {
     setError(null);
     setPlace(null);
     setFixes({});
+    setFixing(false);
     try {
       const response = await fetch('/api/google/lookup', {
         method: 'POST',
@@ -80,12 +86,14 @@ export function GoogleImport() {
     if (!place) return;
     setBuilding(true);
     setError(null);
+    const name = value('name') || place.name;
+    const address = value('address');
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          prompt: `A website for ${place.name}${place.category ? `, a ${place.category.toLowerCase()}` : ''}${place.address ? ` at ${place.address}` : ''}.`,
+          prompt: `A website for ${name}${place.category ? `, a ${place.category.toLowerCase()}` : ''}${address ? ` at ${address}` : ''}.`,
           inputMode: 'google',
           googleUrl: url,
           googleFixes: fixes,
@@ -120,9 +128,8 @@ export function GoogleImport() {
       </div>
       <p className="text-[12px] leading-relaxed text-ink-muted">
         On your Google listing press <strong className="text-ink-secondary">Share</strong> and copy the link.
-        Typing the business name and town works too. Lumen reads what is publicly on the listing — some
-        businesses show a phone number and hours there and some do not, so check what comes back and fill in
-        anything missing before you build.
+        Typing the business name and town works too. Lumen reads your name, address, hours, photographs and
+        reviews off the listing and writes the site from those — nothing to fill in.
       </p>
 
       {error ? (
@@ -132,52 +139,31 @@ export function GoogleImport() {
       ) : null}
 
       {place ? (
-        <div className="space-y-5 rounded-card border border-accent/25 bg-raised p-5">
+        <div className="lumen-panel space-y-5 rounded-card border border-accent/25 bg-raised p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-display text-[20px] leading-tight text-ink-primary">{place.name}</p>
-              {place.category ? <p className="mt-0.5 text-[12.5px] text-ink-muted">{place.category}</p> : null}
+              <p className="text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">Is this you?</p>
+              <p className="mt-1 font-display text-[22px] leading-tight text-ink-primary">
+                {value('name') || place.name}
+              </p>
+              {/* Everything found, on one line — a summary to glance at rather
+                  than four boxes to read through. */}
+              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+                {[
+                  place.category,
+                  value('address') || null,
+                  value('phone') || null,
+                  place.hours.length > 0 ? `${place.hours.length} days of opening hours` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'Google shows no other details for this listing.'}
+              </p>
             </div>
             {place.rating ? (
               <Badge tone="accent" className="shrink-0">
                 {place.rating.toFixed(1)}★ · {place.reviewCount ?? 0} reviews
               </Badge>
             ) : null}
-          </div>
-
-          {/* Editable, not just displayed. Reading a listing off the page finds
-              the name and the photographs reliably and the phone number only
-              sometimes, so the gaps are asked for rather than invented. */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Fix
-              label="Address"
-              found={place.address}
-              value={fixes.address}
-              onChange={(value) => setFixes((current) => ({ ...current, address: value }))}
-              placeholder="12 Hill Road, Bandra West, Mumbai"
-            />
-            <Fix
-              label="Phone"
-              found={place.phone}
-              value={fixes.phone}
-              onChange={(value) => setFixes((current) => ({ ...current, phone: value }))}
-              placeholder="+91 98765 43210"
-            />
-            <Fix
-              label="Website"
-              found={place.website}
-              value={fixes.website}
-              onChange={(value) => setFixes((current) => ({ ...current, website: value }))}
-              placeholder="https://your-site.in"
-            />
-            <div className="min-w-0">
-              <p className="text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">Opening hours</p>
-              <p className="mt-1.5 text-[12.5px] text-ink-secondary">
-                {place.hours.length > 0
-                  ? `${place.hours.length} days read from your listing`
-                  : 'Not found — you can add them after the site is built'}
-              </p>
-            </div>
           </div>
 
           {place.photos.length > 0 ? (
@@ -220,12 +206,20 @@ export function GoogleImport() {
 
           <div className="flex flex-wrap items-center gap-3 border-t border-hairline pt-4">
             <Button onClick={build} disabled={building}>
-              {building ? 'Starting…' : 'Build this site'}
+              {building ? 'Starting…' : 'Build my website'}
             </Button>
             <button
               type="button"
+              onClick={() => setFixing((open) => !open)}
+              className="text-[12.5px] text-ink-muted transition hover:text-ink-primary"
+              aria-expanded={fixing}
+            >
+              {fixing ? 'Hide corrections' : 'Something wrong? Fix it'}
+            </button>
+            <button
+              type="button"
               onClick={() => setPlace(null)}
-              className={cn('text-[12.5px] text-ink-muted transition hover:text-ink-primary')}
+              className="text-[12.5px] text-ink-muted transition hover:text-ink-primary"
             >
               Not my business
             </button>
@@ -240,6 +234,36 @@ export function GoogleImport() {
               </a>
             ) : null}
           </div>
+
+          {/* Corrections, only when asked for. Reading a listing off the page
+              finds the name and the photographs reliably and the phone number
+              only sometimes — but a gap here is not a job for the owner, it is
+              something they can add later in the editor. */}
+          {fixing ? (
+            <div className="grid gap-3 border-t border-hairline pt-4 sm:grid-cols-3">
+              <Fix
+                label="Business name"
+                found={place.name}
+                value={fixes.name}
+                onChange={(next) => setFixes((current) => ({ ...current, name: next }))}
+                placeholder="Sharma Dental Clinic"
+              />
+              <Fix
+                label="Address"
+                found={place.address}
+                value={fixes.address}
+                onChange={(next) => setFixes((current) => ({ ...current, address: next }))}
+                placeholder="12 Hill Road, Bandra West, Mumbai"
+              />
+              <Fix
+                label="Phone"
+                found={place.phone}
+                value={fixes.phone}
+                onChange={(next) => setFixes((current) => ({ ...current, phone: next }))}
+                placeholder="+91 98765 43210"
+              />
+            </div>
+          ) : null}
 
           <p className="text-[11.5px] leading-relaxed text-ink-muted">
             Photos and reviews come from your Google listing and are copied into your site, credited to their
@@ -276,9 +300,7 @@ function Fix({
     <label className="block min-w-0">
       <span className="flex items-baseline justify-between gap-2">
         <span className="text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">{label}</span>
-        {!found && !value ? (
-          <span className="text-[10.5px] text-ink-muted">not found</span>
-        ) : null}
+        {!found && !value ? <span className="text-[10.5px] text-ink-muted">not found</span> : null}
       </span>
       <input
         value={value ?? found ?? ''}
