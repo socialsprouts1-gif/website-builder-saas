@@ -11,8 +11,9 @@ import { VisualEditorPanel } from '@/components/app/VisualEditorPanel';
 import { BuildingStage, type BuildStageId } from '@/components/app/BuildingStage';
 import { PublishButton } from '@/components/app/PublishButton';
 import { NextSteps } from '@/components/app/NextSteps';
+import { MediaDrop } from '@/components/app/MediaDrop';
 import { ConnectFlow } from '@/components/app/ConnectFlow';
-import { detectConnectIntent, type ConnectIntent } from '@/lib/connectors/intent';
+import { BUILT_IN_PROVIDERS, detectConnectIntent, type ConnectIntent } from '@/lib/connectors/intent';
 import { pageLabel } from '@/lib/pages';
 import { createClient } from '@/lib/supabase/client';
 import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
@@ -295,6 +296,28 @@ export function Workspace({
       }
     }
   }
+
+  /**
+   * "Connect something", with nothing named yet.
+   *
+   * The same guided card the chat opens when it recognises the request in a
+   * sentence — reached deliberately from the + menu rather than only by
+   * happening to phrase it the way the matcher expects.
+   */
+  const ANYTHING: ConnectIntent = {
+    group: 'payments',
+    title: 'What do you want to connect?',
+    providers: [
+      BUILT_IN_PROVIDERS.paymentLink,
+      BUILT_IN_PROVIDERS.chatbot,
+      'razorpay_checkout',
+      'stripe',
+      'google_analytics',
+      'vercel',
+      'github',
+    ],
+    confidence: 'high',
+  };
 
   function attachReference(raw: string) {
     const url = normaliseReference(raw);
@@ -587,7 +610,9 @@ export function Workspace({
                   onEditInstead={() => {
                     const message = connect.message;
                     setConnect(null);
-                    void sendMessage(message, 'chat', { allowConnect: false });
+                    // Opened from the + menu there is no sentence to fall back
+                    // to, so "change the website instead" just closes the card.
+                    if (message.trim()) void sendMessage(message, 'chat', { allowConnect: false });
                   }}
                 />
               ) : null}
@@ -655,6 +680,36 @@ export function Workspace({
                 onRemoveAttachment={(id) =>
                   setAttachments((current) => current.filter((item) => item.id !== id))
                 }
+                menuExtras={[
+                  {
+                    id: 'connect',
+                    icon: '🔌',
+                    label: 'Connect something',
+                    hint: 'Payments, assistant, analytics, hosting',
+                    onSelect: () => setConnect({ intent: ANYTHING, message: '' }),
+                  },
+                  {
+                    id: 'page',
+                    icon: '📄',
+                    label: 'Add a page',
+                    hint: 'Pricing, gallery, anything',
+                    onSelect: () => setInput('Add a new page called '),
+                  },
+                  {
+                    id: 'ideas',
+                    icon: '✨',
+                    label: 'What can I add?',
+                    hint: 'Features worth having on this site',
+                    onSelect: () => setNextSteps(true),
+                  },
+                  {
+                    id: 'help',
+                    icon: '❔',
+                    label: 'Help',
+                    hint: 'How Lumen works',
+                    href: '/how-it-works',
+                  },
+                ]}
               />
               {/* Two choices, not a model list.
                   The dropdown used to end in an "All models" group holding
@@ -815,6 +870,14 @@ export function Workspace({
           }
         }}
         onPublish={() => setPublishSignal((value) => value + 1)}
+        onSuggest={(prompt) => void sendMessage(prompt)}
+        photos={
+          <MediaDrop
+            attachments={attachments}
+            onAttachFiles={attachFiles}
+            onRemove={(id) => setAttachments((current) => current.filter((item) => item.id !== id))}
+          />
+        }
       />
     </div>
   );

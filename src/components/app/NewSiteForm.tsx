@@ -9,6 +9,7 @@ import { CATEGORIES, categoryBySlug } from '@/lib/categories';
 import { cn } from '@/components/ui/cn';
 import type { ModelOption } from '@/lib/openai/models';
 import { InterviewStep } from '@/components/app/InterviewStep';
+import { MediaDrop } from '@/components/app/MediaDrop';
 import type { Answer, InterviewQuestion } from '@/lib/generation/interview';
 import { createClient } from '@/lib/supabase/client';
 import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
@@ -226,6 +227,13 @@ export function NewSiteForm({
           busy={busy}
           onDone={(answers) => void create(answers)}
           onSkipAll={() => void create([])}
+          media={
+            <MediaDrop
+              attachments={attachments}
+              onAttachFiles={attachFiles}
+              onRemove={(id) => setAttachments((current) => current.filter((item) => item.id !== id))}
+            />
+          }
         />
         {error ? (
           <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
@@ -337,6 +345,15 @@ export function NewSiteForm({
         onRemoveAttachment={(id) =>
           setAttachments((current) => current.filter((item) => item.id !== id))
         }
+        menuExtras={[
+          {
+            id: 'help',
+            icon: '❔',
+            label: 'Help',
+            hint: 'How Lumen works',
+            href: '/how-it-works',
+          },
+        ]}
       />
 
       <p className="text-center text-[12px] leading-relaxed text-ink-muted">

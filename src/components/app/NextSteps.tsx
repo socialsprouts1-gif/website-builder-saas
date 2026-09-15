@@ -56,16 +56,66 @@ const STEPS: (projectId: string) => Step[] = (projectId) => [
   },
 ];
 
+/**
+ * Things worth adding, as sentences the chat already understands.
+ *
+ * Suggestions rather than buttons wired to new code: every one of these is an
+ * ordinary edit, so the list can say what a small business actually wants on a
+ * site without any of it having to be built as a special case. Picking one puts
+ * the sentence in the chat and sends it.
+ */
+const IDEAS: { label: string; prompt: string }[] = [
+  {
+    label: 'WhatsApp button',
+    prompt:
+      'Add a floating WhatsApp enquiry button to every page that opens a chat with our number, with a short pre-filled message.',
+  },
+  {
+    label: 'Enquiry form',
+    prompt: 'Add a contact form to the contact page with name, phone, and message, and show it in the footer too.',
+  },
+  {
+    label: 'Photo gallery',
+    prompt: 'Add a photo gallery section to the homepage in a responsive grid, with a caption under each picture.',
+  },
+  {
+    label: 'Opening hours',
+    prompt: 'Add an opening hours block to the footer and the contact page, laid out day by day.',
+  },
+  {
+    label: 'Customer reviews',
+    prompt: 'Add a testimonials section with three customer reviews in cards, with names and star ratings.',
+  },
+  {
+    label: 'Google map',
+    prompt: 'Add an embedded Google map of our address to the contact page, under the address.',
+  },
+  {
+    label: 'Price list',
+    prompt: 'Add a pricing section with three clear tiers, each with what is included and a call to action.',
+  },
+  {
+    label: 'FAQ',
+    prompt: 'Add a frequently asked questions section with six questions and answers that expand when clicked.',
+  },
+];
+
 export function NextSteps({
   projectId,
   open,
   onClose,
   onPublish,
+  onSuggest,
+  photos,
 }: {
   projectId: string;
   open: boolean;
   onClose: () => void;
   onPublish: () => void;
+  /** Sends an idea to the chat as an ordinary edit. */
+  onSuggest?: (prompt: string) => void;
+  /** The upload control, passed in because the uploading belongs to the page. */
+  photos?: React.ReactNode;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -106,6 +156,18 @@ export function NextSteps({
           </button>
         </div>
 
+        {photos ? (
+          <div className="mt-5 rounded-[14px] border border-hairline bg-raised p-4">
+            <p className="text-[13.5px] text-ink-primary">Put your own photos in it</p>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+              The pictures on the site are stand-ins. Add your logo and a few real photographs and Lumen
+              swaps them in — this is the single biggest difference between a site that looks generic and
+              one that looks like yours.
+            </p>
+            <div className="mt-3">{photos}</div>
+          </div>
+        ) : null}
+
         <div className="mt-5 space-y-2.5">
           {STEPS(projectId).map((step) =>
             step.href ? (
@@ -132,6 +194,30 @@ export function NextSteps({
             ),
           )}
         </div>
+
+        {onSuggest ? (
+          <div className="mt-6 border-t border-hairline pt-5">
+            <p className="text-[13.5px] text-ink-primary">Or add something to the site</p>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+              Tap one and Lumen makes the change. You can undo it from the version history.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {IDEAS.map((idea) => (
+                <button
+                  key={idea.label}
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSuggest(idea.prompt);
+                  }}
+                  className="rounded-pill border border-hairline px-3 py-1.5 text-[12px] text-ink-secondary transition hover:border-accent/45 hover:text-accent"
+                >
+                  {idea.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <button
           type="button"

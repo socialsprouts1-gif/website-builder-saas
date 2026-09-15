@@ -18,6 +18,24 @@ export interface PromptAttachment {
   error?: string;
 }
 
+/**
+ * Anything else the + menu should offer.
+ *
+ * Attaching a file is not the only thing someone wants from that button —
+ * connecting a payment gateway, adding a page and finding help all belong in
+ * the same place. They are passed in rather than built here because what is
+ * on offer depends on where the prompt bar is: the new-site screen has no
+ * project to connect anything to yet.
+ */
+export interface PromptMenuItem {
+  id: string;
+  icon: string;
+  label: string;
+  hint: string;
+  href?: string;
+  onSelect?: () => void;
+}
+
 export function PromptBar({
   value,
   onChange,
@@ -33,6 +51,7 @@ export function PromptBar({
   onAttachFiles,
   onAttachReference,
   onRemoveAttachment,
+  menuExtras = [],
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -54,6 +73,8 @@ export function PromptBar({
   onAttachFiles?: (kind: 'logo' | 'image' | 'video', files: File[]) => void;
   onAttachReference?: (url: string) => void;
   onRemoveAttachment?: (id: string) => void;
+  /** Extra entries under the file ones, separated by a rule. */
+  menuExtras?: PromptMenuItem[];
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +83,7 @@ export function PromptBar({
   const [pickKind, setPickKind] = useState<'logo' | 'image' | 'video'>('image');
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [reference, setReference] = useState('');
-  const canAttach = Boolean(onAttachFiles);
+  const canAttach = Boolean(onAttachFiles) || menuExtras.length > 0;
   // What was already typed when dictation started. Live results replace only
   // the spoken part, so a half-written sentence is not eaten by the mic.
   const spokenBaseRef = useRef<string | null>(null);
@@ -204,8 +225,8 @@ export function PromptBar({
               aria-expanded={menuOpen}
               className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-hairline px-3 text-[12.5px] text-ink-secondary transition hover:border-accent/40 hover:text-ink-primary"
             >
-              <ClipIcon />
-              Attach
+              <PlusIcon />
+              Add
             </button>
             {menuOpen ? (
               <>
@@ -217,7 +238,12 @@ export function PromptBar({
                   onClick={() => setMenuOpen(false)}
                   className="fixed inset-0 z-10 cursor-default"
                 />
-                <div className="lumen-panel absolute bottom-11 left-0 z-20 w-56 overflow-hidden rounded-[12px] border border-hairline bg-raised py-1">
+                <div className="lumen-panel absolute bottom-11 left-0 z-20 max-h-[60vh] w-60 overflow-y-auto rounded-[12px] border border-hairline bg-raised py-1">
+                  {onAttachFiles ? (
+                    <p className="px-3 pb-1 pt-2 text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                      Attach
+                    </p>
+                  ) : null}
                   <MenuItem
                     icon={ICONS.logo}
                     label="Logo"
@@ -260,6 +286,24 @@ export function PromptBar({
                         setReferenceOpen(true);
                       }}
                     />
+                  ) : null}
+
+                  {menuExtras.length > 0 ? (
+                    <div className="mt-1 border-t border-hairline pt-1">
+                      {menuExtras.map((extra) => (
+                        <MenuItem
+                          key={extra.id}
+                          icon={extra.icon}
+                          label={extra.label}
+                          hint={extra.hint}
+                          href={extra.href}
+                          onClick={() => {
+                            setMenuOpen(false);
+                            extra.onSelect?.();
+                          }}
+                        />
+                      ))}
+                    </div>
                   ) : null}
                 </div>
               </>
@@ -312,37 +356,45 @@ function MenuItem({
   label,
   hint,
   onClick,
+  href,
 }: {
   icon: string;
   label: string;
   hint: string;
   onClick: () => void;
+  href?: string;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-white/5"
-    >
+  const inner = (
+    <>
       <span aria-hidden className="text-[14px]">{icon}</span>
       <span className="min-w-0">
         <span className="block text-[12.5px] text-ink-primary">{label}</span>
         <span className="block text-[11px] text-ink-muted">{hint}</span>
       </span>
+    </>
+  );
+  const className = 'flex w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-white/5';
+
+  // A link stays a link: middle-click and "open in new tab" keep working, which
+  // a button pretending to navigate never does.
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" onClick={onClick} className={className}>
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {inner}
     </button>
   );
 }
 
-function ClipIcon() {
+function PlusIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <path
-        d="M13.5 6.5 7.9 12.1a1.9 1.9 0 0 0 2.7 2.7l5.9-5.9a3.6 3.6 0 0 0-5.1-5.1l-6 6a5.3 5.3 0 0 0 7.5 7.5l4.3-4.3"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M10 4.5v11M4.5 10h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }

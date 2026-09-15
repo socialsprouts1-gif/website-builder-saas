@@ -19,21 +19,40 @@ export function InterviewStep({
   onDone,
   onSkipAll,
   busy,
+  media,
 }: {
   questions: InterviewQuestion[];
   onDone: (answers: Answer[]) => void;
   onSkipAll: () => void;
   busy: boolean;
+  /**
+   * An upload control, asked for as the last question.
+   *
+   * A logo and a few real photographs change a generated site more than any
+   * answer here does, and the moment to ask is while someone is already
+   * answering questions — not after they have seen stock imagery in their own
+   * shop's website. Optional like everything else: the step can be skipped.
+   */
+  media?: React.ReactNode;
 }) {
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<Record<string, string[]>>({});
   const [other, setOther] = useState<Record<string, string>>({});
 
-  const question = questions[index];
-  const last = index === questions.length - 1;
+  // Before anything derives from the list. The caller only renders this with
+  // questions to ask, and this is what keeps that assumption from becoming an
+  // index off the end of the array if that ever stops being true.
+  if (questions.length === 0) return null;
+
+  const steps = questions.length + (media ? 1 : 0);
+  const onMedia = Boolean(media) && index === questions.length;
+  // On the media step there is no question; everything below reads from this
+  // one, so it falls back to the last real one rather than going undefined.
+  const question = questions[Math.min(index, questions.length - 1)];
+  const last = index === steps - 1;
   const chosen = picked[question.id] ?? [];
   const typed = other[question.id] ?? '';
-  const answered = chosen.length > 0 || typed.trim().length > 0;
+  const answered = onMedia || chosen.length > 0 || typed.trim().length > 0;
 
   function toggle(label: string) {
     setPicked((current) => {
@@ -66,13 +85,15 @@ export function InterviewStep({
     else setIndex((current) => current + 1);
   }
 
+  const dots = Array.from({ length: steps }, (_, position) => position);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex gap-1.5" aria-hidden>
-          {questions.map((item, position) => (
+          {dots.map((position) => (
             <span
-              key={item.id}
+              key={position}
               className={cn(
                 'h-1 rounded-pill transition-all',
                 position === index ? 'w-6 bg-accent' : position < index ? 'w-3 bg-accent/45' : 'w-3 bg-white/25',
@@ -81,21 +102,30 @@ export function InterviewStep({
           ))}
         </div>
         <p className="text-[11.5px] text-ink-muted">
-          {index + 1} of {questions.length}
+          {index + 1} of {steps}
         </p>
       </div>
 
       <div>
-        <h2 className="font-display text-[24px] leading-tight text-ink-primary">{question.question}</h2>
-        {question.help ? (
+        <h2 className="font-display text-[24px] leading-tight text-ink-primary">
+          {onMedia ? 'Do you have a logo or photos?' : question.question}
+        </h2>
+        {onMedia ? (
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
+            Optional, and you can add them later. If you put them in now, Lumen builds the site around
+            your own pictures instead of stand-ins.
+          </p>
+        ) : question.help ? (
           <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">{question.help}</p>
         ) : null}
-        {question.kind === 'multi' ? (
+        {!onMedia && question.kind === 'multi' ? (
           <p className="mt-1.5 text-[11.5px] text-ink-muted">Pick as many as apply.</p>
         ) : null}
       </div>
 
-      {question.options.length > 0 ? (
+      {onMedia ? <div>{media}</div> : null}
+
+      {!onMedia && question.options.length > 0 ? (
         <div className="space-y-2">
           {question.options.map((option) => {
             const active = chosen.includes(option.label);
@@ -135,7 +165,7 @@ export function InterviewStep({
         </div>
       ) : null}
 
-      {question.kind === 'text' || question.allowOther ? (
+      {!onMedia && (question.kind === 'text' || question.allowOther) ? (
         <Input
           value={typed}
           onChange={(event) => setOther((current) => ({ ...current, [question.id]: event.target.value }))}
