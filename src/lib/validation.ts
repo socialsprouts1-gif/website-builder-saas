@@ -53,6 +53,8 @@ export const createProjectSchema = z.object({
 
 export const chatEditSchema = z.object({
   message: z.string().trim().min(1).max(4000),
+  /** What to show and remember, when the message itself is machinery. */
+  label: z.string().trim().max(200).optional(),
   model: z.string().max(120).nullable().optional(),
   source: z.enum(['chat', 'voice']).default('chat'),
 });

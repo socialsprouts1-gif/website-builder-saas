@@ -104,8 +104,10 @@ export function Workspace({
   const [suggestions, setSuggestions] = useState<BuildSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [imagesBusy, setImagesBusy] = useState(false);
-  // Something typed while the site was still being built, waiting its turn.
-  const [queued, setQueued] = useState<string | null>(null);
+  // Something typed or pressed while something else was running, waiting.
+  const [queued, setQueued] = useState<{ message: string; label?: string } | null>(null);
+  // What the editor is doing right now, as it does it.
+  const [steps, setSteps] = useState<{ id: string; label: string; done: boolean }[]>([]);
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [ready, setReady] = useState(initialStatus === 'ready');
   // A build that died leaves the project here with nothing running. Without a
@@ -127,6 +129,10 @@ export function Workspace({
   // version of those same files, so the two cannot run at once — but the
   // composer stays usable and holds what is typed until this clears.
   const buildRunning = stillAdding || (busy && !ready);
+  // Anything that would write to the files is already writing to them. A
+  // request made now waits rather than being dropped on the floor — a button
+  // that quietly does nothing is the worst of the three options.
+  const holdMessages = buildRunning || busy;
 
   const logRef = useRef<HTMLDivElement>(null);
   // The current sendMessage, so the queue can be flushed from an effect without
@@ -177,11 +183,11 @@ export function Workspace({
   // Whatever was typed during the build runs the moment the build lets go of
   // the files, as if it had been sent by hand right then.
   useEffect(() => {
-    if (!queued || buildRunning || busy) return;
+    if (!queued || holdMessages) return;
     const pending = queued;
     setQueued(null);
-    void sendRef.current?.(pending, 'chat', { allowConnect: false });
-  }, [queued, buildRunning, busy]);
+    void sendRef.current?.(pending.message, 'chat', { allowConnect: false, label: pending.label });
+  }, [queued, holdMessages]);
 
   // ---- watching the build ---------------------------------------------------
   useEffect(() => {
@@ -381,22 +387,34 @@ export function Workspace({
    * and that nothing else in the product shares.
    */
   async function generateImages() {
-    if (imagesBusy || busy) return;
+    // Only one run at a time, but it does not wait on an edit: making the
+    // pictures touches nothing, and the message that places them queues behind
+    // whatever is running like any other.
+    if (imagesBusy) return;
     setImagesBusy(true);
     setError(null);
-    setProgress('Making photographs for your site — about a minute…');
+    setSteps([{ id: 'images', label: 'Making photographs for your site', done: false }]);
     try {
       const response = await fetch(`/api/projects/${projectId}/images`, { method: 'POST' });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? 'Could not make the images');
 
       setImagesBusy(false);
-      setProgress(null);
-      await sendMessage(payload.instruction, 'chat', { allowConnect: false });
+      setSteps((current) =>
+        current.map((step) =>
+          step.id === 'images'
+            ? { ...step, label: `Made ${payload.images.length} photographs`, done: true }
+            : step,
+        ),
+      );
+      await sendMessage(payload.instruction, 'chat', {
+        allowConnect: false,
+        label: 'Put the new photographs in the site',
+      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not make the images');
       setImagesBusy(false);
-      setProgress(null);
+      setSteps([]);
     }
   }
 
@@ -442,7 +460,7 @@ export function Workspace({
   async function sendMessage(
     text: string,
     source: 'chat' | 'voice' = 'chat',
-    options: { allowConnect?: boolean } = {},
+    options: { allowConnect?: boolean; label?: string } = {},
   ) {
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -463,15 +481,13 @@ export function Workspace({
      * links to the uploads are already in the composed text, so nothing is
      * lost by holding it.
      */
-    if (buildRunning) {
-      setQueued(withAttachments(trimmed));
+    if (holdMessages) {
+      setQueued({ message: withAttachments(trimmed), label: options.label });
       setAttachments([]);
       setInput('');
       setError(null);
       return;
     }
-
-    if (busy) return;
 
     // "Connect a payment gateway" is not a change to the HTML, and handing it
     // to the editor got a fake Pay button written into the page. It opens the
@@ -501,14 +517,17 @@ export function Workspace({
     setProgress('Applying your change…');
     setMessages((current) => [
       ...current,
-      { id: `local-${Date.now()}`, role: 'user', content: composed },
+      // Pressing a button shows the button's words, not the paragraph of
+      // instructions it sends.
+      { id: `local-${Date.now()}`, role: 'user', content: options.label ?? composed },
     ]);
+    setSteps([]);
 
     try {
       const response = await fetch(`/api/projects/${projectId}/chat`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ message: composed, model: model || null, source }),
+        body: JSON.stringify({ message: composed, label: options.label, model: model || null, source }),
       });
 
       if (!response.ok || !response.body) {
@@ -535,6 +554,13 @@ export function Workspace({
           const payload = JSON.parse(raw);
           if (payload.type === 'ping') continue;
           if (payload.type === 'stage') setProgress(payload.message ?? null);
+          if (payload.type === 'step') {
+            setProgress(null);
+            setSteps((current) => {
+              const next = current.filter((item) => item.id !== payload.id);
+              return [...next, { id: payload.id, label: payload.label, done: payload.done }];
+            });
+          }
           if (payload.type === 'error') throw new Error(payload.message);
           if (payload.type === 'done') {
             setMessages((current) => [
@@ -732,6 +758,26 @@ export function Workspace({
                 />
               ) : null}
 
+              {steps.length > 0 ? (
+                // Shown as it happens rather than summarised afterwards. Each
+                // line is a real event from the parser — a file the model
+                // actually opened — not a script of plausible-sounding stages.
+                <div className="mr-4 space-y-1.5 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
+                  {steps.map((step) => (
+                    <p key={step.id} className="flex items-center gap-2 text-[12.5px]">
+                      {step.done ? (
+                        <span className="text-accent" aria-hidden>
+                          ✓
+                        </span>
+                      ) : (
+                        <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" aria-hidden />
+                      )}
+                      <span className={step.done ? 'text-ink-muted' : 'text-ink-primary'}>{step.label}</span>
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+
               {progress ? (
                 <div className="mr-4 space-y-2.5 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
                   <p className="flex items-center gap-2 text-[13px] text-accent">
@@ -775,7 +821,10 @@ export function Workspace({
                 <div className="mr-4 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
                   <p className="text-[11px] uppercase tracking-[0.16em] text-ink-muted">Queued</p>
                   <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed text-ink-secondary">
-                    {queued.length > 240 ? `${queued.slice(0, 240)}…` : queued}
+                    {(() => {
+                      const shown = queued.label ?? queued.message;
+                      return shown.length > 240 ? `${shown.slice(0, 240)}…` : shown;
+                    })()}
                   </p>
                   <button
                     type="button"
@@ -790,15 +839,20 @@ export function Workspace({
               {ready && !stillAdding && showSuggestions && !connect ? (
                 <BuildSuggestions
                   suggestions={suggestions}
-                  busy={busy}
+                  busy={false}
                   imagesBusy={imagesBusy}
                   onGenerateImages={() => void generateImages()}
                   onDismiss={() => setShowSuggestions(false)}
                   onPick={(suggestion) => {
                     // Straight to the editor: a suggestion is an ordinary edit,
                     // so it streams, saves a version and can be undone like any
-                    // other. Nothing here is a second kind of build.
-                    void sendMessage(suggestion.prompt, 'chat', { allowConnect: false });
+                    // other. Nothing here is a second kind of build. The label
+                    // is what shows in the chat — the prompt behind it is
+                    // machinery and reads like it.
+                    void sendMessage(suggestion.prompt, 'chat', {
+                      allowConnect: false,
+                      label: suggestion.label,
+                    });
                   }}
                 />
               ) : null}

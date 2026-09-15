@@ -156,6 +156,14 @@ export function nextStep(state: BuildState): BuildStep | null {
   return unsaved ? 'publish' : 'section';
 }
 
+/** What to call a file on screen. Nobody wants to read `styles.css`. */
+export function fileLabel(path: string): string {
+  if (path.endsWith('.html')) return `the ${pageLabel(path)} page`;
+  if (path.endsWith('.css')) return 'the stylesheet';
+  if (path.endsWith('.js')) return 'the page scripts';
+  return path;
+}
+
 /** The plan's sitemap, from the vertical it was matched to. */
 function verticalOf(state: BuildState): Vertical {
   const slug = state.plan?.verticalSlug;
@@ -521,6 +529,14 @@ export interface EditResult {
  * Chat iteration. Applies a diff-style edit against current files so earlier
  * customisations survive.
  */
+/** One thing the editor is doing, as it happens. */
+export interface EditStep {
+  /** Stable across the start and the finish of the same file. */
+  id: string;
+  label: string;
+  done: boolean;
+}
+
 export async function runChatEdit(params: {
   projectId: string;
   userId: string;
@@ -528,6 +544,16 @@ export async function runChatEdit(params: {
   requestedModel?: string | null;
   source?: 'chat' | 'voice';
   onDelta?: (delta: string) => void;
+  /**
+   * Called as the work happens, not after it.
+   *
+   * The parser has always known when the model opens a file and when it closes
+   * one — nothing was listening. An edit that rewrites four files showed one
+   * line saying "Applying your change…" for a minute and then the finished
+   * site, which is indistinguishable from a hang and says nothing about what
+   * was touched.
+   */
+  onStep?: (step: EditStep) => void;
 }): Promise<EditResult> {
   const { apiKey, source: keySource } = await resolveApiKey(params.userId, 'chat_edit');
   const catalog = await getModelCatalog(apiKey);
@@ -571,7 +597,10 @@ export async function runChatEdit(params: {
     });
   });
 
-  const parser = new StreamingFileParser();
+  const parser = new StreamingFileParser(
+    (path) => params.onStep?.({ id: path, label: `Writing ${fileLabel(path)}`, done: false }),
+    (file) => params.onStep?.({ id: file.path, label: `Writing ${fileLabel(file.path)}`, done: true }),
+  );
   let tokensIn = 0;
   let tokensOut = 0;
 

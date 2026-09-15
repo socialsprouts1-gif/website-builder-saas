@@ -35,7 +35,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   );
   if (!limit.allowed) return jsonError('Too many edits in a row. Give it a minute.', 429);
 
-  let body: { message: string; model?: string | null; source: 'chat' | 'voice' };
+  let body: { message: string; label?: string; model?: string | null; source: 'chat' | 'voice' };
   try {
     body = chatEditSchema.parse(await request.json());
   } catch {
@@ -43,10 +43,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   }
 
   const admin = createAdminClient();
+  // What the person actually asked for. Pressing "Create the About page" sends
+  // a paragraph of instructions to the model; the history should remember the
+  // button, not the paragraph.
   await admin.from('chat_messages').insert({
     project_id: projectId,
     role: 'user',
-    content: body.message,
+    content: body.label?.trim() || body.message,
   });
 
   const stream = new ReadableStream({
@@ -62,9 +65,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       };
 
       const heartbeat = setInterval(() => send({ type: 'ping' }), 15_000);
-      send({ type: 'stage', stage: 'code', message: 'Applying your change…' });
+      send({ type: 'step', id: 'read', label: 'Reading your site', done: false });
 
       try {
+        let reading = true;
         const result = await runChatEdit({
           projectId,
           userId: user.id,
@@ -72,6 +76,21 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           requestedModel: body.model,
           source: body.source,
           onDelta: (delta) => send({ type: 'token', delta }),
+          onStep: (step) => {
+            // The first file opening is what proves the reading is over.
+            if (reading) {
+              reading = false;
+              send({ type: 'step', id: 'read', label: 'Read your site', done: true });
+            }
+            send({ type: 'step', ...step });
+          },
+        });
+
+        send({
+          type: 'step',
+          id: 'save',
+          label: `Saved — ${result.changedPaths.length} file${result.changedPaths.length === 1 ? '' : 's'} changed`,
+          done: true,
         });
 
         const summary =
