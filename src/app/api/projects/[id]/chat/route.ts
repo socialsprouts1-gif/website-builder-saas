@@ -93,6 +93,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           versionId: result.versionId,
           message: summary,
           model: result.model,
+          // So the workspace can put a newly written page in the page picker
+          // rather than making someone reload to find out it worked.
+          paths: result.changedPaths,
         });
       } catch (cause) {
         const message = cause instanceof Error ? cause.message : 'That edit failed';

@@ -11,10 +11,12 @@ import { VisualEditorPanel } from '@/components/app/VisualEditorPanel';
 import { BuildingStage, type BuildStageId } from '@/components/app/BuildingStage';
 import { PublishButton } from '@/components/app/PublishButton';
 import { NextSteps } from '@/components/app/NextSteps';
+import { BuildSuggestions } from '@/components/app/BuildSuggestions';
+import type { BuildSuggestion } from '@/lib/generation/suggest';
 import { MediaDrop } from '@/components/app/MediaDrop';
 import { ConnectFlow } from '@/components/app/ConnectFlow';
 import { BUILT_IN_PROVIDERS, detectConnectIntent, type ConnectIntent } from '@/lib/connectors/intent';
-import { pageLabel } from '@/lib/pages';
+import { orderPages, pageLabel } from '@/lib/pages';
 import { createClient } from '@/lib/supabase/client';
 import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
 import type { ModelOption } from '@/lib/openai/models';
@@ -48,7 +50,7 @@ export function Workspace({
   initialStatus,
   initialMessages,
   initialVersions,
-  pages,
+  pages: initialPages,
   models,
   activeModel,
   initialJobId,
@@ -94,7 +96,13 @@ export function Workspace({
   const [stillAdding, setStillAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
-  const [page, setPage] = useState(pages[0] ?? 'index.html');
+  // Held in state, not read straight off the prop: an edit can write a page
+  // that did not exist when this was server-rendered, and a page you have to
+  // reload to discover reads as an edit that did nothing.
+  const [pages, setPages] = useState<string[]>(initialPages);
+  const [page, setPage] = useState(initialPages[0] ?? 'index.html');
+  const [suggestions, setSuggestions] = useState<BuildSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [ready, setReady] = useState(initialStatus === 'ready');
   // A build that died leaves the project here with nothing running. Without a
@@ -130,6 +138,29 @@ export function Workspace({
     setPreviewKey((key) => key + 1);
     router.refresh();
   }, [router]);
+
+  /**
+   * What the site is still missing, read back from the site itself.
+   *
+   * Asked for again after every edit rather than worked out once: press
+   * "Customer reviews" and by the time the change lands it has dropped off the
+   * list, because the list is a fact about the files and not a checklist being
+   * ticked off in the browser.
+   */
+  const loadSuggestions = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/suggestions`);
+      if (!response.ok) return;
+      const payload = await response.json();
+      setSuggestions(Array.isArray(payload.suggestions) ? payload.suggestions : []);
+    } catch {
+      // Suggestions are an offer, not a feature anything depends on.
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (ready && !stillAdding) void loadSuggestions();
+  }, [ready, stillAdding, loadSuggestions]);
 
   // ---- watching the build ---------------------------------------------------
   useEffect(() => {
@@ -340,10 +371,10 @@ export function Workspace({
    * uploading or failed is left out rather than sent as a broken link.
    */
   function withAttachments(text: string): string {
-    const ready = attachments.filter((item) => item.url && !item.error);
-    if (ready.length === 0) return text;
+    const usable = attachments.filter((item) => item.url && !item.error);
+    if (usable.length === 0) return text;
 
-    const lines = ready.map((item) => {
+    const lines = usable.map((item) => {
       if (item.kind === 'logo') {
         return `This is the business's logo — put it in the site header, linked as-is: ${item.url}`;
       }
@@ -452,7 +483,18 @@ export function Workspace({
             // Only once the edit landed: a failed edit keeps the chips, so a
             // file does not have to be picked and uploaded all over again.
             setAttachments([]);
+
+            // A page the edit created has to reach the picker now. Reloading to
+            // find out whether "create the Services page" worked is the same as
+            // it not having worked.
+            const written: string[] = Array.isArray(payload.paths) ? payload.paths : [];
+            const fresh = written.filter((path) => path.toLowerCase().endsWith('.html'));
+            if (fresh.length > 0) {
+              setPages((current) => orderPages([...new Set([...current, ...fresh])]));
+            }
+
             refreshPreview();
+            void loadSuggestions();
           }
         }
       }
@@ -633,6 +675,25 @@ export function Workspace({
                 <p className="rounded-[12px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
                   {error}
                 </p>
+              ) : null}
+
+              {/* Not while the build is still going: the card would offer to
+                  write a page the build is already halfway through. It appears
+                  the moment the queue is empty — including when a build ended
+                  early, which is exactly when a missing page needs a button
+                  rather than an explanation. */}
+              {ready && !stillAdding && showSuggestions && !connect ? (
+                <BuildSuggestions
+                  suggestions={suggestions}
+                  busy={busy}
+                  onDismiss={() => setShowSuggestions(false)}
+                  onPick={(suggestion) => {
+                    // Straight to the editor: a suggestion is an ordinary edit,
+                    // so it streams, saves a version and can be undone like any
+                    // other. Nothing here is a second kind of build.
+                    void sendMessage(suggestion.prompt, 'chat', { allowConnect: false });
+                  }}
+                />
               ) : null}
 
               {versions.length > 0 ? (
