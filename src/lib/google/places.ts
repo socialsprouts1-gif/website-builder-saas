@@ -66,6 +66,15 @@ export interface PlaceProfile {
   hours: string[];
   /** What this business actually offers, as the listing names them. */
   services?: string[];
+  /**
+   * Why this listing is thin, when it is.
+   *
+   * A key-free read depends on Google serving the facts in the page it hands
+   * back, and sometimes it hands back an empty application shell instead. That
+   * used to produce a listing with a name and nothing else, silently, and a
+   * website built from nothing. This says what actually came back.
+   */
+  note?: string;
   reviews: PlaceReview[];
   photos: PlacePhoto[];
 }

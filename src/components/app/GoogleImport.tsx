@@ -33,6 +33,7 @@ interface PlaceProfile {
   reviewCount: number | null;
   hours: string[];
   services?: string[];
+  note?: string;
   reviews: PlaceReview[];
   photos: PlacePhoto[];
 }
@@ -177,6 +178,21 @@ export function GoogleImport() {
               </Badge>
             ) : null}
           </div>
+
+          {place.note ? (
+            // Said out loud, because a thin listing that looks fine produces a
+            // website about nothing and no clue as to why.
+            <div className="rounded-[10px] border border-[#e5a15a]/30 bg-[#e5a15a]/10 px-3.5 py-3">
+              <p className="text-[12.5px] leading-relaxed text-[#e5a15a]">
+                Google gave up very little for this link. {place.note}
+              </p>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
+                Build it anyway and the site will be about your business but short on detail — or press{' '}
+                <strong className="text-ink-secondary">Something wrong? Fix it</strong> and type your address
+                and phone number first. Adding your own photos afterwards makes the biggest difference.
+              </p>
+            </div>
+          ) : null}
 
           {place.photos.length > 0 ? (
             <div>

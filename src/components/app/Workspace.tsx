@@ -104,6 +104,8 @@ export function Workspace({
   const [suggestions, setSuggestions] = useState<BuildSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [imagesBusy, setImagesBusy] = useState(false);
+  // Something typed while the site was still being built, waiting its turn.
+  const [queued, setQueued] = useState<string | null>(null);
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [ready, setReady] = useState(initialStatus === 'ready');
   // A build that died leaves the project here with nothing running. Without a
@@ -121,7 +123,16 @@ export function Workspace({
   // rewritten site.
   const [suggest, setSuggest] = useState<{ intent: ConnectIntent; message: string } | null>(null);
 
+  // The build is in flight and owns the project's files. A chat edit writes a
+  // version of those same files, so the two cannot run at once — but the
+  // composer stays usable and holds what is typed until this clears.
+  const buildRunning = stillAdding || (busy && !ready);
+
   const logRef = useRef<HTMLDivElement>(null);
+  // The current sendMessage, so the queue can be flushed from an effect without
+  // that effect having to re-subscribe to the build every time a message is
+  // typed.
+  const sendRef = useRef<typeof sendMessage | null>(null);
   const generationStarted = useRef(false);
   const publishedSeen = useRef(false);
   // How many pages the build had saved last time the preview was reloaded.
@@ -162,6 +173,15 @@ export function Workspace({
   useEffect(() => {
     if (ready && !stillAdding) void loadSuggestions();
   }, [ready, stillAdding, loadSuggestions]);
+
+  // Whatever was typed during the build runs the moment the build lets go of
+  // the files, as if it had been sent by hand right then.
+  useEffect(() => {
+    if (!queued || buildRunning || busy) return;
+    const pending = queued;
+    setQueued(null);
+    void sendRef.current?.(pending, 'chat', { allowConnect: false });
+  }, [queued, buildRunning, busy]);
 
   // ---- watching the build ---------------------------------------------------
   useEffect(() => {
@@ -425,12 +445,33 @@ export function Workspace({
     options: { allowConnect?: boolean } = {},
   ) {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed) return;
 
     if (attachments.some((item) => !item.url && !item.error)) {
       setError('Still uploading — one moment.');
       return;
     }
+
+    /**
+     * While the build still owns the files, the message waits rather than
+     * being refused.
+     *
+     * Two photographs uploaded, "add this images" typed, and Send greyed out
+     * because a build was running — with nothing saying so, and nothing saying
+     * what to do about it. The build is writing versions of these same files,
+     * so an edit cannot run alongside it; but the request can be held, and the
+     * links to the uploads are already in the composed text, so nothing is
+     * lost by holding it.
+     */
+    if (buildRunning) {
+      setQueued(withAttachments(trimmed));
+      setAttachments([]);
+      setInput('');
+      setError(null);
+      return;
+    }
+
+    if (busy) return;
 
     // "Connect a payment gateway" is not a change to the HTML, and handing it
     // to the editor got a fake Pay button written into the page. It opens the
@@ -540,6 +581,8 @@ export function Workspace({
       setProgress(null);
     }
   }
+
+  sendRef.current = sendMessage;
 
   async function retryBuild() {
     setRetrying(true);
@@ -707,11 +750,43 @@ export function Workspace({
                 </p>
               ) : null}
 
-              {/* Not while the build is still going: the card would offer to
-                  write a page the build is already halfway through. It appears
-                  the moment the queue is empty — including when a build ended
-                  early, which is exactly when a missing page needs a button
-                  rather than an explanation. */}
+              {/* While the rest is still being written.
+                  The card of things to build cannot appear yet — it would offer
+                  to write a page the build is halfway through — but the silence
+                  was worse: a live homepage, no word on what else is coming,
+                  and a composer that would not take a message. */}
+              {ready && stillAdding ? (
+                <div className="lumen-panel mr-4 space-y-2 rounded-[14px] border border-accent/25 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-accent">
+                    Your homepage is live
+                  </p>
+                  <p className="text-[13px] leading-relaxed text-ink-secondary">
+                    The rest of the site is being written now — each page appears in the preview as it
+                    lands. Look at the homepage while you wait.
+                  </p>
+                  <p className="text-[12.5px] leading-relaxed text-ink-muted">
+                    Want something specific? Type it below, or attach your photos and logo with{' '}
+                    <strong className="text-ink-secondary">Add</strong>. It runs the moment this finishes.
+                  </p>
+                </div>
+              ) : null}
+
+              {queued ? (
+                <div className="mr-4 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-ink-muted">Queued</p>
+                  <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed text-ink-secondary">
+                    {queued.length > 240 ? `${queued.slice(0, 240)}…` : queued}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setQueued(null)}
+                    className="mt-2 text-[12px] text-ink-muted transition hover:text-ink-primary"
+                  >
+                    Cancel this
+                  </button>
+                </div>
+              ) : null}
+
               {ready && !stillAdding && showSuggestions && !connect ? (
                 <BuildSuggestions
                   suggestions={suggestions}
@@ -763,10 +838,12 @@ export function Workspace({
                 value={input}
                 onChange={setInput}
                 onSubmit={() => sendMessage(input)}
-                busy={busy}
-                disabled={!ready}
-                placeholder={ready ? 'Make the hero darker…' : 'Building your site…'}
-                submitLabel="Send"
+                busy={busy && !buildRunning}
+                disabled={false}
+                placeholder={
+                  buildRunning ? 'Anything else? It runs when the build finishes…' : 'Make the hero darker…'
+                }
+                submitLabel={buildRunning ? 'Queue' : 'Send'}
                 attachments={attachments}
                 onAttachFiles={attachFiles}
                 onAttachReference={attachReference}

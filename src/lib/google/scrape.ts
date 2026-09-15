@@ -496,6 +496,42 @@ export function mergeListing(
   };
 }
 
+/** Everything worth building a page around, beyond the name. */
+export function listingIsThin(place: PlaceProfile): boolean {
+  return (
+    !place.address &&
+    !place.phone &&
+    place.hours.length === 0 &&
+    (place.services?.length ?? 0) === 0 &&
+    place.reviews.length === 0
+  );
+}
+
+/**
+ * What came back, in words that name the actual failure.
+ *
+ * Written down rather than left to be guessed at from a bad website: whether
+ * Google sent a real page or an empty application shell is the difference
+ * between a bug worth fixing and a limit worth explaining, and until now both
+ * looked identical from the outside — a site with a name and no facts.
+ */
+export function diagnose(html: string, finalUrl: string, photos: number): string {
+  const shell =
+    !/data-item-id=/i.test(html) && !/lh\d\.googleusercontent\.com/i.test(html) && html.length < 400_000;
+
+  const where = /\/maps\//i.test(finalUrl)
+    ? 'a Maps page'
+    : /\/search/i.test(finalUrl)
+      ? 'a Search results page'
+      : 'a Google page';
+
+  const size = `${Math.round(html.length / 1000)}kB`;
+
+  return shell
+    ? `Google served ${where} with the listing held back — an application shell, ${size}, with no address or photo markup in it at all.`
+    : `Google served ${where} (${size}, ${photos} photo${photos === 1 ? '' : 's'}) but the details were not in it in a readable form.`;
+}
+
 /**
  * Fetches a pasted Google link and reads the listing off the page.
  *
@@ -514,7 +550,7 @@ export async function scrapeListing(input: string, userId?: string): Promise<Pla
   if (!userId) return base;
 
   const read = await readListingWithModel(html, userId);
-  if (!read) return base;
+  if (!read) return base ? withNote(base, html, finalUrl) : base;
 
   // The patterns can come back with nothing at all — a page whose title is
   // "Google Search" has no name to salvage — and the model reading it properly
@@ -544,5 +580,12 @@ export async function scrapeListing(input: string, userId?: string): Promise<Pla
     );
   }
 
-  return mergeListing(base, read);
+  return withNote(mergeListing(base, read), html, finalUrl);
+}
+
+/** Attaches the diagnosis when, and only when, the listing came back thin. */
+function withNote(place: PlaceProfile, html: string, finalUrl: string): PlaceProfile {
+  return listingIsThin(place)
+    ? { ...place, note: diagnose(html, finalUrl, place.photos.length) }
+    : place;
 }
