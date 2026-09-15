@@ -127,6 +127,9 @@ export async function GET(
 const HTML_CSP = [
   "default-src 'none'",
   "img-src 'self' https: data:",
+  // An uploaded video lives in Supabase storage, so it is not 'self'. Without
+  // this, default-src 'none' blocks it and the published page shows a dead box.
+  "media-src 'self' https: data: blob:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   'font-src https://fonts.gstatic.com',
   "script-src 'self'",

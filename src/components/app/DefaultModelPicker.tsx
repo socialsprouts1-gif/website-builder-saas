@@ -96,7 +96,7 @@ export function DefaultModelPicker({
           onClick={() => setShowAll((value) => !value)}
           className="text-[12.5px] text-ink-muted transition hover:text-ink-primary"
         >
-          {showAll ? '− Hide' : '+ Custom'} — pick any model your key can reach ({all.length})
+          {showAll ? '− Hide' : '+ Custom'} — pick any GPT model your key can reach ({all.length})
         </button>
         {showAll ? (
           <select

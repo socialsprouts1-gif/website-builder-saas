@@ -48,6 +48,9 @@ function previewCsp(origin: string): string {
     `style-src 'unsafe-inline' ${origin} https://fonts.googleapis.com`,
     'font-src https://fonts.gstatic.com data:',
     `img-src ${origin} https: data:`,
+    // An uploaded video is served from Supabase storage, not from here. Without
+    // this, default-src 'none' blocks it and the <video> renders as a black box.
+    'media-src https: data: blob:',
     // The site assistant talks back to Lumen. Without this the widget appears
     // and then fails silently on the first message.
     `connect-src ${origin}`,

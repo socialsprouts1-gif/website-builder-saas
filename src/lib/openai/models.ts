@@ -72,6 +72,18 @@ function isChatModel(id: string): boolean {
   return !NON_CHAT_HINTS.some((hint) => id.includes(hint));
 }
 
+/**
+ * GPT chat models, and nothing else.
+ *
+ * The picker used to list every id the key could see — embeddings, Whisper,
+ * text-to-speech, moderation, the lot. None of them can write a website, and a
+ * dropdown that offers `text-embedding-3-small` as a way to build a page is a
+ * trap. Lumen writes sites with GPT, so GPT is what the picker offers.
+ */
+export function isSelectableModel(id: string): boolean {
+  return id.startsWith('gpt-') && isChatModel(id);
+}
+
 function isSmall(id: string): boolean {
   return SMALL_HINTS.some((hint) => id.includes(hint));
 }
@@ -138,7 +150,7 @@ export function fallbackCatalog(stale = true): ModelCatalog {
       seed(SEED_MODELS.mid, 'custom', ''),
       seed(fast, 'fast', ''),
       seed(SEED_MODELS.code, 'custom', ''),
-    ],
+    ].filter((option) => isSelectableModel(option.id)),
     vision: custom.vision ?? SEED_MODELS.vision,
     image: custom.image ?? SEED_MODELS.image,
     transcription: custom.transcription ?? SEED_MODELS.transcription,
@@ -161,7 +173,7 @@ export async function getModelCatalog(apiKey: string): Promise<ModelCatalog> {
     if (ids.length === 0) throw new Error('empty model list');
 
     const custom = overrides();
-    const chat = ids.filter(isChatModel);
+    const chat = ids.filter(isSelectableModel);
 
     const qualityId =
       custom.quality ?? pickFirstMatch(chat, (id) => !isSmall(id), SEED_MODELS.quality);
@@ -180,7 +192,10 @@ export async function getModelCatalog(apiKey: string): Promise<ModelCatalog> {
         bucket: 'fast',
         description: 'Fast & cheap — great for quick iterations.',
       },
-      all: ids.map((id) => ({
+      // Only what a site can actually be written with. `resolveModel` checks a
+      // requested id against this list, so narrowing it here also stops a
+      // stored default of, say, an embedding model from ever being sent.
+      all: [...new Set([qualityId, fastId, ...ids.filter(isSelectableModel)])].map((id) => ({
         id,
         label: humanize(id),
         bucket: id === qualityId ? 'quality' : id === fastId ? 'fast' : 'custom',

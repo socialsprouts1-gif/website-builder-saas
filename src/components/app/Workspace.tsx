@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CodeWindow } from '@/components/ui/CodeWindow';
-import { PromptBar } from '@/components/ui/PromptBar';
+import { PromptBar, type PromptAttachment } from '@/components/ui/PromptBar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/components/ui/cn';
@@ -14,6 +14,8 @@ import { NextSteps } from '@/components/app/NextSteps';
 import { ConnectFlow } from '@/components/app/ConnectFlow';
 import { detectConnectIntent, type ConnectIntent } from '@/lib/connectors/intent';
 import { pageLabel } from '@/lib/pages';
+import { createClient } from '@/lib/supabase/client';
+import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
 import type { ModelOption } from '@/lib/openai/models';
 
 export interface WorkspaceMessage {
@@ -76,6 +78,7 @@ export function Workspace({
   const [versions, setVersions] = useState<WorkspaceVersion[]>(initialVersions);
   const [input, setInput] = useState('');
   const [model, setModel] = useState(activeModel ?? models.quality?.id ?? '');
+  const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
   const [busy, setBusy] = useState(initialStatus === 'generating');
   const [progress, setProgress] = useState<string | null>(
     initialStatus === 'generating' ? 'Starting up…' : null,
@@ -242,6 +245,89 @@ export function Workspace({
     };
   }, [initialJobId, initialStatus, projectId, refreshPreview]);
 
+  // ---- attachments ----------------------------------------------------------
+
+  /**
+   * A file, on its way to storage and then into the page.
+   *
+   * The bytes never pass through Lumen's API. A serverless request body tops
+   * out well below a photo from a phone, let alone a video, so the route hands
+   * back a signed URL and the browser uploads straight to storage. The chip
+   * appears immediately and fills in when the upload lands, so a slow video
+   * looks like a slow video rather than nothing happening.
+   */
+  async function attachFiles(kind: 'image' | 'video', files: File[]) {
+    for (const file of files) {
+      const id = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const reason = rejectReason(file);
+
+      setAttachments((current) => [
+        ...current,
+        { id, kind, label: file.name, url: null, ...(reason ? { error: reason } : {}) },
+      ]);
+      if (reason) continue;
+
+      try {
+        const response = await fetch(`/api/projects/${projectId}/assets/sign`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, contentType: file.type, size: file.size }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error ?? 'Upload failed');
+
+        const { error: uploadError } = await createClient()
+          .storage.from(payload.bucket)
+          .uploadToSignedUrl(payload.path, payload.token, file, { contentType: file.type });
+        if (uploadError) throw new Error(uploadError.message);
+
+        setAttachments((current) =>
+          current.map((item) => (item.id === id ? { ...item, url: payload.publicUrl } : item)),
+        );
+      } catch (cause) {
+        const message = cause instanceof Error ? cause.message : 'Upload failed';
+        setAttachments((current) =>
+          current.map((item) => (item.id === id ? { ...item, error: message } : item)),
+        );
+      }
+    }
+  }
+
+  function attachReference(raw: string) {
+    const url = normaliseReference(raw);
+    if (!url) {
+      setError('That does not look like a website address.');
+      return;
+    }
+    setError(null);
+    setAttachments((current) => [
+      ...current,
+      { id: `ref-${Date.now()}`, kind: 'reference', label: referenceLabel(url), url },
+    ]);
+  }
+
+  /**
+   * The message as the model will read it.
+   *
+   * An uploaded file is only useful if the instruction says what it is for, so
+   * each one is spelled out on its own line under the request. Anything still
+   * uploading or failed is left out rather than sent as a broken link.
+   */
+  function withAttachments(text: string): string {
+    const ready = attachments.filter((item) => item.url && !item.error);
+    if (ready.length === 0) return text;
+
+    const lines = ready.map((item) => {
+      if (item.kind === 'image') return `Use this image (already hosted, link it as-is): ${item.url}`;
+      if (item.kind === 'video') {
+        return `Use this video (already hosted, embed it in a <video> tag): ${item.url}`;
+      }
+      return `Match the look and layout of this website: ${item.url}`;
+    });
+
+    return `${text}\n\n${lines.join('\n')}`;
+  }
+
   // ---- chat iteration -------------------------------------------------------
   async function sendMessage(
     text: string,
@@ -250,6 +336,11 @@ export function Workspace({
   ) {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
+
+    if (attachments.some((item) => !item.url && !item.error)) {
+      setError('Still uploading — one moment.');
+      return;
+    }
 
     // "Connect a payment gateway" is not a change to the HTML, and handing it
     // to the editor got a fake Pay button written into the page. It opens the
@@ -269,20 +360,24 @@ export function Workspace({
       setSuggest(intent ? { intent, message: trimmed } : null);
     }
 
+    // Composed once and used for both the bubble and the request, so the
+    // history after a reload says exactly what was asked for.
+    const composed = withAttachments(trimmed);
+
     setError(null);
     setBusy(true);
     setInput('');
     setProgress('Applying your change…');
     setMessages((current) => [
       ...current,
-      { id: `local-${Date.now()}`, role: 'user', content: trimmed },
+      { id: `local-${Date.now()}`, role: 'user', content: composed },
     ]);
 
     try {
       const response = await fetch(`/api/projects/${projectId}/chat`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, model: model || null, source }),
+        body: JSON.stringify({ message: composed, model: model || null, source }),
       });
 
       if (!response.ok || !response.body) {
@@ -325,6 +420,9 @@ export function Workspace({
               },
               ...current,
             ]);
+            // Only once the edit landed: a failed edit keeps the chips, so a
+            // file does not have to be picked and uploaded all over again.
+            setAttachments([]);
             refreshPreview();
           }
         }
@@ -500,29 +598,38 @@ export function Workspace({
                 disabled={!ready}
                 placeholder={ready ? 'Make the hero darker…' : 'Building your site…'}
                 submitLabel="Send"
+                attachments={attachments}
+                onAttachFiles={attachFiles}
+                onAttachReference={attachReference}
+                onRemoveAttachment={(id) =>
+                  setAttachments((current) => current.filter((item) => item.id !== id))
+                }
               />
-              <label className="flex items-center justify-between gap-2 px-1 text-[11.5px] text-ink-muted">
-                <span>Model</span>
-                <select
-                  value={model}
-                  onChange={(event) => setModel(event.target.value)}
-                  className="max-w-[62%] truncate rounded-pill border border-hairline bg-raised px-2.5 py-1 text-[11.5px] text-ink-secondary outline-none focus:border-accent/40"
-                >
-                  {models.fast ? (
-                    <option value={models.fast.id}>Fast — {models.fast.label}</option>
-                  ) : null}
-                  {models.quality ? (
-                    <option value={models.quality.id}>Best quality, slower — {models.quality.label}</option>
-                  ) : null}
-                  <optgroup label="All models">
-                    {models.all.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.id}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-              </label>
+              {/* Two choices, not a model list.
+                  The dropdown used to end in an "All models" group holding
+                  every id the key could see — embeddings, Whisper, moderation —
+                  none of which can write a website. Both of these are GPT; the
+                  only thing being chosen is speed against quality. */}
+              <div className="flex items-center justify-center gap-1 px-1">
+                {([models.fast, models.quality].filter(Boolean) as ModelOption[]).map(
+                  (option, index) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setModel(option.id)}
+                      title={option.id}
+                      className={cn(
+                        'rounded-pill border px-3 py-1 text-[11.5px] transition',
+                        model === option.id
+                          ? 'border-accent/45 bg-accent-soft text-accent'
+                          : 'border-hairline text-ink-muted hover:text-ink-secondary',
+                      )}
+                    >
+                      {index === 0 ? 'Fast' : 'Best quality'}
+                    </button>
+                  ),
+                )}
+              </div>
             </div>
           </>
         ) : (
