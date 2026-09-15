@@ -94,17 +94,26 @@ export async function claimJob(jobId: string, userId: string): Promise<Generatio
 }
 
 /**
- * How long a step may go silent before it is presumed lost.
+ * How long a step may go SILENT before it is presumed lost.
  *
- * A step is one small JSON call now, not a whole page of HTML, so ninety
- * seconds of silence means something has gone wrong rather than that the model
- * is being thorough. Picking a live step back up costs one duplicated call and
- * nothing else — both writers compute the same remaining queue — where waiting
- * six minutes cost the user six minutes.
+ * Silent, not "running": stepStartedAt is refreshed by every write a step
+ * makes, including a heartbeat on a timer, so this measures how long nothing
+ * has been heard rather than how long the step has been going.
+ *
+ * That distinction is the whole fix. This was ninety seconds against a step
+ * that was one small JSON call, on the reasoning that picking a live step back
+ * up cost one duplicated call. A step became a whole page of sections written
+ * together, which takes longer than ninety seconds — so the browser's thirty
+ * second nudge started a second runner on the same page, then a third, each
+ * writing the queue back over the last one's work. That is a build that says
+ * "writing courses" for two hours and never gets to the next page.
  */
-export const STEP_TIMEOUT_MS = 90 * 1000;
+export const STEP_TIMEOUT_MS = 180 * 1000;
 
-/** True when the current step has gone quiet for longer than it could live. */
+/** How often a running step says it is still alive. */
+export const HEARTBEAT_MS = 25 * 1000;
+
+/** True when the current step has said nothing for longer than it should. */
 export function stepLooksLost(progress: JobProgress, jobCreatedAt: string): boolean {
   const since = progress.stepStartedAt ?? jobCreatedAt;
   return Date.now() - new Date(since).getTime() > STEP_TIMEOUT_MS;
@@ -152,27 +161,46 @@ export async function runNextStep(
 
   const files = [...before.files];
   let expected = before.expected;
-  const stepStartedAt = new Date().toISOString();
+
+  /**
+   * Every write to the job row, in the order it was asked for.
+   *
+   * They used to be fire-and-forget, and each one carried the build state as it
+   * was when the step began. So a progress line issued a moment before the step
+   * finished could land a moment after it — putting the queue back to where it
+   * started, and running the same page again. Forever. Chaining them means the
+   * write that finishes a step is always the last word on it.
+   */
+  let latest: JobProgress & { build: BuildState } = {
+    ...before,
+    stepStartedAt: new Date().toISOString(),
+    build: state,
+  };
+  let writes: Promise<void> = Promise.resolve();
+
+  const commit = (patch: Partial<JobProgress & { build: BuildState }>): Promise<void> => {
+    // Refreshed on every write, which is what makes stepStartedAt a heartbeat
+    // rather than a start time.
+    latest = { ...latest, ...patch, stepStartedAt: new Date().toISOString() };
+    const snapshot = { ...latest, files: [...latest.files] };
+    writes = writes.then(() => writeState(job.id, snapshot)).catch(() => {
+      // A lost progress line must never be the reason a build stops.
+    });
+    return writes;
+  };
 
   // Written before any model call, so a step that never reports again can be
   // told apart from one that is merely slow.
-  await writeState(job.id, { ...before, stepStartedAt, build: state });
+  await commit({});
+
+  // Says "still here" while a long step is thinking. Without it a page that
+  // takes longer than the timeout gets a second runner started on top of it.
+  const heartbeat = setInterval(() => void commit({}), HEARTBEAT_MS);
 
   const emitFile = (path: string) => {
     if (files.includes(path)) return;
     files.push(path);
-    // Fire and forget: a file line arriving late is better than the build
-    // waiting on a database write to report it.
-    void writeState(job.id, {
-      ...before,
-      stage: 'code',
-      message: `Writing ${path}`,
-      files,
-      expected,
-      percent: 0,
-      stepStartedAt,
-      build: state,
-    });
+    void commit({ stage: 'code', message: `Writing ${path}`, files: [...files], expected });
   };
 
   try {
@@ -188,29 +216,22 @@ export async function runNextStep(
         inputMode: job.input_mode,
       },
       emitFile,
-      say: (message: string) => {
-        void writeState(job.id, {
-          ...before,
-          message,
-          files,
-          expected,
-          stepStartedAt,
-          build: state,
-        });
-      },
+      say: (message: string) => void commit({ message, files: [...files], expected }),
     });
 
     if (typeof outcome.expected === 'number') expected = outcome.expected;
 
-    await writeState(job.id, {
-      ...before,
+    clearInterval(heartbeat);
+
+    // Awaited, and therefore last: every progress line queued above has been
+    // applied before this one, so the state that ends the step is the state
+    // the next step reads.
+    await commit({
       stage: outcome.stage,
       message: outcome.message,
-      files,
+      files: [...files],
       expected,
-      percent: 0,
-      stepStartedAt,
-      published: outcome.published ?? before.published,
+      published: outcome.published ?? latest.published,
       // Every save bumps this, which is how the watching tab knows a new page
       // exists and reloads the preview instead of showing the first save until
       // the build ends.
@@ -228,6 +249,7 @@ export async function runNextStep(
 
     return { done: false, failed: false };
   } catch (cause) {
+    clearInterval(heartbeat);
     const message = cause instanceof Error ? cause.message : 'Generation failed';
     await admin
       .from('generation_jobs')

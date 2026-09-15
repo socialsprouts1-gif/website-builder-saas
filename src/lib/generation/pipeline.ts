@@ -124,6 +124,15 @@ export interface StepOutcome {
  * homepage's sections exist, so there is something to look at while the rest
  * of the pages fill in behind.
  */
+/**
+ * How many sections may be in flight at once.
+ *
+ * Whole pages are taken off the queue until the batch is at least this wide, so
+ * a page is never split across two steps — every page still lands complete, and
+ * still publishes as soon as it does.
+ */
+export const SECTION_CONCURRENCY = 8;
+
 export function nextStep(state: BuildState): BuildStep | null {
   if (!state.plan) return 'plan';
 
@@ -337,21 +346,32 @@ export async function runBuildStep(
     const first = queue[0];
     if (!first) throw new Error('Nothing left to write.');
 
-    // A whole page at once, rather than one section per step.
+    // Whole pages at once, up to a ceiling, rather than one section per step.
     //
     // Each section is an independent request that knows nothing about its
-    // neighbours, so writing them one after another only ever bought latency:
-    // a five-page site is around twenty calls, and at twenty seconds each that
-    // is the five minutes of "Working…" with nothing on screen. The sections of
-    // one page now go out together, which turns those twenty round trips into
-    // five. They are still saved a page at a time, so the preview fills in as
-    // each page lands instead of everything arriving at the end.
-    const batch = queue.filter((entry) => entry.page === first.page);
-    const rest = queue.filter((entry) => entry.page !== first.page);
-    const page = vertical.pages.find((candidate) => candidate.path === first.page);
+    // neighbours, so writing them one after another only ever bought latency: a
+    // five-page site is around twenty calls, and at twenty seconds each that is
+    // minutes of "Working…" with nothing on screen. They go out together now,
+    // taking whole pages off the queue until the batch reaches the ceiling — so
+    // a typical site is two rounds rather than twenty, and still saves a page
+    // at a time so the preview fills in as it goes.
+    //
+    // The ceiling is there because concurrency is not free: past a certain
+    // width the requests start queueing behind the account's rate limit, where
+    // each one comes back slower and a 429 costs a retry with a back-off. Eight
+    // is wide enough to collapse a site into a couple of rounds and narrow
+    // enough not to trip that.
+    const batch: typeof queue = [];
+    for (const entry of queue) {
+      if (batch.length >= SECTION_CONCURRENCY && entry.page !== batch[batch.length - 1].page) break;
+      batch.push(entry);
+    }
+    const taken = new Set(batch.map((entry) => entry.page));
+    const rest = queue.filter((entry) => !taken.has(entry.page));
 
     const written = await Promise.all(
       batch.map(async (job) => {
+        const page = vertical.pages.find((candidate) => candidate.path === job.page);
         const content = await ask(
           SECTION_SYSTEM,
           buildSectionPrompt({
