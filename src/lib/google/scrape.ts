@@ -1,5 +1,6 @@
 import 'server-only';
 import type { PlacePhoto, PlaceProfile, PlaceReview } from './places';
+import { readListingWithModel } from './extract';
 
 /**
  * Reading a Google listing from the page itself, with no API key.
@@ -457,11 +458,91 @@ export function parseListing(html: string, sourceUrl: string): PlaceProfile | nu
   };
 }
 
-/** Fetches a pasted Google link and reads the listing off the page. */
-export async function scrapeListing(input: string): Promise<PlaceProfile | null> {
+/**
+ * Merges what the model read over what the patterns found.
+ *
+ * The model wins on every fact it actually found, because the patterns are
+ * guesses at a markup that changes and it is reading the page as a person
+ * would. The patterns keep the photographs — those are exact URLs lifted from
+ * the page, which is the one thing a language model should not be asked to
+ * reproduce from memory.
+ */
+export function mergeListing(
+  base: PlaceProfile,
+  read: Partial<PlaceProfile> | null,
+): PlaceProfile {
+  if (!read) return base;
+
+  const better = <T>(candidate: T | null | undefined, fallback: T): T =>
+    candidate === null || candidate === undefined ? fallback : candidate;
+
+  const name = cleanName(read.name ?? null);
+
+  return {
+    ...base,
+    name: name ?? base.name,
+    category: better(read.category, base.category),
+    summary: better(read.summary, base.summary),
+    address: better(read.address, base.address),
+    phone: better(read.phone, base.phone),
+    website: better(read.website, base.website),
+    rating: better(read.rating, base.rating),
+    reviewCount: better(read.reviewCount, base.reviewCount),
+    hours: read.hours && read.hours.length > 0 ? read.hours : base.hours,
+    services: read.services && read.services.length > 0 ? read.services : base.services,
+    reviews: read.reviews && read.reviews.length > 0 ? read.reviews : base.reviews,
+    // Never the model's: these are exact URLs read off the page.
+    photos: base.photos,
+  };
+}
+
+/**
+ * Fetches a pasted Google link and reads the listing off the page.
+ *
+ * Two readings of the same fetch. The patterns below run first and are exact
+ * about photographs; the model then reads the page properly, and whatever it
+ * finds wins. Without a user there is no key to read with, so the patterns are
+ * all there is — which is the behaviour this had everywhere until now.
+ */
+export async function scrapeListing(input: string, userId?: string): Promise<PlaceProfile | null> {
   const url = normaliseMapsUrl(input);
   if (!url) return null;
 
   const { html, finalUrl } = await getHtml(url);
-  return parseListing(html, finalUrl);
+  const base = parseListing(html, finalUrl);
+
+  if (!userId) return base;
+
+  const read = await readListingWithModel(html, userId);
+  if (!read) return base;
+
+  // The patterns can come back with nothing at all — a page whose title is
+  // "Google Search" has no name to salvage — and the model reading it properly
+  // is then the only thing standing between the owner and a site built from a
+  // business name and no facts.
+  if (!base) {
+    const name = cleanName(read.name ?? null);
+    if (!name) return null;
+    return mergeListing(
+      {
+        placeId: '',
+        name,
+        category: null,
+        summary: null,
+        address: null,
+        phone: null,
+        website: null,
+        mapsUrl: finalUrl,
+        rating: null,
+        reviewCount: null,
+        hours: [],
+        services: [],
+        reviews: [],
+        photos: extractPhotos(html),
+      },
+      read,
+    );
+  }
+
+  return mergeListing(base, read);
 }

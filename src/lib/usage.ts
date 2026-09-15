@@ -38,6 +38,7 @@ export async function recordUsage(params: {
     | 'embedding'
     | 'chatbot_reply'
     | 'image'
+    | 'listing'
     | 'interview';
   model: string;
   keySource: KeySource;

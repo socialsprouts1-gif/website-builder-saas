@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     if (!limit.allowed) return jsonError('Too many lookups. Give it a minute.', 429);
 
     const { url } = bodySchema.parse(await request.json());
-    const place = await lookupPlace(url);
+    const place = await lookupPlace(url, user.id);
 
     if (!place) {
       return jsonError(

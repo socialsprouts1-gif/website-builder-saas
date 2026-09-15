@@ -159,6 +159,10 @@ export const CREDIT_COST = {
   // The pre-build interview runs on the fast model and exists to make the one
   // generation the user does pay for land closer to what they wanted.
   interview: 0,
+  // Reading a Google listing, for the same reason: it runs on the fast model
+  // and its whole purpose is that the generation being paid for below starts
+  // from the real business rather than from a name. Rate limited instead.
+  listing: 0,
 } as const;
 
 export type CreditedEvent = keyof typeof CREDIT_COST;

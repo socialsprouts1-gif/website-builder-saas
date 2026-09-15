@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     // so the build starts from real facts and real photographs rather than
     // inventing a business that already exists.
     if (body.inputMode === 'google' && body.googleUrl) {
-      const found = await lookupPlace(body.googleUrl);
+      const found = await lookupPlace(body.googleUrl, user.id);
       if (!found) {
         await admin.from('projects').delete().eq('id', project.id);
         return jsonError('That Google listing could not be read. Check the link and try again.', 422);

@@ -32,6 +32,7 @@ interface PlaceProfile {
   rating: number | null;
   reviewCount: number | null;
   hours: string[];
+  services?: string[];
   reviews: PlaceReview[];
   photos: PlacePhoto[];
 }
@@ -154,10 +155,21 @@ export function GoogleImport() {
                   value('address') || null,
                   value('phone') || null,
                   place.hours.length > 0 ? `${place.hours.length} days of opening hours` : null,
+                  place.services && place.services.length > 0
+                    ? `${place.services.length} services`
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(' · ') || 'Google shows no other details for this listing.'}
               </p>
+              {place.services && place.services.length > 0 ? (
+                // Shown, because this is the part that decides whether the site
+                // is about this business or about a business like it.
+                <p className="mt-1.5 text-[12px] leading-relaxed text-ink-secondary">
+                  {place.services.slice(0, 6).join(' · ')}
+                  {place.services.length > 6 ? ' …' : ''}
+                </p>
+              ) : null}
             </div>
             {place.rating ? (
               <Badge tone="accent" className="shrink-0">

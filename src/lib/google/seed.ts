@@ -33,6 +33,14 @@ export function describePlace(place: PlaceProfile, photoUrls: string[]): string 
   if (place.website) lines.push(`Existing website: ${place.website}`);
   if (place.hours.length > 0) lines.push(`Opening hours:\n${place.hours.map((h) => `  ${h}`).join('\n')}`);
 
+  if (place.services && place.services.length > 0) {
+    lines.push(
+      'What this business actually offers, named on its own listing. Build the services section ' +
+        'around exactly these — do not replace them with generic ones, and do not invent others:',
+    );
+    for (const service of place.services.slice(0, 12)) lines.push(`  - ${service}`);
+  }
+
   if (place.rating && place.reviewCount) {
     lines.push(`Google rating: ${place.rating} from ${place.reviewCount} reviews. Say this on the page.`);
   }
@@ -55,6 +63,23 @@ export function describePlace(place: PlaceProfile, photoUrls: string[]): string 
 
   if (place.mapsUrl) {
     lines.push(`Link "See us on Google" to ${place.mapsUrl} in the footer, and attribute reviews to Google.`);
+  }
+
+  // Naming the gaps beats letting them be filled in. A page that says "call us"
+  // is honest; a page with a phone number nobody answers is worse than no page.
+  const missing = [
+    !place.address && 'address',
+    !place.phone && 'phone number',
+    place.hours.length === 0 && 'opening hours',
+    (!place.services || place.services.length === 0) && 'list of services',
+  ].filter(Boolean);
+
+  if (missing.length > 0) {
+    lines.push(
+      `The listing does not publish this business's ${missing.join(', ')}. Leave those out rather ` +
+        'than inventing them: no made-up street address, no made-up phone number, no invented ' +
+        'timings, and no list of services this business has not said it offers.',
+    );
   }
 
   return lines.join('\n');

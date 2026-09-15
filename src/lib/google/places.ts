@@ -64,6 +64,8 @@ export interface PlaceProfile {
   rating: number | null;
   reviewCount: number | null;
   hours: string[];
+  /** What this business actually offers, as the listing names them. */
+  services?: string[];
   reviews: PlaceReview[];
   photos: PlacePhoto[];
 }
@@ -189,8 +191,8 @@ function toProfile(raw: RawPlace): PlaceProfile | null {
  * the listing is read off the page instead, so the feature works on a
  * deployment that has set nothing up at all.
  */
-export async function lookupPlace(input: string): Promise<PlaceProfile | null> {
-  if (!isPlacesConfigured()) return scrapeListing(input);
+export async function lookupPlace(input: string, userId?: string): Promise<PlaceProfile | null> {
+  if (!isPlacesConfigured()) return scrapeListing(input, userId);
 
   try {
     const viaApi = await lookupViaApi(input);
@@ -199,7 +201,7 @@ export async function lookupPlace(input: string): Promise<PlaceProfile | null> {
     // A key that is rejected, out of quota, or misconfigured should not be the
     // end of the feature when the page itself is readable.
   }
-  return scrapeListing(input);
+  return scrapeListing(input, userId);
 }
 
 async function lookupViaApi(input: string): Promise<PlaceProfile | null> {
