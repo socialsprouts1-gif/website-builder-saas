@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PromptBar } from '@/components/ui/PromptBar';
+import { PromptBar, type PromptAttachment } from '@/components/ui/PromptBar';
 import { CategoryChip } from '@/components/ui/CategoryChip';
 import { Button } from '@/components/ui/Button';
 import { CATEGORIES, categoryBySlug } from '@/lib/categories';
@@ -10,6 +10,8 @@ import { cn } from '@/components/ui/cn';
 import type { ModelOption } from '@/lib/openai/models';
 import { InterviewStep } from '@/components/app/InterviewStep';
 import type { Answer, InterviewQuestion } from '@/lib/generation/interview';
+import { createClient } from '@/lib/supabase/client';
+import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
 
 type Mode = 'describe' | 'screenshot' | 'speak';
 
@@ -48,6 +50,7 @@ export function NewSiteForm({
   const [questions, setQuestions] = useState<InterviewQuestion[] | null>(null);
   const [asking, setAsking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
 
   // Seed from the marketing hero / onboarding hand-off.
   useEffect(() => {
@@ -78,6 +81,71 @@ export function NewSiteForm({
     });
     setScreenshot({ dataUrl, name: file.name });
   }
+
+  /**
+   * A logo or a photograph, uploaded before the project exists.
+   *
+   * It has to be this way round: the brief that starts the build has to be able
+   * to name the files, and the brief is fixed the moment the job is queued. The
+   * bytes go straight to storage from here — they are far too big for a
+   * serverless request body — and only the resulting link is sent on.
+   */
+  async function attachFiles(kind: 'logo' | 'image' | 'video', files: File[]) {
+    for (const file of files) {
+      const id = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const reason = rejectReason(file);
+
+      setAttachments((current) => [
+        // Only ever one logo: a second replaces the first.
+        ...(kind === 'logo' ? current.filter((item) => item.kind !== 'logo') : current),
+        { id, kind, label: file.name, url: null, ...(reason ? { error: reason } : {}) },
+      ]);
+      if (reason) continue;
+
+      try {
+        const response = await fetch('/api/uploads/sign', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, contentType: file.type, size: file.size }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error ?? 'Upload failed');
+
+        const { error: uploadError } = await createClient()
+          .storage.from(payload.bucket)
+          .uploadToSignedUrl(payload.path, payload.token, file, { contentType: file.type });
+        if (uploadError) throw new Error(uploadError.message);
+
+        setAttachments((current) =>
+          current.map((item) => (item.id === id ? { ...item, url: payload.publicUrl } : item)),
+        );
+      } catch (cause) {
+        const message = cause instanceof Error ? cause.message : 'Upload failed';
+        setAttachments((current) =>
+          current.map((item) => (item.id === id ? { ...item, error: message } : item)),
+        );
+      }
+    }
+  }
+
+  function attachReference(raw: string) {
+    const url = normaliseReference(raw);
+    if (!url) {
+      setError('That does not look like a website address.');
+      return;
+    }
+    setError(null);
+    setAttachments((current) => [
+      ...current,
+      { id: `ref-${Date.now()}`, kind: 'reference', label: referenceLabel(url), url },
+    ]);
+  }
+
+  const ready = attachments.filter((item) => item.url && !item.error);
+  const logoUrl = ready.find((item) => item.kind === 'logo')?.url ?? null;
+  const imageUrls = ready.filter((item) => item.kind === 'image').map((item) => item.url!);
+  const videoUrls = ready.filter((item) => item.kind === 'video').map((item) => item.url!);
+  const referenceUrls = ready.filter((item) => item.kind === 'reference').map((item) => item.url!);
 
   const brief = prompt.trim() || 'Build a site based on this screenshot.';
 
@@ -131,6 +199,7 @@ export function NewSiteForm({
           model: model || null,
           inputMode: mode === 'screenshot' ? 'screenshot' : mode === 'speak' ? 'voice' : 'prompt',
           screenshotDataUrl: mode === 'screenshot' ? screenshot?.dataUrl : null,
+          assets: { logoUrl, imageUrls, videoUrls, referenceUrls },
           answers,
         }),
       });
@@ -262,10 +331,18 @@ export function NewSiteForm({
               : 'A candlelit French bistro with online reservations…'
         }
         submitLabel={asking ? 'Thinking…' : 'Continue'}
+        attachments={attachments}
+        onAttachFiles={attachFiles}
+        onAttachReference={attachReference}
+        onRemoveAttachment={(id) =>
+          setAttachments((current) => current.filter((item) => item.id !== id))
+        }
       />
 
-      <p className="text-center text-[12px] text-ink-muted">
-        Lumen asks a few questions before it builds — you can skip them.
+      <p className="text-center text-[12px] leading-relaxed text-ink-muted">
+        Lumen asks a few questions before it builds — you can skip them. Use{' '}
+        <strong className="text-ink-secondary">Attach</strong> to hand over your logo and your own
+        photographs now, and they go into the site as it is written.
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -291,19 +368,13 @@ export function NewSiteForm({
             onChange={(event) => setModel(event.target.value)}
             className="rounded-pill border border-hairline bg-raised px-3 py-1.5 text-[12.5px] text-ink-secondary outline-none focus:border-accent/40"
           >
-            {models.fast ? (
-              <option value={models.fast.id}>Fast — {models.fast.label}</option>
-            ) : null}
+            {/* Two GPT choices. The list that used to sit under these offered
+                every id the key could reach, embeddings and Whisper included,
+                none of which can write a page. */}
+            {models.fast ? <option value={models.fast.id}>Fast</option> : null}
             {models.quality ? (
-              <option value={models.quality.id}>Best quality, slower — {models.quality.label}</option>
+              <option value={models.quality.id}>Best quality, slower</option>
             ) : null}
-            <optgroup label="All models">
-              {models.all.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.id}
-                </option>
-              ))}
-            </optgroup>
           </select>
         </label>
       </div>

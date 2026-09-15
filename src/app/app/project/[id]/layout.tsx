@@ -16,9 +16,9 @@ export default async function ProjectLayout({
   if (!project) notFound();
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <ProjectTabs projectId={project.id} name={project.name} />
-      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+      <div className="min-h-0 flex-1">{children}</div>
     </div>
   );
 }

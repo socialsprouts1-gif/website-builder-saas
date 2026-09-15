@@ -79,6 +79,9 @@ export function Workspace({
   const [input, setInput] = useState('');
   const [model, setModel] = useState(activeModel ?? models.quality?.id ?? '');
   const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
+  // Which of the two panes a phone is looking at. Ignored from `lg` up, where
+  // both are on screen at once.
+  const [pane, setPane] = useState<'panel' | 'preview'>('panel');
   const [busy, setBusy] = useState(initialStatus === 'generating');
   const [progress, setProgress] = useState<string | null>(
     initialStatus === 'generating' ? 'Starting up…' : null,
@@ -256,7 +259,7 @@ export function Workspace({
    * appears immediately and fills in when the upload lands, so a slow video
    * looks like a slow video rather than nothing happening.
    */
-  async function attachFiles(kind: 'image' | 'video', files: File[]) {
+  async function attachFiles(kind: 'logo' | 'image' | 'video', files: File[]) {
     for (const file of files) {
       const id = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const reason = rejectReason(file);
@@ -318,6 +321,9 @@ export function Workspace({
     if (ready.length === 0) return text;
 
     const lines = ready.map((item) => {
+      if (item.kind === 'logo') {
+        return `This is the business's logo — put it in the site header, linked as-is: ${item.url}`;
+      }
       if (item.kind === 'image') return `Use this image (already hosted, link it as-is): ${item.url}`;
       if (item.kind === 'video') {
         return `Use this video (already hosted, embed it in a <video> tag): ${item.url}`;
@@ -476,10 +482,55 @@ export function Workspace({
   const previewSrc = `/preview/${projectId}/${page}?k=${previewKey}${mode === 'visual' ? '&editor=1' : ''}`;
 
   return (
-    <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-1">
+    // One pane at a time on a phone, both side by side from `lg`.
+    //
+    // It used to be two grid rows, the chat taking 1fr and the preview `auto` —
+    // and `auto` against children that are all flex-1 measures as nothing, so
+    // the preview collapsed and a phone showed a tall empty column where the
+    // site should have been.
+    <div className="flex h-full min-h-0 flex-col lg:grid lg:grid-cols-[380px_minmax(0,1fr)]">
+      {/* Phone-only switcher; display:none takes it out of the grid entirely. */}
+      <div className="flex shrink-0 gap-1 border-b border-hairline p-2 lg:hidden">
+        {([
+          { id: 'chat', label: 'Chat' },
+          { id: 'visual', label: 'Visual edit' },
+          { id: 'preview', label: 'Preview' },
+        ] as const).map((item) => {
+          const active = item.id === 'preview' ? pane === 'preview' : pane === 'panel' && mode === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              // Preview stays reachable during the build: pages are saved as
+              // they are written, so it is where you watch the site appear.
+              disabled={!ready && item.id === 'visual'}
+              onClick={() => {
+                if (item.id === 'preview') {
+                  setPane('preview');
+                  return;
+                }
+                setPane('panel');
+                setMode(item.id);
+              }}
+              className={cn(
+                'flex-1 rounded-pill px-2 py-2 text-[12.5px] transition disabled:opacity-40',
+                active ? 'bg-accent text-accent-ink' : 'text-ink-secondary',
+              )}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ---- left pane: chat / visual editor ---- */}
-      <div className="flex min-h-0 flex-col border-hairline lg:border-r">
-        <div className="flex gap-1 border-b border-hairline p-3">
+      <div
+        className={cn(
+          'min-h-0 flex-1 flex-col border-hairline lg:flex lg:border-r',
+          pane === 'panel' ? 'flex' : 'hidden',
+        )}
+      >
+        <div className="hidden gap-1 border-b border-hairline p-3 lg:flex">
           {(['chat', 'visual'] as Mode[]).map((item) => (
             <button
               key={item}
@@ -645,7 +696,12 @@ export function Workspace({
       </div>
 
       {/* ---- right pane: live preview ---- */}
-      <div className="flex min-h-0 flex-col bg-[var(--bg-base-deep)] p-4 lg:p-6">
+      <div
+        className={cn(
+          'min-h-0 flex-1 flex-col bg-[var(--bg-base-deep)] p-2 sm:p-4 lg:flex lg:p-6',
+          pane === 'preview' ? 'flex' : 'hidden',
+        )}
+      >
         <CodeWindow
           title={`LUMEN / ${projectName.toUpperCase().replace(/\s+/g, '-')}`}
           className="flex min-h-0 flex-1 flex-col"
@@ -677,7 +733,7 @@ export function Workspace({
                   </option>
                 ))}
               </select>
-              <div className="hidden gap-0.5 sm:flex">
+              <div className="flex gap-0.5">
                 {(['desktop', 'tablet', 'mobile'] as Viewport[]).map((item) => (
                   <button
                     key={item}
@@ -697,14 +753,14 @@ export function Workspace({
                 href={`/preview/${projectId}/${page}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] text-ink-muted transition hover:text-ink-primary"
+                className="hidden text-[11px] text-ink-muted transition hover:text-ink-primary sm:block"
               >
                 open ↗
               </a>
               <button
                 type="button"
                 onClick={() => setNextSteps(true)}
-                className="text-[11px] text-ink-muted transition hover:text-ink-primary"
+                className="hidden text-[11px] text-ink-muted transition hover:text-ink-primary sm:block"
               >
                 what next?
               </button>

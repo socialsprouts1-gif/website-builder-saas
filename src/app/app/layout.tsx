@@ -13,8 +13,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
 
+  // A fixed-height app frame rather than a document that grows.
+  //
+  // The workspace asks for the viewport's height, and on a phone it was given
+  // that height *below* a nav several hundred pixels tall, so the preview sat
+  // off the bottom of the screen and read as missing. dvh rather than vh
+  // because a phone's address bar makes vh lie.
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
+    <div className="flex h-screen flex-col [height:100dvh] lg:flex-row">
       <AppNav
         email={user.email}
         isAdmin={Boolean(user.profile?.is_admin) || isBootstrapAdmin(user.email)}
@@ -32,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             : null
         }
       />
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }

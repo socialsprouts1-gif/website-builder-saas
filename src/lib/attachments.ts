@@ -6,35 +6,35 @@
  * finished uploading is the worst version of this.
  */
 
-export type AttachmentKind = "image" | "video" | "reference";
+export type AttachmentKind = 'logo' | 'image' | 'video' | 'reference';
 
 export const IMAGE_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-  "image/svg+xml",
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+  'image/svg+xml',
 ] as const;
 
 export const VIDEO_TYPES = [
-  "video/mp4",
-  "video/webm",
-  "video/ogg",
+  'video/mp4',
+  'video/webm',
+  'video/ogg',
   // What an iPhone produces.
-  "video/quicktime",
+  'video/quicktime',
 ] as const;
 
 export const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
 /** The `accept` attribute for a file input of this kind. */
-export const acceptFor = (kind: "image" | "video"): string =>
-  (kind === "image" ? IMAGE_TYPES : VIDEO_TYPES).join(",");
+export const acceptFor = (kind: 'logo' | 'image' | 'video'): string =>
+  (kind === 'video' ? VIDEO_TYPES : IMAGE_TYPES).join(',');
 
-export function kindForType(contentType: string): "image" | "video" | null {
-  if ((IMAGE_TYPES as readonly string[]).includes(contentType)) return "image";
-  if ((VIDEO_TYPES as readonly string[]).includes(contentType)) return "video";
+export function kindForType(contentType: string): 'image' | 'video' | null {
+  if ((IMAGE_TYPES as readonly string[]).includes(contentType)) return 'image';
+  if ((VIDEO_TYPES as readonly string[]).includes(contentType)) return 'video';
   return null;
 }
 
@@ -48,9 +48,9 @@ export function rejectReason(file: {
   if (!kind) return `${file.name} is not an image or a video Lumen can use.`;
   if (file.size === 0) return `${file.name} is empty.`;
 
-  const limit = kind === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+  const limit = kind === 'image' ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
   if (file.size > limit) {
-    return `${file.name} is too big — ${kind === "image" ? "images" : "videos"} must be under ${Math.round(
+    return `${file.name} is too big — ${kind === 'image' ? 'images' : 'videos'} must be under ${Math.round(
       limit / (1024 * 1024),
     )}MB.`;
   }
@@ -78,13 +78,13 @@ export function normaliseReference(input: string): string | null {
     return null;
   }
 
-  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
 
   const host = url.hostname.toLowerCase();
-  if (!host.includes(".") || host.endsWith(".local")) return null;
-  if (host === "localhost" || host.endsWith(".localhost")) return null;
+  if (!host.includes('.') || host.endsWith('.local')) return null;
+  if (host === 'localhost' || host.endsWith('.localhost')) return null;
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
-    const [a, b] = host.split(".").map(Number);
+    const [a, b] = host.split('.').map(Number);
     if (
       a === 10 ||
       a === 127 ||
@@ -96,7 +96,7 @@ export function normaliseReference(input: string): string | null {
     }
     if (a === 169 && b === 254) return null;
   }
-  if (host.includes(":")) return null;
+  if (host.includes(':')) return null;
 
   return url.toString();
 }
@@ -104,7 +104,7 @@ export function normaliseReference(input: string): string | null {
 /** The short label shown on the chip. */
 export function referenceLabel(url: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, '');
   } catch {
     return url;
   }

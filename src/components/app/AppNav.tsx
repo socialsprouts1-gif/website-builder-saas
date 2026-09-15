@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
@@ -51,12 +52,43 @@ export function AppNav({
   credits: CreditSummary | null;
 }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  // Following a link is a navigation, not a reason to leave the menu covering
+  // the page you just asked for.
+  useEffect(() => setOpen(false), [pathname]);
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-8 border-b border-hairline px-5 py-5 lg:h-screen lg:w-[232px] lg:border-b-0 lg:border-r lg:py-6">
-      <Logo href="/app" />
+    <aside
+      className={cn(
+        'flex w-full shrink-0 flex-col border-b border-hairline px-5 lg:h-screen lg:w-[232px]',
+        'lg:gap-8 lg:border-b-0 lg:border-r lg:py-6',
+        // On a phone this was the whole nav stacked full-width: a logo, eight
+        // links, the credit meter and the sign-out, about five hundred pixels
+        // of it above every page before any content began. It is a bar now,
+        // and everything else is behind the button on it.
+        open ? 'gap-6 py-5' : 'gap-0 py-3 lg:gap-8',
+      )}
+    >
+      <div className="flex items-center justify-between lg:block">
+        <Logo href="/app" />
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          className="rounded-[9px] border border-hairline px-3 py-1.5 text-[13px] text-ink-secondary transition hover:text-ink-primary lg:hidden"
+        >
+          {open ? 'Close' : 'Menu'}
+        </button>
+      </div>
 
-      <nav className="flex flex-1 flex-col gap-7 overflow-y-auto">
+      <nav
+        className={cn(
+          'flex-1 flex-col gap-7 overflow-y-auto',
+          open ? 'flex' : 'hidden lg:flex',
+        )}
+      >
         {GROUPS.map((group) => (
           <div key={group.title} className="space-y-1">
             <p className="px-3 pb-1 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">{group.title}</p>
@@ -92,12 +124,17 @@ export function AppNav({
       </nav>
 
       {credits ? (
-        <div className="pt-1">
+        <div className={cn('pt-1', open ? 'block' : 'hidden lg:block')}>
           <CreditMeter {...credits} variant="nav" />
         </div>
       ) : null}
 
-      <div className="space-y-2 border-t border-hairline pt-4">
+      <div
+        className={cn(
+          'space-y-2 border-t border-hairline pt-4',
+          open ? 'block' : 'hidden lg:block',
+        )}
+      >
         <p className="truncate px-3 text-[12px] text-ink-muted" title={email}>
           {email}
         </p>

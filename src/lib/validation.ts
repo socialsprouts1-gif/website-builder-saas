@@ -23,6 +23,21 @@ export const createProjectSchema = z.object({
     .max(9_000_000)
     .nullable()
     .optional(),
+  /**
+   * Files the owner handed over on the new-site screen, already in storage.
+   *
+   * Only links, never bytes: they were uploaded straight to storage from the
+   * browser, and these are the public URLs. They go into the brief, so the
+   * pages are written around them rather than around stock imagery.
+   */
+  assets: z
+    .object({
+      logoUrl: z.string().url().max(2000).nullable().optional(),
+      imageUrls: z.array(z.string().url().max(2000)).max(12).optional(),
+      videoUrls: z.array(z.string().url().max(2000)).max(4).optional(),
+      referenceUrls: z.array(z.string().url().max(2000)).max(4).optional(),
+    })
+    .optional(),
   templateSlug: z.string().max(120).nullable().optional(),
   /** Replies to the pre-build interview, folded into the brief server-side. */
   answers: z

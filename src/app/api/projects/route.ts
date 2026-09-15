@@ -53,6 +53,35 @@ export async function POST(request: NextRequest) {
     // input, so every downstream stage sees them without changing shape.
     let brief = applyAnswers(body.prompt, body.answers ?? []);
 
+    // A logo and photographs are only useful if the brief says what they are.
+    // Every section is written from this text, so naming them here is what puts
+    // the owner's own pictures in the page instead of stock ones.
+    const assets = body.assets;
+    if (assets) {
+      const lines: string[] = [];
+      if (assets.logoUrl) {
+        lines.push(`The business's logo, to go in the site header, linked as-is: ${assets.logoUrl}`);
+      }
+      if (assets.imageUrls?.length) {
+        lines.push(
+          `Photographs of this business, to use across the pages rather than stock imagery, linked as-is:\n${assets.imageUrls
+            .map((url) => `- ${url}`)
+            .join('\n')}`,
+        );
+      }
+      if (assets.videoUrls?.length) {
+        lines.push(
+          `Videos to embed in <video> tags, linked as-is:\n${assets.videoUrls
+            .map((url) => `- ${url}`)
+            .join('\n')}`,
+        );
+      }
+      if (assets.referenceUrls?.length) {
+        lines.push(`Sites to match the look and layout of: ${assets.referenceUrls.join(', ')}`);
+      }
+      if (lines.length > 0) brief = `${brief}\n\n${lines.join('\n\n')}`;
+    }
+
     // projects.user_id references public.users; make sure that row exists
     // before inserting, rather than failing on the constraint.
     await ensureUserProfile({

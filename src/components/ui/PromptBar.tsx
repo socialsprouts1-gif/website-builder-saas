@@ -51,7 +51,7 @@ export function PromptBar({
    * attach button is not rendered at all — the landing-page prompt has no
    * project to upload into yet.
    */
-  onAttachFiles?: (kind: 'image' | 'video', files: File[]) => void;
+  onAttachFiles?: (kind: 'logo' | 'image' | 'video', files: File[]) => void;
   onAttachReference?: (url: string) => void;
   onRemoveAttachment?: (id: string) => void;
 }) {
@@ -59,7 +59,7 @@ export function PromptBar({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [pickKind, setPickKind] = useState<'image' | 'video'>('image');
+  const [pickKind, setPickKind] = useState<'logo' | 'image' | 'video'>('image');
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [reference, setReference] = useState('');
   const canAttach = Boolean(onAttachFiles);
@@ -188,7 +188,7 @@ export function PromptBar({
             <input
               ref={fileInputRef}
               type="file"
-              multiple
+              multiple={pickKind !== 'logo'}
               accept={acceptFor(pickKind)}
               className="hidden"
               onChange={(event) => {
@@ -219,9 +219,19 @@ export function PromptBar({
                 />
                 <div className="lumen-panel absolute bottom-11 left-0 z-20 w-56 overflow-hidden rounded-[12px] border border-hairline bg-raised py-1">
                   <MenuItem
+                    icon={ICONS.logo}
+                    label="Logo"
+                    hint="Goes in the header"
+                    onClick={() => {
+                      setPickKind('logo');
+                      setMenuOpen(false);
+                      requestAnimationFrame(() => fileInputRef.current?.click());
+                    }}
+                  />
+                  <MenuItem
                     icon={ICONS.image}
                     label="Image"
-                    hint="Logo, photo, screenshot"
+                    hint="A photo of the business"
                     onClick={() => {
                       setPickKind('image');
                       setMenuOpen(false);
@@ -291,6 +301,7 @@ export function PromptBar({
 }
 
 const ICONS: Record<AttachmentKind, string> = {
+  logo: '✦',
   image: '🖼',
   video: '🎬',
   reference: '🔗',

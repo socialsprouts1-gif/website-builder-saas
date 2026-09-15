@@ -18,12 +18,13 @@ export function ProjectTabs({ projectId, name }: { projectId: string; name: stri
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-4 border-b border-hairline px-6 py-3">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-2.5 sm:px-6 sm:py-3">
       <Link href="/app" className="text-[13px] text-ink-muted transition hover:text-ink-primary">
         ← Sites
       </Link>
       <span className="truncate font-display text-[17px] text-ink-primary">{name}</span>
-      <nav className="ml-auto flex gap-1">
+      {/* Sideways on a phone, rather than wrapping five tabs into three rows. */}
+      <nav className="-mx-4 flex w-full gap-1 overflow-x-auto px-4 sm:mx-0 sm:ml-auto sm:w-auto sm:px-0">
         {tabs.map((tab) => {
           const active = tab.href === base ? pathname === base : pathname.startsWith(tab.href);
           return (
@@ -31,7 +32,7 @@ export function ProjectTabs({ projectId, name }: { projectId: string; name: stri
               key={tab.href}
               href={tab.href}
               className={cn(
-                'rounded-pill px-3.5 py-1.5 text-[13px] transition',
+                'shrink-0 rounded-pill px-3.5 py-1.5 text-[13px] transition',
                 active ? 'bg-accent-soft text-accent' : 'text-ink-secondary hover:text-ink-primary',
               )}
             >

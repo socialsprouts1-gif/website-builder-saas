@@ -334,32 +334,46 @@ export async function runBuildStep(
 
   if (step === 'section') {
     const queue = state.queue ?? [];
-    const job = queue[0];
-    if (!job) throw new Error('Nothing left to write.');
+    const first = queue[0];
+    if (!first) throw new Error('Nothing left to write.');
 
-    const page = vertical.pages.find((candidate) => candidate.path === job.page);
-    const key = `${job.page}#${job.index}`;
+    // A whole page at once, rather than one section per step.
+    //
+    // Each section is an independent request that knows nothing about its
+    // neighbours, so writing them one after another only ever bought latency:
+    // a five-page site is around twenty calls, and at twenty seconds each that
+    // is the five minutes of "Working…" with nothing on screen. The sections of
+    // one page now go out together, which turns those twenty round trips into
+    // five. They are still saved a page at a time, so the preview fills in as
+    // each page lands instead of everything arriving at the end.
+    const batch = queue.filter((entry) => entry.page === first.page);
+    const rest = queue.filter((entry) => entry.page !== first.page);
+    const page = vertical.pages.find((candidate) => candidate.path === first.page);
 
-    const content = await ask(
-      SECTION_SYSTEM,
-      buildSectionPrompt({
-        kind: job.kind,
-        business: plan.businessName,
-        tagline: plan.tagline,
-        audience: plan.audience,
-        vertical,
-        pageTitle: page?.title ?? 'Home',
-        brief: input.prompt,
-        sitemap: vertical.pages.map((entry) => ({ path: entry.path, title: entry.title })),
+    const written = await Promise.all(
+      batch.map(async (job) => {
+        const content = await ask(
+          SECTION_SYSTEM,
+          buildSectionPrompt({
+            kind: job.kind,
+            business: plan.businessName,
+            tagline: plan.tagline,
+            audience: plan.audience,
+            vertical,
+            pageTitle: page?.title ?? 'Home',
+            brief: input.prompt,
+            sitemap: vertical.pages.map((entry) => ({ path: entry.path, title: entry.title })),
+          }),
+        );
+        return { job, section: parseSection(job.kind, `${job.kind}-${job.index + 1}`, content) };
       }),
     );
 
-    const section = parseSection(job.kind, `${job.kind}-${job.index + 1}`, content);
-    const rest = queue.slice(1);
     const sections = { ...(state.sections ?? {}) };
-    if (hasContent(section)) sections[key] = section;
-
-    emitFile(`${pageLabel(job.page)} · ${job.kind}`);
+    for (const { job, section } of written) {
+      if (hasContent(section)) sections[`${job.page}#${job.index}`] = section;
+      emitFile(`${pageLabel(job.page)} · ${job.kind}`);
+    }
 
     const nextState: BuildState = { ...state, sections, queue: rest };
 
@@ -375,7 +389,7 @@ export async function runBuildStep(
       message:
         next === 'publish'
           ? 'Saving what is written so far…'
-          : `Writing the ${rest[0]?.kind ?? 'next'} section…`,
+          : `Writing ${pageLabel(rest[0]?.page ?? '')}…`,
     };
   }
 
