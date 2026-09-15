@@ -1,7 +1,6 @@
 import { Badge } from '@/components/ui/Badge';
 import { GoogleImport } from '@/components/app/GoogleImport';
 import { requireUser } from '@/lib/auth';
-import { isPlacesConfigured } from '@/lib/google/places';
 
 export const metadata = { title: 'From Google' };
 export const dynamic = 'force-dynamic';
@@ -24,7 +23,7 @@ export default async function GoogleImportPage() {
         </p>
       </div>
 
-      <GoogleImport configured={isPlacesConfigured()} />
+      <GoogleImport />
     </div>
   );
 }

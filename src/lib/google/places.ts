@@ -1,6 +1,7 @@
 import 'server-only';
 import { env } from '@/lib/env';
 import { coordinatesFrom, isShortLink, parseGoogleUrl } from './urls';
+import { scrapeListing } from './scrape';
 
 /**
  * Reading a business's own Google listing, through the Places API.
@@ -44,6 +45,11 @@ export interface PlacePhoto {
   width: number;
   height: number;
   attributions: string[];
+  /**
+   * A direct image URL, when the listing was read from the page rather than
+   * from the API. The API's photos have no URL until a key signs one.
+   */
+  url?: string;
 }
 
 export interface PlaceProfile {
@@ -175,8 +181,28 @@ function toProfile(raw: RawPlace): PlaceProfile | null {
   };
 }
 
-/** Resolves whatever was pasted into one business's listing. */
+/**
+ * Resolves whatever was pasted into one business's listing.
+ *
+ * The API first where a key exists — it is stable, and it returns reviews and
+ * photographs the page does not. Without a key, or when the API has nothing,
+ * the listing is read off the page instead, so the feature works on a
+ * deployment that has set nothing up at all.
+ */
 export async function lookupPlace(input: string): Promise<PlaceProfile | null> {
+  if (!isPlacesConfigured()) return scrapeListing(input);
+
+  try {
+    const viaApi = await lookupViaApi(input);
+    if (viaApi) return viaApi;
+  } catch {
+    // A key that is rejected, out of quota, or misconfigured should not be the
+    // end of the feature when the page itself is readable.
+  }
+  return scrapeListing(input);
+}
+
+async function lookupViaApi(input: string): Promise<PlaceProfile | null> {
   let target = input.trim();
   if (isShortLink(target)) target = await expandShortLink(target);
 

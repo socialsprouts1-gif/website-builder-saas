@@ -9,6 +9,14 @@ export const createProjectSchema = z.object({
   inputMode: z.enum(['prompt', 'screenshot', 'voice', 'template', 'google']).default('prompt'),
   /** A Google listing to build from, resolved server-side before generating. */
   googleUrl: z.string().trim().max(2000).nullable().optional(),
+  googleFixes: z
+    .object({
+      name: z.string().trim().max(120).optional(),
+      address: z.string().trim().max(300).optional(),
+      phone: z.string().trim().max(40).optional(),
+      website: z.string().trim().max(300).optional(),
+    })
+    .optional(),
   screenshotDataUrl: z
     .string()
     .regex(/^data:image\/(png|jpe?g|webp|gif);base64,/, 'Unsupported image type')

@@ -84,11 +84,24 @@ export async function POST(request: NextRequest) {
     // so the build starts from real facts and real photographs rather than
     // inventing a business that already exists.
     if (body.inputMode === 'google' && body.googleUrl) {
-      const place = await lookupPlace(body.googleUrl);
-      if (!place) {
+      const found = await lookupPlace(body.googleUrl);
+      if (!found) {
         await admin.from('projects').delete().eq('id', project.id);
         return jsonError('That Google listing could not be read. Check the link and try again.', 422);
       }
+
+      // Anything the owner typed on the confirmation screen wins. Reading a
+      // listing off the page does not always find a phone number or the full
+      // address, and a corrected fact beats a missing one every time.
+      const fixes = body.googleFixes ?? {};
+      const place = {
+        ...found,
+        name: fixes.name?.trim() || found.name,
+        address: fixes.address?.trim() || found.address,
+        phone: fixes.phone?.trim() || found.phone,
+        website: fixes.website?.trim() || found.website,
+      };
+
       const seeded = await seedFromPlace(project.id, place);
       brief = `${brief}\n\n${seeded.brief}`;
 

@@ -70,7 +70,10 @@ export async function importPlacePhotos(projectId: string, place: PlaceProfile):
   const urls: string[] = [];
 
   for (const [index, photo] of place.photos.slice(0, MAX_PHOTOS).entries()) {
-    const source = photoMediaUrl(photo.name, 1600);
+    // A listing read from the page already has a fetchable URL; one from the
+    // API needs a key-signed one. Either way the bytes end up in the project's
+    // own storage, because a generated site cannot depend on Lumen staying up.
+    const source = photo.url ?? photoMediaUrl(photo.name, 1600);
     if (!source) break;
 
     try {
