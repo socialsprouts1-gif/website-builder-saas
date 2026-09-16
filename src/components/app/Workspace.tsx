@@ -867,6 +867,8 @@ export function Workspace({
               {ready && !stillAdding && !busy && !imagesBusy && showSuggestions && !connect ? (
                 <BuildSuggestions
                   suggestions={suggestions}
+                  projectId={projectId}
+                  onLookApplied={() => refreshPreview()}
                   busy={false}
                   imagesBusy={imagesBusy}
                   onGenerateImages={() => void generateImages()}

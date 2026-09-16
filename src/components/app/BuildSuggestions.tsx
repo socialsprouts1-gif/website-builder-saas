@@ -1,6 +1,7 @@
 'use client';
 
 import type { BuildSuggestion } from '@/lib/generation/suggest';
+import { LookPicker } from '@/components/app/LookPicker';
 import { cn } from '@/components/ui/cn';
 
 /**
@@ -18,6 +19,8 @@ export function BuildSuggestions({
   onDismiss,
   onGenerateImages,
   imagesBusy,
+  projectId,
+  onLookApplied,
 }: {
   suggestions: BuildSuggestion[];
   busy: boolean;
@@ -26,6 +29,8 @@ export function BuildSuggestions({
   /** Making photographs is not a chat edit, so it gets its own action. */
   onGenerateImages?: () => void;
   imagesBusy?: boolean;
+  projectId?: string;
+  onLookApplied?: (name: string) => void;
 }) {
   if (suggestions.length === 0 && !onGenerateImages) return null;
 
@@ -55,6 +60,15 @@ export function BuildSuggestions({
       {pages.length > 0 ? (
         <Group title="Pages" items={pages} busy={busy} onPick={onPick} emphasis />
       ) : null}
+      {projectId ? (
+        <div>
+          <p className="mb-1.5 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+            Or try a different look
+          </p>
+          <LookPicker projectId={projectId} onApplied={onLookApplied} compact />
+        </div>
+      ) : null}
+
       {sections.length > 0 ? (
         <Group title="Add to the site" items={sections} busy={busy} onPick={onPick} />
       ) : null}

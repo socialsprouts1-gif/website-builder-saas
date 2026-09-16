@@ -382,6 +382,14 @@ export function EditorWorkspace({
               onToken={editToken}
               onFont={editFont}
               loading={awaitingOutline}
+              projectId={projectId}
+              onLookApplied={() => {
+                // Saved on the server, so the pending queue knows nothing about
+                // it — the frame has to be reloaded rather than nudged.
+                setNotice('New look applied and saved.');
+                setFrameKey((key) => key + 1);
+                router.refresh();
+              }}
             />
           )}
         </div>

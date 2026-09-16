@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { asHex } from '@/lib/theme-tokens';
+import { LookPicker } from '@/components/app/LookPicker';
 import { fontsFor, type FontChoice } from '@/lib/fonts';
 import type { PaletteToken } from './Inspector';
 
 /** Groups, the way a theme editor has them — one open at a time. */
-type Group = 'colours' | 'type' | 'shape';
+type Group = 'looks' | 'colours' | 'type' | 'shape';
 
 /** Corner rounding and section spacing, as choices rather than numbers. */
 const ROUNDING: { label: string; radius: string; large: string }[] = [
@@ -35,13 +36,19 @@ export function ThemePanel({
   onToken,
   onFont,
   loading,
+  projectId,
+  onLookApplied,
 }: {
   palette: PaletteToken[];
   onToken: (name: string, value: string) => void;
   onFont: (role: 'display' | 'body', family: string, googleHref: string | null) => void;
   loading: boolean;
+  projectId: string;
+  onLookApplied?: () => void;
 }) {
-  const [open, setOpen] = useState<Group>('colours');
+  // Looks first, and open: changing all of it at once is what most people
+  // want, and picking one colour at a time is the specialist case.
+  const [open, setOpen] = useState<Group>('looks');
   if (loading && palette.length === 0) {
     return <p className="p-4 text-[12px] text-ink-muted">Reading the site&rsquo;s palette…</p>;
   }
@@ -57,6 +64,12 @@ export function ThemePanel({
 
   return (
     <div className="p-3">
+      <Section title="Whole look" open={open === 'looks'} onToggle={() => setOpen('looks')}>
+        <div className="px-1">
+          <LookPicker projectId={projectId} onApplied={onLookApplied} compact />
+        </div>
+      </Section>
+
       <Section
         title="Colour palette"
         open={open === 'colours'}
