@@ -188,8 +188,8 @@ export function Workspace({
   }, [projectId]);
 
   useEffect(() => {
-    if (ready && !stillAdding) void loadSuggestions();
-  }, [ready, stillAdding, loadSuggestions]);
+    if (ready && !stillAdding && !busy) void loadSuggestions();
+  }, [ready, stillAdding, busy, loadSuggestions]);
 
   // Whatever was typed during the build runs the moment the build lets go of
   // the files, as if it had been sent by hand right then.
@@ -857,7 +857,14 @@ export function Workspace({
                 </div>
               ) : null}
 
-              {ready && !stillAdding && showSuggestions && !connect ? (
+              {/* Not while something is running.
+                  The card lives at the end of the log, so a request made from
+                  it landed above the card that produced it — the newest thing
+                  on screen was not the newest thing that happened. It steps
+                  aside while the work runs, which puts the request and the
+                  steps under it at the bottom where they belong, and comes
+                  back afterwards with whatever was just built taken off it. */}
+              {ready && !stillAdding && !busy && !imagesBusy && showSuggestions && !connect ? (
                 <BuildSuggestions
                   suggestions={suggestions}
                   busy={false}
@@ -865,6 +872,13 @@ export function Workspace({
                   onGenerateImages={() => void generateImages()}
                   onDismiss={() => setShowSuggestions(false)}
                   onPick={(suggestion) => {
+                    // Off the list the moment it is pressed, rather than when
+                    // the site is read back afterwards. Offering to build
+                    // something that is being built is the same bug as the
+                    // card sitting below the work.
+                    setSuggestions((current) =>
+                      current.filter((item) => item.id !== suggestion.id),
+                    );
                     // Straight to the editor: a suggestion is an ordinary edit,
                     // so it streams, saves a version and can be undone like any
                     // other. Nothing here is a second kind of build. The label

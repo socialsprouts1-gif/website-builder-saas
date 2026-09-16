@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { normaliseSlug, publicUrl } from '@/lib/publish';
 import { cn } from '@/components/ui/cn';
 
-const PANEL_WIDTH = 340;
-
 /**
  * Publishing, from the screen where the site actually is.
  *
@@ -13,9 +11,16 @@ const PANEL_WIDTH = 340;
  * means "set up hosting". The moment a site finishes is the moment someone
  * wants to send it to a person, so the button belongs here, next to the site.
  *
- * The panel is a two-beat flow rather than a form: set the address and,
- * optionally, the tab icon — then publish, and the link is what you are left
- * looking at.
+ * A dialog, not a popover hung off the button. The popover measured the
+ * button and rendered only once it had a position — so anything that stopped
+ * that measurement, an ancestor that clips or transforms among them, produced
+ * a Publish button that did nothing at all when pressed and said nothing about
+ * why. A dialog has nothing to measure, cannot be clipped by the preview
+ * window it sits inside, and is the only version of this that works on a
+ * phone.
+ *
+ * The flow is two beats rather than a form: set the address and, optionally,
+ * the tab icon — then publish, and the link is what you are left looking at.
  */
 export function PublishButton({
   projectId,
@@ -46,12 +51,6 @@ export function PublishButton({
   // After publishing, the link is the point. "Change the address" goes back.
   const [editing, setEditing] = useState(false);
 
-  const panelRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  // The preview window clips its own overflow, so the panel is placed against
-  // the viewport rather than hung off the button inside it.
-  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
-
   // The address is whatever domain this is being used on, not a build-time
   // constant: the same app answers on a preview URL and on its own domain, and
   // a link that points at the wrong one is worse than no link.
@@ -63,34 +62,11 @@ export function PublishButton({
 
   useEffect(() => {
     if (!open) return;
-
-    const place = () => {
-      const rect = buttonRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      setAnchor({
-        top: rect.bottom + 10,
-        left: Math.max(12, Math.min(rect.right - PANEL_WIDTH, window.innerWidth - PANEL_WIDTH - 12)),
-      });
-    };
-
-    place();
-    window.addEventListener('resize', place);
-    window.addEventListener('scroll', place, true);
-
-    const onClick = (event: MouseEvent) => {
-      if (!panelRef.current?.contains(event.target as Node)) setOpen(false);
-    };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
     };
-    document.addEventListener('mousedown', onClick);
     document.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('resize', place);
-      window.removeEventListener('scroll', place, true);
-      document.removeEventListener('mousedown', onClick);
-      document.removeEventListener('keydown', onKey);
-    };
+    return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
   const address = normaliseSlug(slug);
@@ -160,9 +136,8 @@ export function PublishButton({
   }
 
   return (
-    <div className="relative" ref={panelRef}>
+    <>
       <button
-        ref={buttonRef}
         type="button"
         onClick={() => setOpen((value) => !value)}
         className={cn(
@@ -175,11 +150,17 @@ export function PublishButton({
         {published ? 'Live ↗' : 'Publish'}
       </button>
 
-      {open && anchor ? (
+      {open ? (
         <div
-          className="lumen-panel fixed z-50 overflow-hidden rounded-[16px] border border-hairline"
-          style={{ top: anchor.top, left: anchor.left, width: PANEL_WIDTH }}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Publish this site"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
         >
+        <div className="lumen-panel max-h-full w-full max-w-[380px] overflow-y-auto rounded-[16px] border border-hairline">
           {/* ---- header: what this panel is, as an object ---- */}
           <div className="flex items-start gap-3 border-b border-hairline px-4 py-3.5">
             <span className="lumen-tile flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]">
@@ -233,6 +214,33 @@ export function PublishButton({
                     Open ↗
                   </a>
                 </div>
+
+                {/* The question everyone asks next, answered before it is
+                    asked. The published address serves the project's current
+                    files on every request, so there is nothing to press to
+                    push an edit out — and a button that did nothing would be
+                    worse than this sentence. */}
+                <p className="rounded-[10px] border border-hairline bg-raised px-3 py-2.5 text-[11.5px] leading-relaxed text-ink-muted">
+                  <span className="text-ink-secondary">Edits go live by themselves.</span> Every change you
+                  make in chat or the editor is on this link the moment it saves — there is nothing to
+                  publish a second time.
+                </p>
+
+                <a
+                  href={`/app/project/${projectId}/deploy`}
+                  className="lumen-raise flex items-center gap-3 rounded-[12px] border border-hairline p-3 transition hover:border-accent/40"
+                >
+                  <span className="lumen-well flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] border border-hairline text-ink-secondary">
+                    <TagMark />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] text-ink-primary">Use your own domain</span>
+                    <span className="mt-0.5 block text-[11px] leading-relaxed text-ink-muted">
+                      Point one you own at this site, or buy one
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[12px] text-ink-muted">→</span>
+                </a>
 
                 <div className="flex items-center justify-between gap-3 border-t border-hairline pt-3">
                   <button
@@ -353,8 +361,9 @@ export function PublishButton({
             ) : null}
           </div>
         </div>
+        </div>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -368,6 +377,21 @@ function GlobeMark() {
         stroke="currentColor"
         strokeWidth="1.3"
       />
+    </svg>
+  );
+}
+
+/** For the domain row: a luggage tag, which is what a domain is. */
+function TagMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <path
+        d="M10.5 2.5H16a1.5 1.5 0 0 1 1.5 1.5v5.5a2 2 0 0 1-.6 1.4l-5.6 5.6a1.5 1.5 0 0 1-2.1 0l-5.6-5.6a1.5 1.5 0 0 1 0-2.1l5.6-5.6a2 2 0 0 1 1.3-.7Z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <circle cx="13.5" cy="6.5" r="1.2" stroke="currentColor" strokeWidth="1.3" />
     </svg>
   );
 }
