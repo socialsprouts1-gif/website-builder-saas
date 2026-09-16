@@ -135,9 +135,31 @@ export async function generateSiteImages(params: {
     .map((result) => result.value);
 }
 
+/**
+ * Photographs that were made but never made it onto the page.
+ *
+ * Making four pictures takes about a minute and costs real money, and the
+ * browser used to be the only place that knew the URLs: close the tab while it
+ * ran and the images sat in storage, paid for, with nothing pointing at them,
+ * while the site went on offering to make them all over again. This compares
+ * what is in the bucket against what the site actually links to, so the offer
+ * can be "put the ones you already have in" rather than "make some more".
+ */
+export function unplacedImages(urls: string[], siteFiles: string[]): string[] {
+  const site = siteFiles.join('\n');
+  return urls.filter((url) => {
+    // The stored path is what survives a CDN prefix change or a re-signed URL;
+    // matching on the whole URL would miss a picture that is plainly there.
+    const key = url.split('/').pop();
+    return Boolean(key) && !site.includes(key!);
+  });
+}
+
 /** The instruction that puts them in the page, for the ordinary editor. */
-export function imageInstruction(images: GeneratedImage[]): string {
-  const lines = images.map((image) => `- ${image.url} — for ${image.role}`);
+export function imageInstruction(images: { url: string; role?: string }[]): string {
+  const lines = images.map((image) =>
+    image.role ? `- ${image.url} — for ${image.role}` : `- ${image.url}`,
+  );
   return (
     'Put these hosted images into the site. They are already online, so link each one as-is in an ' +
     '<img> tag with a descriptive alt attribute, sized and cropped by CSS the way the existing ' +

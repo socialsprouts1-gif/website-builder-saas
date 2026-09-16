@@ -24,7 +24,8 @@ export function LookPicker({
   compact = false,
 }: {
   projectId: string;
-  onApplied?: (name: string) => void;
+  /** The name picked and the sentence to put in the chat for it. */
+  onApplied?: (name: string, message: string) => void;
   compact?: boolean;
 }) {
   const [looks, setLooks] = useState<Look[] | null>(null);
@@ -60,7 +61,7 @@ export function LookPicker({
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? 'Could not change the look');
       setApplied(look.id);
-      onApplied?.(look.name);
+      onApplied?.(look.name, payload.message ?? `Switched the site to the ${look.name} look.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not change the look');
     } finally {

@@ -21,6 +21,8 @@ export function BuildSuggestions({
   imagesBusy,
   projectId,
   onLookApplied,
+  readyPhotos = 0,
+  onPlacePhotos,
 }: {
   suggestions: BuildSuggestion[];
   busy: boolean;
@@ -30,7 +32,14 @@ export function BuildSuggestions({
   onGenerateImages?: () => void;
   imagesBusy?: boolean;
   projectId?: string;
-  onLookApplied?: (name: string) => void;
+  onLookApplied?: (name: string, message: string) => void;
+  /**
+   * Photographs made earlier that never reached the page — because the tab was
+   * closed while they were being made, most likely. Offering to make more would
+   * charge for the same thing twice.
+   */
+  readyPhotos?: number;
+  onPlacePhotos?: () => void;
 }) {
   if (suggestions.length === 0 && !onGenerateImages) return null;
 
@@ -76,6 +85,25 @@ export function BuildSuggestions({
       {onGenerateImages ? (
         <div>
           <p className="mb-1.5 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">Pictures</p>
+          {readyPhotos > 0 && onPlacePhotos ? (
+            <button
+              type="button"
+              disabled={busy || imagesBusy}
+              onClick={onPlacePhotos}
+              className="lumen-raise mb-1.5 flex w-full items-center gap-3 rounded-[11px] border border-accent/40 bg-accent-soft px-3 py-2.5 text-left transition hover:border-accent disabled:opacity-40"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] text-accent">
+                  Put the {readyPhotos} photograph{readyPhotos === 1 ? '' : 's'} you already have into
+                  the site
+                </span>
+                <span className="mt-0.5 block text-[11.5px] text-ink-muted">
+                  Made earlier and never placed. Nothing new to pay for.
+                </span>
+              </span>
+              <span className="shrink-0 text-[11px] uppercase tracking-[0.1em] text-ink-muted">Use</span>
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={busy || imagesBusy}

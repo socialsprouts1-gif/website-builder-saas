@@ -7,7 +7,8 @@ import { PromptBar, type PromptAttachment } from '@/components/ui/PromptBar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/components/ui/cn';
-import { VisualEditorPanel } from '@/components/app/VisualEditorPanel';
+import { VisualEditPanel } from '@/components/app/VisualEditPanel';
+import type { BlockMenuItem } from '@/components/app/editor/EditorWorkspace';
 import { BuildingStage, type BuildStageId } from '@/components/app/BuildingStage';
 import { PublishButton } from '@/components/app/PublishButton';
 import { NextSteps } from '@/components/app/NextSteps';
@@ -17,6 +18,7 @@ import { MediaDrop } from '@/components/app/MediaDrop';
 import { ConnectFlow } from '@/components/app/ConnectFlow';
 import { BUILT_IN_PROVIDERS, detectConnectIntent, type ConnectIntent } from '@/lib/connectors/intent';
 import { orderPages, pageLabel } from '@/lib/pages';
+import { openingView, type JobStatus } from '@/lib/generation/opening-view';
 import { createClient } from '@/lib/supabase/client';
 import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
 import type { ModelOption } from '@/lib/openai/models';
@@ -54,10 +56,12 @@ export function Workspace({
   models,
   activeModel,
   initialJobId,
+  initialJobStatus,
   jobStartedAt,
   publicSlug,
   published,
   favicon,
+  blockMenu,
 }: {
   projectId: string;
   projectName: string;
@@ -68,13 +72,33 @@ export function Workspace({
   models: { quality: ModelOption | null; fast: ModelOption | null; all: ModelOption[] };
   activeModel: string | null;
   initialJobId: string | null;
+  /**
+   * The build's own status, which is the only thing that says whether one is
+   * running. `initialStatus` is the project's, and a build sets that to `ready`
+   * the moment it saves its first page.
+   */
+  initialJobStatus: JobStatus;
   /** When the build actually began, so the timer survives leaving the page. */
   jobStartedAt: string | null;
   publicSlug: string | null;
   published: boolean;
   favicon: string | null;
+  /** The sections the visual editor can add. Authored on the server. */
+  blockMenu: BlockMenuItem[];
 }) {
   const router = useRouter();
+
+  /**
+   * Computed once, from the two rows as they were when this page rendered.
+   *
+   * Held in state rather than recomputed: `router.refresh()` re-renders this
+   * component with fresh props several times during a build, and re-deriving
+   * from them would let a late server render overwrite what the live stream
+   * has already told us.
+   */
+  const [opening] = useState(() =>
+    openingView({ projectStatus: initialStatus, jobStatus: initialJobStatus }),
+  );
 
   const [mode, setMode] = useState<Mode>('chat');
   const [messages, setMessages] = useState<WorkspaceMessage[]>(initialMessages);
@@ -85,15 +109,20 @@ export function Workspace({
   // Which of the two panes a phone is looking at. Ignored from `lg` up, where
   // both are on screen at once.
   const [pane, setPane] = useState<'panel' | 'preview'>('panel');
-  const [busy, setBusy] = useState(initialStatus === 'generating');
-  const [progress, setProgress] = useState<string | null>(
-    initialStatus === 'generating' ? 'Starting up…' : null,
-  );
+  const [busy, setBusy] = useState(opening.busy);
+  const [progress, setProgress] = useState<string | null>(opening.busy ? 'Starting up…' : null);
   const [stage, setStage] = useState<BuildStageId>('brief');
+  // How many pages are saved and how many the plan calls for, so the card can
+  // say where the build has got to instead of "it is working on it".
+  const [written, setWritten] = useState<{ saved: number; expected: number }>({
+    saved: 0,
+    expected: 0,
+  });
   const [builtFiles, setBuiltFiles] = useState<string[]>([]);
   const [percent, setPercent] = useState(2);
-  // Viewable, but the build has not finished adding pages.
-  const [stillAdding, setStillAdding] = useState(false);
+  // Viewable, but the build has not finished adding pages. True from the
+  // start when a reload lands in the middle of one.
+  const [stillAdding, setStillAdding] = useState(opening.stillAdding);
   const [error, setError] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
   // Held in state, not read straight off the prop: an edit can write a page
@@ -104,6 +133,11 @@ export function Workspace({
   const [suggestions, setSuggestions] = useState<BuildSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [imagesBusy, setImagesBusy] = useState(false);
+  // Photographs already in storage that the site does not link to, and the
+  // instruction that places them.
+  const [readyPhotos, setReadyPhotos] = useState<{ count: number; instruction: string } | null>(
+    null,
+  );
   // Something typed or pressed while something else was running, waiting.
   const [queued, setQueued] = useState<{ message: string; label?: string } | null>(null);
   /**
@@ -120,11 +154,11 @@ export function Workspace({
     items: { id: string; label: string; done: boolean }[];
   } | null>(null);
   const [viewport, setViewport] = useState<Viewport>('desktop');
-  const [ready, setReady] = useState(initialStatus === 'ready');
+  const [ready, setReady] = useState(opening.ready);
   // A build that died leaves the project here with nothing running. Without a
   // way out, the workspace shows a build screen for something that is not
   // building.
-  const [stopped, setStopped] = useState(initialStatus === 'failed' && !initialJobId);
+  const [stopped, setStopped] = useState(opening.stopped);
   const [retrying, setRetrying] = useState(false);
   // Shown once, when a build finishes, and reopenable from the header.
   const [nextSteps, setNextSteps] = useState(false);
@@ -146,11 +180,14 @@ export function Workspace({
   const holdMessages = buildRunning || busy;
 
   const logRef = useRef<HTMLDivElement>(null);
+  // The visual editor drives this frame over postMessage; it never reaches
+  // into it.
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const frameLoad = useRef<(() => void) | null>(null);
   // The current sendMessage, so the queue can be flushed from an effect without
   // that effect having to re-subscribe to the build every time a message is
   // typed.
   const sendRef = useRef<typeof sendMessage | null>(null);
-  const generationStarted = useRef(false);
   const publishedSeen = useRef(false);
   // How many pages the build had saved last time the preview was reloaded.
   const savedSeen = useRef(0);
@@ -163,10 +200,43 @@ export function Workspace({
 
   useEffect(scrollLog, [messages, progress, scrollLog]);
 
+  /**
+   * A fresh frame whenever the tab changes.
+   *
+   * Visual edit needs the page served with the editor bridge in it and chat
+   * needs it served without, so the two tabs are two different documents.
+   * Changing the `src` of a frame React is already showing does navigate it,
+   * but it leaves the panel talking to whichever document wins the race.
+   * Remounting makes the order plain, and gives the panel a load event to
+   * hang its first question on.
+   */
+  useEffect(() => {
+    setPreviewKey((key) => key + 1);
+  }, [mode]);
+
   const refreshPreview = useCallback(() => {
     setPreviewKey((key) => key + 1);
     router.refresh();
   }, [router]);
+
+  /**
+   * The build this tab follows, fixed at mount.
+   *
+   * It has to be, because the watcher below is an effect and an effect is torn
+   * down when its dependencies change. Depending on `initialJobId` and
+   * `initialStatus` meant that the first `router.refresh()` — which the watcher
+   * itself fires, every time the build saves a page — re-rendered this
+   * component with a project status of `ready`, changed the dependencies, ran
+   * the cleanup and closed the EventSource. The build carried on server-side
+   * with nobody listening: no further progress, no `done`, no card of what to
+   * build next, and a composer still holding messages for a build it thought
+   * was running. Reloading the page was the only way to see any of it, which is
+   * precisely what it looked like from the outside.
+   */
+  const watchedJobId = useRef(opening.watch ? initialJobId : null).current;
+  // Read by the watcher without being a dependency of it.
+  const refreshRef = useRef(refreshPreview);
+  refreshRef.current = refreshPreview;
 
   /**
    * What the site is still missing, read back from the site itself.
@@ -185,11 +255,45 @@ export function Workspace({
     } catch {
       // Suggestions are an offer, not a feature anything depends on.
     }
+
+    // Asked for at the same time, and for the same reason: a picture that was
+    // made and never placed is a fact about the site, and the only way to know
+    // it is to look.
+    try {
+      const response = await fetch(`/api/projects/${projectId}/images`);
+      if (!response.ok) return;
+      const payload = await response.json();
+      const count = Array.isArray(payload.images) ? payload.images.length : 0;
+      setReadyPhotos(count > 0 && payload.instruction ? { count, instruction: payload.instruction } : null);
+    } catch {
+      // Same: an offer.
+    }
   }, [projectId]);
 
   useEffect(() => {
     if (ready && !stillAdding && !busy) void loadSuggestions();
   }, [ready, stillAdding, busy, loadSuggestions]);
+
+  /**
+   * Pages the server has learned about since this loaded.
+   *
+   * `pages` is seeded from the prop and then owned locally, which is right for
+   * a page an edit just wrote — but it meant the pages a *build* writes, which
+   * arrive through `router.refresh()` as a new prop, never reached the picker.
+   * A build would finish the Services page, the preview would reload, and the
+   * only page you could switch to was still Home. Merged rather than replaced,
+   * so a page written locally is not dropped by a server render that predates
+   * it.
+   */
+  const serverPages = initialPages.join('|');
+  useEffect(() => {
+    setPages((current) => {
+      const merged = orderPages([...new Set([...current, ...serverPages.split('|').filter(Boolean)])]);
+      const same =
+        merged.length === current.length && merged.every((path, index) => path === current[index]);
+      return same ? current : merged;
+    });
+  }, [serverPages]);
 
   // Whatever was typed during the build runs the moment the build lets go of
   // the files, as if it had been sent by hand right then.
@@ -202,14 +306,19 @@ export function Workspace({
 
   // ---- watching the build ---------------------------------------------------
   useEffect(() => {
-    if (!initialJobId || generationStarted.current || initialStatus !== 'generating') return;
-    generationStarted.current = true;
+    if (!watchedJobId) return;
+
+    // No "have I already started?" latch here. The dependencies below are
+    // fixed for the life of this component, so in production this runs once;
+    // and the latch that used to guard it meant that StrictMode's deliberate
+    // mount-unmount-mount in development tore the watcher down and then
+    // refused to build it again.
 
     // Ask the server to start it, then watch. Starting is idempotent — the job
     // is claimed with a conditional update — so arriving on this page a second
     // time watches the build already in flight instead of launching another.
     const nudge = () =>
-      void fetch(`/api/generate/${initialJobId}/run`, { method: 'POST' }).catch(() => {
+      void fetch(`/api/generate/${watchedJobId}/run`, { method: 'POST' }).catch(() => {
         // The watcher below reports the real state either way.
       });
 
@@ -230,7 +339,7 @@ export function Workspace({
     let finished = false;
 
     const open = () => {
-      source = new EventSource(`/api/generate/${initialJobId}/stream`);
+      source = new EventSource(`/api/generate/${watchedJobId}/stream`);
       wire(source);
     };
 
@@ -244,6 +353,12 @@ export function Workspace({
         if (payload.stage) setStage(payload.stage as BuildStageId);
       }
       if (typeof payload.percent === 'number') setPercent(payload.percent);
+      if (typeof payload.saved === 'number' || typeof payload.expected === 'number') {
+        setWritten((current) => ({
+          saved: typeof payload.saved === 'number' ? payload.saved : current.saved,
+          expected: typeof payload.expected === 'number' ? payload.expected : current.expected,
+        }));
+      }
       // The site is saved and viewable well before the build ends. Swap the
       // build screen for the real thing the moment there is something to see.
       // A ref, not state: reading `ready` here would make it a dependency of
@@ -258,7 +373,7 @@ export function Workspace({
       // count going up rather than once at the start and once at the end.
       if (typeof payload.saved === 'number' && payload.saved > savedSeen.current) {
         savedSeen.current = payload.saved;
-        refreshPreview();
+        refreshRef.current();
       }
       if (payload.type === 'file' && payload.path) {
         setStage('code');
@@ -279,7 +394,7 @@ export function Workspace({
         setReady(true);
         setStillAdding(false);
         source.close();
-        refreshPreview();
+        refreshRef.current();
         // What you can do with a finished site is worth saying once, here,
         // rather than leaving it behind tabs named after features.
         try {
@@ -316,7 +431,7 @@ export function Workspace({
       clearInterval(revive);
       source?.close();
     };
-  }, [initialJobId, initialStatus, projectId, refreshPreview]);
+  }, [watchedJobId, projectId]);
 
   // ---- attachments ----------------------------------------------------------
 
@@ -419,6 +534,7 @@ export function Workspace({
       if (!response.ok) throw new Error(payload.error ?? 'Could not make the images');
 
       setImagesBusy(false);
+      setReadyPhotos(null);
       setSteps((current) =>
         current
           ? {
@@ -831,6 +947,16 @@ export function Workspace({
                     The rest of the site is being written now — each page appears in the preview as it
                     lands. Look at the homepage while you wait.
                   </p>
+                  {/* Where it has got to. A progress line that names the page
+                      being written is the difference between waiting and
+                      wondering whether anything is still happening. */}
+                  <p className="flex items-center gap-2 text-[12.5px] leading-relaxed text-accent">
+                    <span className="h-1.5 w-1.5 shrink-0 animate-pulse-dot rounded-pill bg-accent" />
+                    {progress ?? 'Writing the next page…'}
+                    {written.expected > 0
+                      ? ` · ${Math.min(written.saved, written.expected)} of ${written.expected} pages saved`
+                      : ''}
+                  </p>
                   <p className="text-[12.5px] leading-relaxed text-ink-muted">
                     Want something specific? Type it below, or attach your photos and logo with{' '}
                     <strong className="text-ink-secondary">Add</strong>. It runs the moment this finishes.
@@ -868,7 +994,28 @@ export function Workspace({
                 <BuildSuggestions
                   suggestions={suggestions}
                   projectId={projectId}
-                  onLookApplied={() => refreshPreview()}
+                  readyPhotos={readyPhotos?.count ?? 0}
+                  onPlacePhotos={() => {
+                    const pending = readyPhotos;
+                    if (!pending) return;
+                    setReadyPhotos(null);
+                    void sendMessage(pending.instruction, 'chat', {
+                      allowConnect: false,
+                      label: `Put the ${pending.count} photograph${pending.count === 1 ? '' : 's'} you already have into the site`,
+                    });
+                  }}
+                  onLookApplied={(name, message) => {
+                    // Said in the chat, where every other change to the site is
+                    // said. The server has already written both of these down,
+                    // so this is only showing now what a reload would show.
+                    const stamp = Date.now();
+                    setMessages((current) => [
+                      ...current,
+                      { id: `look-${stamp}`, role: 'user', content: `Use the ${name} look` },
+                      { id: `look-${stamp}-reply`, role: 'assistant', content: message },
+                    ]);
+                    refreshPreview();
+                  }}
                   busy={false}
                   imagesBusy={imagesBusy}
                   onGenerateImages={() => void generateImages()}
@@ -1007,13 +1154,16 @@ export function Workspace({
             </div>
           </>
         ) : (
-          <VisualEditorPanel
+          <VisualEditPanel
             projectId={projectId}
+            projectName={projectName}
             page={page}
-            onSaved={() => {
-              refreshPreview();
-              setMode('chat');
-            }}
+            pages={pages}
+            blockMenu={blockMenu}
+            frameRef={frameRef}
+            frameLoad={frameLoad}
+            reloadToken={previewKey}
+            onReload={refreshPreview}
           />
         )}
       </div>
@@ -1102,7 +1252,9 @@ export function Workspace({
           {ready ? (
             <iframe
               key={previewKey}
+              ref={frameRef}
               src={previewSrc}
+              onLoad={() => frameLoad.current?.()}
               title={`${projectName} preview`}
               // No allow-same-origin: generated code runs in an opaque origin and
               // can never touch Lumen's cookies or DOM.

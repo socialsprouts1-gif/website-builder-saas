@@ -105,14 +105,37 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       designSystem: variant.tokens as never,
     });
 
+    const admin = createAdminClient();
+
     // Remembered on the project too, so the next variant is derived from the
     // look the site actually has rather than from the one it was born with.
-    await createAdminClient()
+    await admin
       .from('projects')
       .update({ design_system: variant.tokens as never })
       .eq('id', id);
 
-    return NextResponse.json({ ok: true, versionId: version.id, name: variant.name });
+    // And written into the conversation, because changing the look is a change
+    // to the site. It left no trace in the chat at all: pick Sharp, watch the
+    // preview repaint, reload, and the only evidence it had ever happened was
+    // an unnamed entry in version history.
+    await admin.from('chat_messages').insert([
+      { project_id: id, role: 'user', content: `Use the ${variant.name} look` },
+      {
+        project_id: id,
+        role: 'assistant',
+        content: `Switched the site to the ${variant.name} look. Only the styling changed — every word and picture is as it was. Undo it from version history.`,
+        version_id: version.id,
+      },
+    ]);
+
+    return NextResponse.json({
+      ok: true,
+      versionId: version.id,
+      name: variant.name,
+      // What the chat should show now, so the browser does not have to guess at
+      // the wording or reload to find out.
+      message: `Switched the site to the ${variant.name} look. Only the styling changed — every word and picture is as it was. Undo it from version history.`,
+    });
   } catch (cause) {
     return handleRouteError(cause);
   }

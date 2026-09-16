@@ -142,3 +142,23 @@ export async function uploadAsset(params: {
   const { data } = supabase.storage.from(ASSET_BUCKET).getPublicUrl(path);
   return data.publicUrl;
 }
+
+/**
+ * Public URLs of the photographs Lumen has made for this project.
+ *
+ * They are only ever written to the bucket — there is no row for them — so the
+ * bucket is where they are read back from. Newest first, because a second run
+ * is the one being asked about.
+ */
+export async function listGeneratedAssets(projectId: string): Promise<string[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from(ASSET_BUCKET)
+    .list(projectId, { limit: 60, sortBy: { column: 'name', order: 'desc' } });
+
+  if (error || !data) return [];
+
+  return data
+    .filter((entry) => entry.name.startsWith('generated-'))
+    .map((entry) => supabase.storage.from(ASSET_BUCKET).getPublicUrl(`${projectId}/${entry.name}`).data.publicUrl);
+}

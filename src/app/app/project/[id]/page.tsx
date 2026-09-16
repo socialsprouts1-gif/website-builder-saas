@@ -6,6 +6,7 @@ import { getCurrentFiles } from '@/lib/generation/storage';
 import { resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
 import { reapStaleJobs } from '@/lib/generation/reap';
+import { BLOCK_MENU } from '@/lib/generation/blocks';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,23 +42,31 @@ export default async function ProjectWorkspacePage({
   //
   // created_at comes back with it because "how long has this been building" is
   // a fact about the build, not about how long this tab has been open.
+  //
+  // The job's own status comes back with it, and it is the only thing that
+  // says whether a build is running. The project's status cannot: every page a
+  // build saves writes a version, and writing a version sets the project to
+  // `ready`, so a build three pages in leaves `projects.status = 'ready'` while
+  // the job is still going. Reading the project row here was what made the
+  // workspace decide, half way through, that the build had finished.
   const jobQuery = supabase
     .from('generation_jobs')
-    .select('id, created_at')
+    .select('id, created_at, status')
     .eq('project_id', id);
 
+  // Without ?job= in the URL, look for a live one whatever the project says —
+  // for the same reason.
   const { data: liveJob } = job
     ? await jobQuery.eq('id', job).maybeSingle()
-    : project.status === 'generating'
-      ? await jobQuery
-          .in('status', ['queued', 'running'])
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : { data: null };
+    : await jobQuery
+        .in('status', ['queued', 'running'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
   const jobId = liveJob?.id ?? null;
   const jobStartedAt = liveJob?.created_at ?? null;
+  const jobStatus = (liveJob?.status as 'queued' | 'running' | 'succeeded' | 'failed') ?? null;
 
   const [{ data: messages }, { data: versions }] = await Promise.all([
     supabase
@@ -105,10 +114,12 @@ export default async function ProjectWorkspacePage({
       models={{ quality: catalog.quality, fast: catalog.fast, all: catalog.all }}
       activeModel={project.model}
       initialJobId={jobId}
+      initialJobStatus={jobStatus}
       jobStartedAt={jobStartedAt}
       publicSlug={publishState?.public_slug ?? null}
       published={Boolean(publishState?.published_at)}
       favicon={publishState?.favicon_url ?? null}
+      blockMenu={BLOCK_MENU}
     />
   );
 }
