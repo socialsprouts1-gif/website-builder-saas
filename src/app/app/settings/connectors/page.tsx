@@ -16,7 +16,7 @@ export default async function AccountConnectorsPage({
   const cards = await buildConnectorCards({ userId: user.id, scope: 'account' });
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-6 sm:py-10">
       <SectionHeader
         title="Connectors"
         description="Credentials you connect once and reuse across every site you build."

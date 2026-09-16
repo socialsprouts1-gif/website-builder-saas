@@ -52,7 +52,7 @@ export default async function AdminPage() {
   const projectRows = projects.data ?? [];
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="mx-auto max-w-4xl px-5 py-8 sm:px-6 sm:py-10">
       <SectionHeader title="Operations" description="Revenue, model spend and anything needing a look." />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -73,8 +73,11 @@ export default async function AdminPage() {
           No usage recorded in the last 30 days.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-card border border-hairline">
-          <table className="w-full text-left text-[13px]">
+        // A table of five columns cannot become a phone-width table, so it
+        // scrolls sideways inside its own box rather than squeezing every
+        // column to two characters or pushing the page wider than the screen.
+        <div className="overflow-x-auto rounded-card border border-hairline">
+          <table className="w-full min-w-[520px] text-left text-[13px]">
             <thead className="bg-raised text-[11px] uppercase tracking-[0.12em] text-ink-muted">
               <tr>
                 <th className="px-4 py-3 font-normal">Model</th>

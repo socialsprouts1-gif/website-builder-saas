@@ -57,6 +57,14 @@ export function EditorWorkspace({
   const [showBlocks, setShowBlocks] = useState(false);
   const [rail, setRail] = useState<'sections' | 'theme'>('sections');
   const [frameKey, setFrameKey] = useState(0);
+  /**
+   * Which of the three panes a phone is looking at.
+   *
+   * Ignored from `lg` up, where all three are on screen. Below it they were a
+   * single-column grid of three panes that each measure to nothing, which is
+   * the same collapse the workspace had: a toolbar, then a long emptiness.
+   */
+  const [pane, setPane] = useState<'rail' | 'canvas' | 'inspector'>('canvas');
   const [awaitingOutline, setAwaitingOutline] = useState(true);
 
   const post = useCallback((message: Record<string, unknown>) => {
@@ -288,8 +296,8 @@ export function EditorWorkspace({
 
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
-      <div className="flex flex-wrap items-center gap-3 border-b border-hairline px-4 py-2.5">
-        <div className="w-44">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline px-3 py-2.5 sm:px-4">
+        <div className="w-36 sm:w-44">
           <Select value={page} onChange={(event) => setPage(event.target.value)} className="py-1.5 text-[12.5px]">
             {pages.map((item) => (
               <option key={item} value={item}>
@@ -330,8 +338,36 @@ export function EditorWorkspace({
         </div>
       </div>
 
-      <div className="grid min-h-0 lg:grid-cols-[228px_minmax(0,1fr)_280px]">
-        <div className="flex min-h-0 flex-col overflow-y-auto border-hairline lg:border-r">
+      <div className="flex min-h-0 flex-col lg:grid lg:grid-cols-[228px_minmax(0,1fr)_280px]">
+        {/* Phone only; display:none takes it out of the grid entirely. */}
+        <div className="flex shrink-0 gap-1 border-b border-hairline p-2 lg:hidden">
+          {(
+            [
+              { id: 'rail', label: 'Blocks' },
+              { id: 'canvas', label: 'Page' },
+              { id: 'inspector', label: 'Edit' },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setPane(item.id)}
+              className={cn(
+                'flex-1 rounded-pill px-2 py-2 text-[12.5px] transition',
+                pane === item.id ? 'bg-accent text-accent-ink' : 'text-ink-secondary',
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div
+          className={cn(
+            'min-h-0 flex-1 flex-col overflow-y-auto border-hairline lg:flex lg:border-r',
+            pane === 'rail' ? 'flex' : 'hidden',
+          )}
+        >
           {/* Two things live in this rail and they are not the same job:
               arranging this page, and setting the look of the whole site. */}
           <div className="flex shrink-0 gap-1 border-b border-hairline p-2">
@@ -357,7 +393,13 @@ export function EditorWorkspace({
               <LayersPanel
                 blocks={blocks}
                 selected={selection?.lumenId ?? null}
-                onSelect={(lumenId) => post({ type: 'select', lumenId })}
+                onSelect={(lumenId) => {
+                  post({ type: 'select', lumenId });
+                  // On a phone the Edit panel is a different screen, and
+                  // selecting a block with nothing visibly happening reads as
+                  // the tap not working.
+                  if (window.innerWidth < 1024) setPane('inspector');
+                }}
                 onMove={move}
                 onMoveTo={moveTo}
                 onDuplicate={duplicate}
@@ -394,7 +436,12 @@ export function EditorWorkspace({
           )}
         </div>
 
-        <div className="flex min-h-0 justify-center overflow-auto bg-[var(--bg-base-deep)] p-4">
+        <div
+          className={cn(
+            'min-h-0 flex-1 justify-center overflow-auto bg-[var(--bg-base-deep)] p-2 sm:p-4 lg:flex',
+            pane === 'canvas' ? 'flex' : 'hidden',
+          )}
+        >
           <iframe
             key={frameKey}
             ref={frameRef}
@@ -408,7 +455,12 @@ export function EditorWorkspace({
           />
         </div>
 
-        <div className="min-h-0 overflow-y-auto border-hairline lg:border-l">
+        <div
+          className={cn(
+            'min-h-0 flex-1 overflow-y-auto border-hairline lg:block lg:border-l',
+            pane === 'inspector' ? 'block' : 'hidden',
+          )}
+        >
           <Inspector
             selection={selection}
             projectId={projectId}

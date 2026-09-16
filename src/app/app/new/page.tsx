@@ -50,7 +50,7 @@ export default async function NewSitePage({
   const noKeyAtAll = keyStatus ? !keyStatus.hasOwnKey && !keyStatus.platformConfigured : false;
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-14">
+    <div className="mx-auto max-w-2xl px-5 py-9 sm:px-6 sm:py-14">
       <div className="mb-9 text-center">
         <Badge tone="accent" className="mb-5">One prompt</Badge>
         <h1 className="font-display text-[36px] leading-tight text-ink-primary">

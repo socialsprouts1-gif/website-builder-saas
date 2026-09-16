@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
   const [users, stats] = await Promise.all([listUsers(), adminStats()]);
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="mx-auto max-w-4xl px-5 py-8 sm:px-6 sm:py-10">
       <SectionHeader
         title="Users"
         description={`${stats.users} account${stats.users === 1 ? '' : 's'}, ${stats.projects} site${

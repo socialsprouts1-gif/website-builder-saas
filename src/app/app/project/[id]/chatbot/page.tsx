@@ -48,7 +48,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
   const conversations = chatbot ? await loadConversations(chatbot.id) : [];
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-10">
       <SectionHeader
         title="Site chatbot"
         description={`An AI assistant for ${project.name}, answering from this site's own content.`}

@@ -43,7 +43,7 @@ export default async function TemplatesPage() {
       <div className="relative">
         <div className="lumen-glow-field" aria-hidden />
         <TopNav signedIn={signedIn} />
-        <section className="relative mx-auto max-w-shell px-6 pb-12 pt-16 text-center">
+        <section className="relative mx-auto max-w-shell px-5 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16 text-center">
           <h1 className="font-display text-[40px] leading-tight text-ink-primary sm:text-[56px]">
             Start from something <em className="italic text-accent">finished.</em>
           </h1>
@@ -54,7 +54,7 @@ export default async function TemplatesPage() {
         </section>
       </div>
 
-      <section className="mx-auto max-w-shell px-6 pb-24">
+      <section className="mx-auto max-w-shell px-5 pb-16 sm:px-6 sm:pb-24">
         <TemplateGallery templates={templates} signedIn={signedIn} />
       </section>
 

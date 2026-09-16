@@ -37,7 +37,7 @@ export default async function ProjectsPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-6 sm:py-10">
       <SectionHeader
         title="My sites"
         description="Every site you have generated. Open one to keep iterating."

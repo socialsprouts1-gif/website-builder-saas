@@ -24,7 +24,7 @@ export default async function BillingPage() {
     : { data: [] };
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-10">
       <SectionHeader title="Billing" description="One plan, ₹500 a month, everything included." />
 
       <Card className="space-y-5">

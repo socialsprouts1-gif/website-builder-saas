@@ -21,7 +21,7 @@ export default async function ApiKeysPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-10">
       <SectionHeader
         title="API keys"
         description="Use Lumen's shared key, or bring your own for unlimited generations."

@@ -31,7 +31,7 @@ export default async function DeployPage({ params }: { params: Promise<{ id: str
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-10">
       <SectionHeader
         title="Ship it"
         description="Publish it on Lumen in one click, put it on your own domain, or take the code and host it anywhere. It is yours."
