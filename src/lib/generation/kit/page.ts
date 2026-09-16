@@ -127,7 +127,20 @@ export const SITE_SCRIPT = `(function () {
     });
   }
 
+  var endpoint = (document.querySelector('meta[name="lumen-leads"]') || {}).content;
+
   document.querySelectorAll('[data-lumen-form]').forEach(function (form) {
+    // A field no person can see, so no person fills it in. The cheapest spam
+    // filter there is, and it costs a real visitor nothing.
+    var trap = document.createElement('input');
+    trap.type = 'text';
+    trap.name = 'website';
+    trap.tabIndex = -1;
+    trap.autocomplete = 'off';
+    trap.setAttribute('aria-hidden', 'true');
+    trap.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;opacity:0';
+    form.appendChild(trap);
+
     form.addEventListener('submit', function (event) {
       event.preventDefault();
       var status = form.querySelector('[data-lumen-form-status]');
@@ -135,8 +148,56 @@ export const SITE_SCRIPT = `(function () {
         if (status) status.textContent = 'Please fill in your name and how to reach you.';
         return;
       }
-      form.reset();
-      if (status) status.textContent = 'Thank you — we will be in touch shortly.';
+
+      var data = new FormData(form);
+      var pick = function (names) {
+        for (var i = 0; i < names.length; i++) {
+          var value = data.get(names[i]);
+          if (value) return String(value);
+        }
+        return '';
+      };
+
+      // The model names these fields, and it does not always name them the
+      // same way. Read by likely name rather than by an exact contract, so a
+      // form written slightly differently still delivers its lead.
+      var payload = {
+        name: pick(['name', 'fullname', 'full_name', 'your-name']),
+        contact: pick(['phone', 'tel', 'mobile', 'email', 'contact', 'number']),
+        message: pick(['message', 'enquiry', 'inquiry', 'details', 'comments', 'notes']),
+        page: location.pathname,
+        website: String(data.get('website') || '')
+      };
+
+      // Nowhere to send it — a preview, or a site exported elsewhere. Saying
+      // "we will be in touch" would be a lie, so it says what to do instead.
+      if (!endpoint) {
+        if (status) status.textContent = 'This form is not connected yet. Please call or message us directly.';
+        return;
+      }
+
+      var button = form.querySelector('button[type="submit"], input[type="submit"]');
+      if (button) button.disabled = true;
+      if (status) status.textContent = 'Sending…';
+
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function (response) {
+          if (!response.ok) throw new Error('failed');
+          form.reset();
+          if (status) status.textContent = 'Thank you — we have your message and will be in touch.';
+        })
+        .catch(function () {
+          // Never a silent success. If it did not send, they need to know now,
+          // while they are still on the page and can ring instead.
+          if (status) status.textContent = 'That did not send. Please call or message us directly.';
+        })
+        .then(function () {
+          if (button) button.disabled = false;
+        });
     });
   });
 

@@ -243,6 +243,19 @@ type Table<Row> = {
   Relationships: [];
 };
 
+/** An enquiry left on a published site by someone who is not a Lumen user. */
+export type LeadRow = {
+  id: string;
+  project_id: string;
+  name: string | null;
+  contact: string | null;
+  message: string | null;
+  /** The page the form was on, so the owner knows what they were looking at. */
+  page: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -265,6 +278,7 @@ export type Database = {
       templates: Table<TemplateRow>;
       rate_limit_events: Table<RateLimitEventRow>;
       flagged_content: Table<FlaggedContentRow>;
+      leads: Table<LeadRow>;
     };
     Views: Record<never, never>;
     Functions: {

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentFiles } from '@/lib/generation/storage';
 import { pendingPage } from '@/lib/generation/kit/placeholder';
 import { absolutise, decorate, loadSiteExtras } from '@/lib/site-extras';
+import { renderRobots, renderSitemap, withSeoHead, type SiteFacts } from '@/lib/seo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,7 @@ export async function GET(
   const admin = createAdminClient();
   const { data: project } = await admin
     .from('projects')
-    .select('id, published_at, favicon_url')
+    .select('id, name, description, business_type, published_at, favicon_url')
     .eq('public_slug', slug)
     .not('published_at', 'is', null)
     .maybeSingle();
@@ -54,11 +55,36 @@ export async function GET(
   // address was typed with a trailing slash or without one.
   const base = `/s/${encodeURIComponent(slug)}/`;
 
+  // The origin is read from the request rather than from configuration: the
+  // same app answers on a preview URL and on its own domain, and a sitemap
+  // full of the wrong hostname is worse than no sitemap.
+  const origin = originOf(request);
   const requested = (path ?? []).join('/') || 'index.html';
   // No traversal, no absolute paths: only files this project actually has.
   const wanted = requested.replace(/^\/+/, '').replace(/\.\.+/g, '');
 
   const files = await getCurrentFiles(project.id);
+
+  // Written from the site as it currently stands, so a page added this morning
+  // is in the sitemap this afternoon without anything being regenerated.
+  if (wanted === 'sitemap.xml' || wanted === 'robots.txt') {
+    const pages = files
+      .filter((candidate) => candidate.path.endsWith('.html'))
+      .map((candidate) => candidate.path)
+      .sort((a, b) => (a === 'index.html' ? -1 : b === 'index.html' ? 1 : a.localeCompare(b)));
+
+    const body =
+      wanted === 'robots.txt' ? renderRobots(origin, base) : renderSitemap(origin, base, pages);
+
+    return new Response(body, {
+      headers: {
+        'content-type': wanted === 'robots.txt' ? 'text/plain; charset=utf-8' : 'application/xml',
+        'cache-control': 'public, max-age=300, s-maxage=600',
+        'x-content-type-options': 'nosniff',
+      },
+    });
+  }
+
   const file =
     files.find((candidate) => candidate.path === wanted) ??
     (wanted.endsWith('/') || !wanted.includes('.')
@@ -98,10 +124,30 @@ export async function GET(
   const extension = file.path.split('.').pop()?.toLowerCase() ?? 'html';
   const isHtml = extension === 'html';
 
+  const facts: SiteFacts = {
+    businessName: project.name,
+    description: project.description,
+    category: project.business_type,
+    // Not in the project row: the address and phone live in the page the model
+    // wrote. Left null rather than guessed — structured data that is wrong is
+    // worse than structured data that is thin, because it gets believed.
+    address: null,
+    phone: null,
+    faviconUrl: project.favicon_url,
+  };
+
   const body = isHtml
-    ? decorate(
-        absolutise(withFavicon(file.content, project.favicon_url), base),
-        await loadSiteExtras(project.id),
+    ? withSeoHead(
+        decorate(
+          absolutise(withFavicon(file.content, project.favicon_url), base),
+          await loadSiteExtras(project.id),
+        ),
+        {
+          pageUrl: `${origin}${base}${file.path === 'index.html' ? '' : file.path}`,
+          // This is what turns the enquiry form from a message into a lead.
+          leadsEndpoint: `/api/leads/${encodeURIComponent(slug)}`,
+          facts,
+        },
       )
     : file.content;
 
@@ -117,6 +163,13 @@ export async function GET(
       ...(isHtml ? { 'content-security-policy': HTML_CSP } : {}),
     },
   });
+}
+
+/** Whatever hostname this site is actually being served on. */
+function originOf(request: NextRequest): string {
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') ?? 'https';
+  return host ? `${proto}://${host}` : request.nextUrl.origin;
 }
 
 /**
