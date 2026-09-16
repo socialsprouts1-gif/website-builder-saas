@@ -212,6 +212,21 @@ export const EDITOR_BRIDGE = `<script>(function(){
       send('outline', outline());
     }
 
+    if (data.type === 'preview-move-to' && el) {
+      // One move, wherever it landed, rather than a run of swaps. The parent
+      // is read from the block itself so a drag can never reparent anything.
+      var parent = el.parentNode;
+      var before = data.beforeLumenId
+        ? parent.querySelector('[data-lumen-id="' + data.beforeLumenId + '"]')
+        : null;
+      if (before && before.parentNode !== parent) before = null;
+      if (!data.beforeLumenId || before) {
+        parent.insertBefore(el, before);
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        send('outline', outline());
+      }
+    }
+
     if (data.type === 'preview-remove' && el) {
       el.remove();
       selected = null;

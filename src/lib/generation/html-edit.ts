@@ -23,6 +23,15 @@ export type VisualEdit =
   | { kind: 'remove'; lumenId: string }
   | { kind: 'style'; lumenId: string; styles: Record<string, string> }
   | { kind: 'move'; lumenId: string; direction: 'up' | 'down' }
+  /**
+   * A drag, as one edit.
+   *
+   * Dragging a block five places used to be five swaps with a neighbour —
+   * five entries in the save, five messages to the preview, and five chances
+   * for one of them to resolve against a document that had already moved.
+   * This says where the block ends up and is applied once.
+   */
+  | { kind: 'moveTo'; lumenId: string; beforeLumenId: string | null }
   | { kind: 'duplicate'; lumenId: string }
   | { kind: 'insert'; afterLumenId: string | null; html: string }
   | { kind: 'token'; name: string; value: string }
@@ -188,6 +197,37 @@ export function applyVisualEdits(html: string, edits: VisualEdit[]): { html: str
       continue;
     }
 
+    if (edit.kind === 'moveTo') {
+      const siblings = siblingsOf(node, tree.roots);
+      const target = edit.beforeLumenId
+        ? siblings.find((candidate) => candidate.lumenId === edit.beforeLumenId)
+        : null;
+
+      // Dropped where it already is, or onto itself: nothing to do, and doing
+      // it anyway would splice the block out and back in for no reason.
+      if (edit.beforeLumenId && !target) continue;
+      if (target === node) continue;
+
+      const end = node.selfClosing ? node.openEnd : node.closeEnd;
+      const moved = output.slice(node.openStart, end);
+
+      // Cut first, then work out where it lands: every offset after the cut
+      // shifts by the length of what was removed, and an insertion point
+      // computed before the cut is wrong by exactly that much.
+      const cut = spliceRange(output, node.openStart, end, '');
+      const removed = end - node.openStart;
+      const shift = (offset: number) => (offset > node.openStart ? offset - removed : offset);
+
+      const last = siblings[siblings.length - 1];
+      const anchor = target
+        ? shift(target.openStart)
+        : shift(last === node ? node.openStart : last.selfClosing ? last.openEnd : last.closeEnd);
+
+      output = spliceRange(cut, anchor, anchor, target ? `${moved}\n` : `\n${moved}`);
+      applied += 1;
+      continue;
+    }
+
     if (edit.kind === 'image') {
       let openTag = output.slice(node.openStart, node.openEnd);
       openTag = setAttribute(openTag, 'src', edit.src);
@@ -231,6 +271,8 @@ export function describeEdit(edit: VisualEdit | ClientVisualEdit): string {
       return `Added a ${'blockId' in edit ? edit.blockId.replace(/-/g, ' ') : 'section'} section`;
     case 'move':
       return `Moved a section ${edit.direction}`;
+    case 'moveTo':
+      return 'Moved a section';
     case 'style':
       return `Restyled ${Object.keys(edit.styles).join(', ')}`;
     case 'link':

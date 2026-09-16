@@ -150,6 +150,12 @@ export function EditorWorkspace({
     post({ type: 'preview-move', lumenId, direction });
   }
 
+  /** A drag: one edit that says where the block ended up. */
+  function moveTo(lumenId: string, beforeLumenId: string | null) {
+    queue({ kind: 'moveTo', lumenId, beforeLumenId });
+    post({ type: 'preview-move-to', lumenId, beforeLumenId });
+  }
+
   function duplicate(lumenId: string) {
     queue({ kind: 'duplicate', lumenId });
     // A duplicate cannot be previewed faithfully — the copy needs fresh ids the
@@ -330,6 +336,7 @@ export function EditorWorkspace({
                 selected={selection?.lumenId ?? null}
                 onSelect={(lumenId) => post({ type: 'select', lumenId })}
                 onMove={move}
+                onMoveTo={moveTo}
                 onDuplicate={duplicate}
                 onRemove={remove}
                 onAdd={() => setShowBlocks((value) => !value)}
