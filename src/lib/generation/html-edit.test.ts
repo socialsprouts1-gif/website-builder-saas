@@ -126,3 +126,41 @@ describe('describeEdit', () => {
     expect(describeEdit({ kind: 'token', name: '--ink', value: '#111' })).toBe('Theme · ink → #111');
   });
 });
+
+describe('replace', () => {
+  const page = '<main>\n<section data-lumen-id="a">old</section>\n<section data-lumen-id="b">b</section>\n</main>';
+
+  it('swaps one section and leaves its neighbours alone', () => {
+    const result = applyVisualEdits(page, [
+      { kind: 'replace', lumenId: 'a', html: '<section data-lumen-id="a">new</section>' },
+    ]);
+    expect(result.applied).toBe(1);
+    expect(result.html).toContain('<section data-lumen-id="a">new</section>');
+    expect(result.html).not.toContain('old');
+    expect(result.html).toContain('<section data-lumen-id="b">b</section>');
+  });
+
+  it('keeps the page order', () => {
+    const result = applyVisualEdits(page, [
+      { kind: 'replace', lumenId: 'a', html: '<section data-lumen-id="a">new</section>' },
+    ]);
+    expect(result.html.indexOf('data-lumen-id="a"')).toBeLessThan(result.html.indexOf('data-lumen-id="b"'));
+  });
+
+  it('does nothing when the section is gone', () => {
+    const result = applyVisualEdits(page, [
+      { kind: 'replace', lumenId: 'ghost', html: '<section data-lumen-id="ghost">x</section>' },
+    ]);
+    expect(result.applied).toBe(0);
+    expect(result.html).toBe(page);
+  });
+
+  it('replaces a section that has children, children and all', () => {
+    const nested = '<main><section data-lumen-id="a"><h2>Old</h2><p>Words</p></section></main>';
+    const result = applyVisualEdits(nested, [
+      { kind: 'replace', lumenId: 'a', html: '<section data-lumen-id="a"><h2>New</h2></section>' },
+    ]);
+    expect(result.html).not.toContain('Words');
+    expect(result.html).toContain('<h2>New</h2>');
+  });
+});

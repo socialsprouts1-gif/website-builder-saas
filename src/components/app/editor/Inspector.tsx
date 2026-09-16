@@ -59,6 +59,7 @@ export function Inspector({
   onLink,
   onRemove,
   onDuplicate,
+  onRewrite,
 }: {
   selection: Selection | null;
   projectId: string;
@@ -72,10 +73,33 @@ export function Inspector({
   onLink: (href: string) => void;
   onRemove: () => void;
   onDuplicate: () => void;
+  /**
+   * Rewrites this section alone. Saves on its own rather than queueing,
+   * because the replacement is markup and markup from the browser must never
+   * reach a page — so the server is what decides what the section becomes.
+   */
+  onRewrite: (instruction: string | null) => Promise<void>;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rewriting, setRewriting] = useState(false);
+  const [askRewrite, setAskRewrite] = useState(false);
+  const [instruction, setInstruction] = useState('');
+
+  async function rewrite() {
+    setRewriting(true);
+    setError(null);
+    try {
+      await onRewrite(instruction.trim() || null);
+      setAskRewrite(false);
+      setInstruction('');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'That rewrite failed');
+    } finally {
+      setRewriting(false);
+    }
+  }
 
   async function upload(file: File) {
     setUploading(true);
@@ -241,6 +265,52 @@ export function Inspector({
         <Button size="sm" variant="danger" className="flex-1" onClick={onRemove}>
           Delete
         </Button>
+      </div>
+
+      {/* Rewriting is the one action here that changes words rather than
+          properties, so it gets its own row and its own explanation. */}
+      <div className="border-t border-hairline px-4 py-3">
+        {askRewrite ? (
+          <div className="space-y-2">
+            <input
+              value={instruction}
+              autoFocus
+              onChange={(event) => setInstruction(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !rewriting) void rewrite();
+                if (event.key === 'Escape') setAskRewrite(false);
+              }}
+              placeholder="Optional: shorter, warmer, mention weekend batches…"
+              className="lumen-well w-full rounded-[9px] border border-hairline px-2.5 py-2 text-[12.5px] text-ink-primary outline-none focus:border-accent/50"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" className="flex-1" onClick={() => void rewrite()} disabled={rewriting}>
+                {rewriting ? 'Rewriting…' : 'Rewrite it'}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setAskRewrite(false)}
+                disabled={rewriting}
+              >
+                Cancel
+              </Button>
+            </div>
+            <p className="text-[11px] leading-relaxed text-ink-muted">
+              Only this section changes. Saved on its own, so it undoes on its own.
+            </p>
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="w-full"
+            onClick={() => setAskRewrite(true)}
+            disabled={rewriting}
+          >
+            {rewriting ? 'Rewriting…' : '✦ Rewrite this section'}
+          </Button>
+        )}
       </div>
 
       {error ? <p className="text-[12px] text-[#e5735a]">{error}</p> : null}

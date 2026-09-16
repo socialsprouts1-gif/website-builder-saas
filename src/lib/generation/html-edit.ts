@@ -32,6 +32,8 @@ export type VisualEdit =
    * This says where the block ends up and is applied once.
    */
   | { kind: 'moveTo'; lumenId: string; beforeLumenId: string | null }
+  /** One section rewritten, with everything around it left exactly as it was. */
+  | { kind: 'replace'; lumenId: string; html: string }
   | { kind: 'duplicate'; lumenId: string }
   | { kind: 'insert'; afterLumenId: string | null; html: string }
   | { kind: 'token'; name: string; value: string }
@@ -44,7 +46,13 @@ export type VisualEdit =
  * never supplies HTML that would end up in a published site.
  */
 export type ClientVisualEdit =
-  | Exclude<VisualEdit, { kind: 'insert' }>
+  /**
+   * `replace` is excluded for the same reason as `insert`: it carries markup,
+   * and markup that came from the browser must never reach a published page.
+   * A rewrite is asked for by name and performed on the server, which is why
+   * it is not something the editor can queue.
+   */
+  | Exclude<VisualEdit, { kind: 'insert' } | { kind: 'replace' }>
   | {
       kind: 'insert';
       afterLumenId: string | null;
@@ -228,6 +236,13 @@ export function applyVisualEdits(html: string, edits: VisualEdit[]): { html: str
       continue;
     }
 
+    if (edit.kind === 'replace') {
+      const end = node.selfClosing ? node.openEnd : node.closeEnd;
+      output = spliceRange(output, node.openStart, end, edit.html);
+      applied += 1;
+      continue;
+    }
+
     if (edit.kind === 'image') {
       let openTag = output.slice(node.openStart, node.openEnd);
       openTag = setAttribute(openTag, 'src', edit.src);
@@ -273,6 +288,8 @@ export function describeEdit(edit: VisualEdit | ClientVisualEdit): string {
       return `Moved a section ${edit.direction}`;
     case 'moveTo':
       return 'Moved a section';
+    case 'replace':
+      return 'Rewrote a section';
     case 'style':
       return `Restyled ${Object.keys(edit.styles).join(', ')}`;
     case 'link':

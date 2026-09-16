@@ -156,6 +156,29 @@ export function EditorWorkspace({
     post({ type: 'preview-move-to', lumenId, beforeLumenId });
   }
 
+  /**
+   * Rewrites the selected section, on the server, as its own version.
+   *
+   * Not queued with the rest. The replacement is markup, and markup the browser
+   * supplied must never reach a published page — so the browser names a section
+   * and the server decides what it becomes. Being its own version also means it
+   * is one thing to undo rather than something tangled into a pending save.
+   */
+  async function rewrite(lumenId: string, instruction: string | null) {
+    const response = await fetch(`/api/projects/${projectId}/rewrite`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ page, lumenId, instruction }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error ?? 'That rewrite failed');
+
+    setSelection(null);
+    setNotice('Section rewritten and saved. Undo it from version history.');
+    setFrameKey((key) => key + 1);
+    router.refresh();
+  }
+
   function duplicate(lumenId: string) {
     queue({ kind: 'duplicate', lumenId });
     // A duplicate cannot be previewed faithfully — the copy needs fresh ids the
@@ -389,6 +412,9 @@ export function EditorWorkspace({
             onLink={editLink}
             onRemove={() => selection && remove(selection.lumenId)}
             onDuplicate={() => selection && duplicate(selection.lumenId)}
+            onRewrite={async (instruction) => {
+              if (selection) await rewrite(selection.lumenId, instruction);
+            }}
           />
 
           {pending.length > 0 ? (
