@@ -45,6 +45,12 @@ export type ProjectRow = {
   favicon_url: string | null;
   payment_url: string | null;
   payment_label: string | null;
+  whatsapp_number: string | null;
+  whatsapp_message: string | null;
+  whatsapp_leads: boolean;
+  booking_enabled: boolean;
+  booking_services: string[];
+  booking_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -252,8 +258,28 @@ export type LeadRow = {
   message: string | null;
   /** The page the form was on, so the owner knows what they were looking at. */
   page: string | null;
+  /** 'enquiry' or 'booking'. A booking is an enquiry with a date on it. */
+  kind: string;
+  service: string | null;
+  preferred_date: string | null;
+  preferred_time: string | null;
   created_at: string;
   read_at: string | null;
+}
+
+/** A day's page views for one path of one site. */
+export type SiteVisitRow = {
+  project_id: string;
+  day: string;
+  path: string;
+  views: number;
+}
+
+/** One person, one day, one site — as a hash that cannot be reversed. */
+export type SiteVisitorRow = {
+  project_id: string;
+  day: string;
+  visitor_hash: string;
 }
 
 export type Database = {
@@ -279,12 +305,18 @@ export type Database = {
       rate_limit_events: Table<RateLimitEventRow>;
       flagged_content: Table<FlaggedContentRow>;
       leads: Table<LeadRow>;
+      site_visits: Table<SiteVisitRow>;
+      site_visitors: Table<SiteVisitorRow>;
     };
     Views: Record<never, never>;
     Functions: {
       match_chatbot_chunks: {
         Args: { p_chatbot_id: string; p_embedding: number[]; p_limit?: number };
         Returns: { chunk_text: string; similarity: number }[];
+      };
+      record_visit: {
+        Args: { p_project: string; p_path: string; p_visitor: string };
+        Returns: void;
       };
     };
     Enums: {

@@ -11,6 +11,10 @@ export interface Lead {
   message: string | null;
   page: string | null;
   pageLabel: string | null;
+  kind?: string | null;
+  service?: string | null;
+  preferred_date?: string | null;
+  preferred_time?: string | null;
   created_at: string;
   read_at: string | null;
 }
@@ -101,6 +105,22 @@ export function LeadList({ projectId, leads }: { projectId: string; leads: Lead[
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
+                {lead.kind === 'booking' ? (
+                  // The slot is the thing being asked for, so it goes first.
+                  <p className="mb-1 text-[12px] uppercase tracking-[0.14em] text-accent">
+                    Booking{lead.service ? ` · ${lead.service}` : ''}
+                  </p>
+                ) : null}
+                {lead.preferred_date ? (
+                  <p className="mb-1 text-[14px] text-ink-primary">
+                    {new Date(`${lead.preferred_date}T00:00:00`).toLocaleDateString(undefined, {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                    {lead.preferred_time ? ` at ${lead.preferred_time}` : ''}
+                  </p>
+                ) : null}
                 <p className="text-[15px] text-ink-primary">{lead.name || 'Someone'}</p>
                 {lead.contact ? (
                   telephone ? (

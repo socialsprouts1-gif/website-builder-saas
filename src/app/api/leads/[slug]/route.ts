@@ -21,6 +21,12 @@ const bodySchema = z.object({
   contact: z.string().trim().max(200).optional(),
   message: z.string().trim().max(4000).optional(),
   page: z.string().trim().max(200).optional(),
+  kind: z.enum(['enquiry', 'booking']).optional(),
+  service: z.string().trim().max(120).optional(),
+  // A date the browser produced, checked here anyway: the form is the
+  // customer's, and anything it sends is theirs to change.
+  preferred_date: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+  preferred_time: z.string().trim().max(20).optional(),
   /**
    * A field no human ever sees, so no human ever fills it in.
    *
@@ -62,15 +68,33 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     // would tell a stranger which slugs exist.
     if (!project) return NextResponse.json({ ok: true });
 
-    const { error } = await admin.from('leads').insert({
+    const row = {
       project_id: project.id,
       name: name || null,
       contact: contact || null,
       message: message || null,
       page: body.page?.slice(0, 200) || null,
-    });
+      kind: body.kind ?? 'enquiry',
+      service: body.service || null,
+      preferred_date: body.preferred_date || null,
+      preferred_time: body.preferred_time || null,
+    };
 
-    if (error) return jsonError('That could not be sent. Please call instead.', 500);
+    const { error } = await admin.from('leads').insert(row);
+
+    if (error) {
+      // The booking columns arrive in migration 0013. An enquiry is worth more
+      // than the fields describing it, so it is filed without them rather than
+      // lost — and the customer is never told it failed when it did not.
+      const { error: fallback } = await admin.from('leads').insert({
+        project_id: row.project_id,
+        name: row.name,
+        contact: row.contact,
+        message: row.message,
+        page: row.page,
+      });
+      if (fallback) return jsonError('That could not be sent. Please call instead.', 500);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (cause) {

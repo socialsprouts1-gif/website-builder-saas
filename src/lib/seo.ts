@@ -58,7 +58,13 @@ export function localBusinessJsonLd(facts: SiteFacts, pageUrl: string): string {
  */
 export function withSeoHead(
   html: string,
-  options: { pageUrl: string; leadsEndpoint?: string | null; facts?: SiteFacts | null },
+  options: {
+    pageUrl: string;
+    leadsEndpoint?: string | null;
+    facts?: SiteFacts | null;
+    /** Where the enquiry form should hand the message on to, if anywhere. */
+    whatsappHandoff?: string | null;
+  },
 ): string {
   if (!/<head[^>]*>/i.test(html)) return html;
 
@@ -79,6 +85,9 @@ export function withSeoHead(
   }
   if (options.leadsEndpoint && !has(/<meta[^>]+name=["']lumen-leads["']/i)) {
     tags.push(`<meta name="lumen-leads" content="${escapeHtml(options.leadsEndpoint)}" />`);
+  }
+  if (options.whatsappHandoff && !has(/<meta[^>]+name=["']lumen-whatsapp["']/i)) {
+    tags.push(`<meta name="lumen-whatsapp" content="${escapeHtml(options.whatsappHandoff)}" />`);
   }
 
   if (tags.length === 0) return html;

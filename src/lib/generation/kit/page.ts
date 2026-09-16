@@ -128,6 +128,7 @@ export const SITE_SCRIPT = `(function () {
   }
 
   var endpoint = (document.querySelector('meta[name="lumen-leads"]') || {}).content;
+  var handoff = (document.querySelector('meta[name="lumen-whatsapp"]') || {}).content;
 
   document.querySelectorAll('[data-lumen-form]').forEach(function (form) {
     // A field no person can see, so no person fills it in. The cheapest spam
@@ -161,13 +162,30 @@ export const SITE_SCRIPT = `(function () {
       // The model names these fields, and it does not always name them the
       // same way. Read by likely name rather than by an exact contract, so a
       // form written slightly differently still delivers its lead.
+      var booking = form.hasAttribute('data-lumen-booking');
       var payload = {
         name: pick(['name', 'fullname', 'full_name', 'your-name']),
         contact: pick(['phone', 'tel', 'mobile', 'email', 'contact', 'number']),
         message: pick(['message', 'enquiry', 'inquiry', 'details', 'comments', 'notes']),
         page: location.pathname,
+        kind: booking ? 'booking' : 'enquiry',
+        service: pick(['service', 'treatment', 'course', 'class']),
+        preferred_date: pick(['preferred_date', 'date', 'day']),
+        preferred_time: pick(['preferred_time', 'time', 'slot']),
         website: String(data.get('website') || '')
       };
+
+      // What the owner reads on WhatsApp. Built here rather than on the server
+      // so the customer sees it before they send it, and can change it.
+      var lines = [];
+      if (payload.service) lines.push('For: ' + payload.service);
+      if (payload.preferred_date) {
+        lines.push('When: ' + payload.preferred_date + (payload.preferred_time ? ' at ' + payload.preferred_time : ''));
+      }
+      if (payload.name) lines.push('Name: ' + payload.name);
+      if (payload.contact) lines.push('Contact: ' + payload.contact);
+      if (payload.message) lines.push(payload.message);
+      var summary = (booking ? 'Booking request' : 'Enquiry') + ' from your website\n' + lines.join('\n');
 
       // Nowhere to send it — a preview, or a site exported elsewhere. Saying
       // "we will be in touch" would be a lie, so it says what to do instead.
@@ -188,7 +206,18 @@ export const SITE_SCRIPT = `(function () {
         .then(function (response) {
           if (!response.ok) throw new Error('failed');
           form.reset();
-          if (status) status.textContent = 'Thank you — we have your message and will be in touch.';
+          if (status) {
+            status.textContent = booking
+              ? 'Thank you — we have your request and will confirm shortly.'
+              : 'Thank you — we have your message and will be in touch.';
+          }
+          // Filed first, then handed over. The order matters: if the customer
+          // never finishes sending the WhatsApp message, the owner still has
+          // the enquiry.
+          if (handoff) {
+            if (status) status.textContent += ' Opening WhatsApp…';
+            window.open(handoff + (handoff.indexOf('?') === -1 ? '?' : '&') + 'text=' + encodeURIComponent(summary), '_blank', 'noopener');
+          }
         })
         .catch(function () {
           // Never a silent success. If it did not send, they need to know now,

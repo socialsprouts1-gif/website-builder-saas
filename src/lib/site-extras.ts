@@ -2,6 +2,8 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { liveChatbotKey, withChatbot } from '@/lib/chatbot-embed';
 import { withPayButton } from '@/lib/payments';
+import { normaliseWhatsApp, withWhatsApp } from '@/lib/whatsapp';
+import { cleanServices, withBooking, type BookingConfig, NO_BOOKING } from '@/lib/booking';
 
 /**
  * The things a site gains after it is built, added where it is served.
@@ -17,42 +19,100 @@ export interface SiteExtras {
   chatbotKey: string | null;
   paymentUrl: string | null;
   paymentLabel: string | null;
+  whatsappNumber: string | null;
+  whatsappMessage: string | null;
+  /** Hand the enquiry to WhatsApp as well as filing it. */
+  whatsappLeads: boolean;
+  booking: BookingConfig;
 }
 
-export const NO_EXTRAS: SiteExtras = { chatbotKey: null, paymentUrl: null, paymentLabel: null };
+export const NO_EXTRAS: SiteExtras = {
+  chatbotKey: null,
+  paymentUrl: null,
+  paymentLabel: null,
+  whatsappNumber: null,
+  whatsappMessage: null,
+  whatsappLeads: false,
+  booking: NO_BOOKING,
+};
 
 export async function loadSiteExtras(
   projectId: string,
   options: { chatbot?: boolean } = {},
 ): Promise<SiteExtras> {
-  const [chatbotKey, payment] = await Promise.all([
+  const [chatbotKey, settings] = await Promise.all([
     options.chatbot === false ? Promise.resolve(null) : liveChatbotKey(projectId).catch(() => null),
-    loadPaymentLink(projectId),
+    loadSiteSettings(projectId),
   ]);
 
-  return { chatbotKey, paymentUrl: payment.url, paymentLabel: payment.label };
+  return { chatbotKey, ...settings };
 }
 
 /**
- * Allowed to come back empty: the payment columns arrive in migration 0009, and
- * a database that has not run it should serve the site rather than fail.
+ * Everything switched on after the build, read in one go.
+ *
+ * Allowed to come back empty at every step: these columns arrive across
+ * migrations 0009 and 0013, and a database that has not run one of them should
+ * serve the customer their page rather than fail in their face. So the select
+ * is attempted whole and falls back to the older shape rather than throwing.
  */
-async function loadPaymentLink(
-  projectId: string,
-): Promise<{ url: string | null; label: string | null }> {
-  const { data } = await createAdminClient()
+async function loadSiteSettings(projectId: string): Promise<Omit<SiteExtras, 'chatbotKey'>> {
+  const admin = createAdminClient();
+  const empty = {
+    paymentUrl: null,
+    paymentLabel: null,
+    whatsappNumber: null,
+    whatsappMessage: null,
+    whatsappLeads: false,
+    booking: NO_BOOKING,
+  };
+
+  const { data, error } = await admin
     .from('projects')
-    .select('payment_url, payment_label')
+    .select(
+      'payment_url, payment_label, whatsapp_number, whatsapp_message, whatsapp_leads, booking_enabled, booking_services, booking_note',
+    )
     .eq('id', projectId)
     .maybeSingle();
 
-  const url = typeof data?.payment_url === 'string' ? data.payment_url : null;
-  const label = typeof data?.payment_label === 'string' ? data.payment_label : null;
-  return { url, label };
+  if (error || !data) {
+    // Migration 0013 is not in yet. The payment link predates it and still is.
+    const { data: older } = await admin
+      .from('projects')
+      .select('payment_url, payment_label')
+      .eq('id', projectId)
+      .maybeSingle();
+
+    return {
+      ...empty,
+      paymentUrl: typeof older?.payment_url === 'string' ? older.payment_url : null,
+      paymentLabel: typeof older?.payment_label === 'string' ? older.payment_label : null,
+    };
+  }
+
+  return {
+    paymentUrl: typeof data.payment_url === 'string' ? data.payment_url : null,
+    paymentLabel: typeof data.payment_label === 'string' ? data.payment_label : null,
+    whatsappNumber: normaliseWhatsApp(data.whatsapp_number),
+    whatsappMessage: typeof data.whatsapp_message === 'string' ? data.whatsapp_message : null,
+    whatsappLeads: data.whatsapp_leads === true,
+    booking: {
+      enabled: data.booking_enabled === true,
+      services: cleanServices(data.booking_services),
+      note: typeof data.booking_note === 'string' ? data.booking_note : null,
+    },
+  };
 }
 
-export function decorate(html: string, extras: SiteExtras): string {
-  return withChatbot(withPayButton(html, extras.paymentUrl, extras.paymentLabel), extras.chatbotKey);
+export function decorate(html: string, extras: SiteExtras, path = ''): string {
+  // Booking first, so the section is on the page before the buttons that float
+  // over it are measured against what is already in the corner.
+  const withForm = withBooking(html, extras.booking, /contact/i.test(path));
+  const withChat = withChatbot(
+    withPayButton(withForm, extras.paymentUrl, extras.paymentLabel),
+    extras.chatbotKey,
+  );
+  return withWhatsApp(withChat, extras.whatsappNumber, extras.whatsappMessage);
 }
 
 /**

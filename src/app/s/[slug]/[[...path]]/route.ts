@@ -1,9 +1,11 @@
-import type { NextRequest } from 'next/server';
+import { after, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentFiles } from '@/lib/generation/storage';
 import { pendingPage } from '@/lib/generation/kit/placeholder';
 import { absolutise, decorate, loadSiteExtras } from '@/lib/site-extras';
 import { renderRobots, renderSitemap, withSeoHead, type SiteFacts } from '@/lib/seo';
+import { recordVisit } from '@/lib/traffic';
+import { whatsappHref } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -136,20 +138,46 @@ export async function GET(
     faviconUrl: project.favicon_url,
   };
 
-  const body = isHtml
-    ? withSeoHead(
-        decorate(
-          absolutise(withFavicon(file.content, project.favicon_url), base),
-          await loadSiteExtras(project.id),
-        ),
-        {
-          pageUrl: `${origin}${base}${file.path === 'index.html' ? '' : file.path}`,
-          // This is what turns the enquiry form from a message into a lead.
-          leadsEndpoint: `/api/leads/${encodeURIComponent(slug)}`,
-          facts,
-        },
-      )
-    : file.content;
+  const extras = isHtml ? await loadSiteExtras(project.id) : null;
+
+  const body =
+    isHtml && extras
+      ? withSeoHead(
+          decorate(
+            absolutise(withFavicon(file.content, project.favicon_url), base),
+            extras,
+            file.path,
+          ),
+          {
+            pageUrl: `${origin}${base}${file.path === 'index.html' ? '' : file.path}`,
+            // This is what turns the enquiry form from a message into a lead.
+            leadsEndpoint: `/api/leads/${encodeURIComponent(slug)}`,
+            facts,
+            // When the owner wants enquiries on WhatsApp, the form hands the
+            // message over after filing it — the customer sends it themselves,
+            // which needs no API and no approval from anyone.
+            whatsappHandoff:
+              extras.whatsappLeads && extras.whatsappNumber
+                ? whatsappHref(extras.whatsappNumber, null)
+                : null,
+          },
+        )
+      : file.content;
+
+  // Counted after the response has gone, so the page is never slower for it.
+  if (isHtml) {
+    after(
+      recordVisit({
+        projectId: project.id,
+        path: file.path,
+        address:
+          request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+          request.headers.get('x-real-ip') ??
+          'unknown',
+        userAgent: request.headers.get('user-agent'),
+      }),
+    );
+  }
 
   return new Response(body, {
     headers: {
