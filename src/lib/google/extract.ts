@@ -2,6 +2,7 @@ import 'server-only';
 import { openaiFor, resolveApiKey } from '@/lib/openai/client';
 import { getModelCatalog } from '@/lib/openai/models';
 import { recordUsage } from '@/lib/usage';
+import { noteError } from '@/lib/errors';
 import type { PlaceProfile } from './places';
 
 /**
@@ -170,9 +171,10 @@ export async function readListingWithModel(
 
     const raw = JSON.parse(response.choices[0]?.message?.content ?? '{}') as ModelListing;
     return shape(raw);
-  } catch {
+  } catch (cause) {
     // The regex path already produced something; this was the improvement on
     // top of it, and an improvement that fails must not take the rest with it.
+    noteError({ scope: 'google.readListing', error: cause, userId });
     return null;
   }
 }

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { rateLimit } from '@/lib/rate-limit';
 import { handleRouteError, jsonError } from '@/lib/api';
+import { logError } from '@/lib/errors';
 
 export const runtime = 'nodejs';
 
@@ -93,7 +94,15 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
         message: row.message,
         page: row.page,
       });
-      if (fallback) return jsonError('That could not be sent. Please call instead.', 500);
+      if (fallback) {
+        await logError({
+          scope: 'lead.insert',
+          error: fallback,
+          projectId: project.id,
+          detail: { kind: row.kind },
+        });
+        return jsonError('That could not be sent. Please call instead.', 500);
+      }
     }
 
     return NextResponse.json({ ok: true });

@@ -267,6 +267,17 @@ export type LeadRow = {
   read_at: string | null;
 }
 
+/** Something that went wrong, written down where it can be read. */
+export type ErrorEventRow = {
+  id: string;
+  user_id: string | null;
+  project_id: string | null;
+  scope: string;
+  message: string;
+  detail: Json | null;
+  created_at: string;
+}
+
 /** A day's page views for one path of one site. */
 export type SiteVisitRow = {
   project_id: string;
@@ -305,6 +316,7 @@ export type Database = {
       rate_limit_events: Table<RateLimitEventRow>;
       flagged_content: Table<FlaggedContentRow>;
       leads: Table<LeadRow>;
+      error_events: Table<ErrorEventRow>;
       site_visits: Table<SiteVisitRow>;
       site_visitors: Table<SiteVisitorRow>;
     };

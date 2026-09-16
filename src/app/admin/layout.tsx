@@ -16,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <nav className="flex gap-1">
           <AdminTab href="/admin" label="Overview" />
           <AdminTab href="/admin/users" label="Users" />
+          <AdminTab href="/admin/errors" label="Errors" />
         </nav>
 
         <Link href="/app" className="ml-auto text-[13px] text-ink-muted transition hover:text-ink-primary">

@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { GenerationJobRow } from '@/lib/database.types';
 import { nextStep, runBuildStep, type BuildState, type BuildStep } from './pipeline';
+import { logError, noteError } from '@/lib/errors';
 
 /**
  * Running a build on the server, not in the tab that asked for it.
@@ -183,8 +184,10 @@ export async function runNextStep(
     // rather than a start time.
     latest = { ...latest, ...patch, stepStartedAt: new Date().toISOString() };
     const snapshot = { ...latest, files: [...latest.files] };
-    writes = writes.then(() => writeState(job.id, snapshot)).catch(() => {
-      // A lost progress line must never be the reason a build stops.
+    writes = writes.then(() => writeState(job.id, snapshot)).catch((cause) => {
+      // A lost progress line must never be the reason a build stops — but it
+      // is how a build goes quiet, so it is written down.
+      noteError({ scope: 'generation.progress', error: cause, projectId: job.project_id });
     });
     return writes;
   };
@@ -251,6 +254,13 @@ export async function runNextStep(
   } catch (cause) {
     clearInterval(heartbeat);
     const message = cause instanceof Error ? cause.message : 'Generation failed';
+    await logError({
+      scope: 'generation.step',
+      error: cause,
+      userId: job.user_id,
+      projectId: job.project_id,
+      detail: { step, files: files.length, expected },
+    });
     await admin
       .from('generation_jobs')
       .update({
@@ -287,5 +297,6 @@ async function writeState(
     // Without the column the build still runs; only the fine-grained report is
     // lost, and the watcher falls back to the coarse stage.
     await admin.from('generation_jobs').update({ stage: payload.stage }).eq('id', jobId);
+    noteError({ scope: 'generation.writeState', error, detail: { jobId, stage: payload.stage } });
   }
 }

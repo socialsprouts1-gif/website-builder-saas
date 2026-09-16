@@ -3,6 +3,7 @@ import { openaiFor, resolveApiKey } from '@/lib/openai/client';
 import { getModelCatalog } from '@/lib/openai/models';
 import { recordUsage } from '@/lib/usage';
 import { uploadAsset } from './storage';
+import { noteError } from '@/lib/errors';
 
 /**
  * Photographs for a site that has none, made rather than found.
@@ -116,6 +117,18 @@ export async function generateSiteImages(params: {
       return { url, role };
     }),
   );
+
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      noteError({
+        scope: 'images.generate',
+        error: result.reason,
+        userId: params.userId,
+        projectId: params.projectId,
+        detail: { model },
+      });
+    }
+  }
 
   return results
     .filter((result): result is PromiseFulfilledResult<GeneratedImage> => result.status === 'fulfilled')

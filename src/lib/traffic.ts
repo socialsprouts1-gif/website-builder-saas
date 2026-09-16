@@ -2,6 +2,7 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { env } from '@/lib/env';
+import { noteError } from '@/lib/errors';
 
 /**
  * Counting visits to a published site.
@@ -79,8 +80,10 @@ export async function recordVisit(input: {
         day,
       }),
     });
-  } catch {
-    // Counting is not the point of the request.
+  } catch (cause) {
+    // Counting is not the point of the request — but a counter that silently
+    // stopped is exactly how an owner ends up staring at a flat line.
+    noteError({ scope: 'traffic.record', error: cause, projectId: input.projectId });
   }
 }
 
