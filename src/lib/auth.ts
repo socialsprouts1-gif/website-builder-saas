@@ -17,7 +17,19 @@ export async function getSessionUser() {
 }
 
 /** Returns the auth user plus the mirrored public.users profile row. */
-export async function getCurrentUser(): Promise<{ id: string; email: string; profile: UserRow | null } | null> {
+export async function getCurrentUser(): Promise<{
+  id: string;
+  email: string;
+  profile: UserRow | null;
+  /**
+   * Whether the address has been confirmed.
+   *
+   * Carried here because the gate on generating a first site depends on it, and
+   * anything that wants to warn someone before they reach that gate needs to
+   * know without asking Supabase a second time.
+   */
+  emailConfirmedAt: string | null;
+} | null> {
   if (!isSupabaseConfigured) return null;
 
   const supabase = await createClient();
@@ -39,7 +51,12 @@ export async function getCurrentUser(): Promise<{ id: string; email: string; pro
       avatarUrl: (user.user_metadata?.avatar_url as string | undefined) ?? null,
     }).catch(() => null));
 
-  return { id: user.id, email: user.email ?? '', profile: resolved ?? null };
+  return {
+    id: user.id,
+    email: user.email ?? '',
+    profile: resolved ?? null,
+    emailConfirmedAt: user.email_confirmed_at ?? null,
+  };
 }
 
 export async function requireUser() {

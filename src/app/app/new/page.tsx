@@ -4,7 +4,7 @@ import { NewSiteForm } from '@/components/app/NewSiteForm';
 import { Badge } from '@/components/ui/Badge';
 import { CreditMeter } from '@/components/app/CreditMeter';
 import { requireUser } from '@/lib/auth';
-import { CREDIT_COST } from '@/lib/env';
+import { CREDIT_COST, DAILY_PLATFORM_CREDITS, WELCOME_CREDITS } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { getKeyStatus, resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
@@ -49,8 +49,47 @@ export default async function NewSitePage({
     : false;
   const noKeyAtAll = keyStatus ? !keyStatus.hasOwnKey && !keyStatus.platformConfigured : false;
 
+  // A first-time visit, which is the only time any of this needs explaining.
+  // Everyone else has seen it and does not need telling twice.
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from('projects')
+    .select('id', { count: 'exact', head: true })
+    .eq('is_template', false);
+  const firstTime = (count ?? 0) === 0 && !keyStatus?.unlimited;
+
   return (
     <div className="mx-auto max-w-2xl px-5 py-9 sm:px-6 sm:py-14">
+      {firstTime ? (
+        // Said once, on the only visit where it is news. Everything a new
+        // account needs to know before it spends anything: what it has, what a
+        // site costs, and that running out is not the end of the account.
+        <div className="mb-8 rounded-card border border-accent/25 bg-accent-soft/30 p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Welcome</p>
+          <p className="mt-1.5 font-display text-[19px] leading-tight text-ink-primary">
+            You have enough to build {Math.floor(WELCOME_CREDITS / CREDIT_COST.generation)} sites right now
+          </p>
+          <ul className="mt-3 space-y-1.5 text-[13px] leading-relaxed text-ink-secondary">
+            <li>
+              <span className="text-ink-primary">{WELCOME_CREDITS} credits to start</span>, plus{' '}
+              {DAILY_PLATFORM_CREDITS} more every day. A whole site costs {CREDIT_COST.generation} — the pages
+              and sections after that are free.
+            </li>
+            <li>
+              Changing something afterwards costs {CREDIT_COST.chat_edit}. Publishing, editing by hand and
+              your own photos cost nothing.
+            </li>
+            <li>
+              Run out and your sites stay live.{' '}
+              <Link href="/app/settings/api-keys" className="text-accent hover:underline">
+                Add your own OpenAI key
+              </Link>{' '}
+              and nothing is metered at all.
+            </li>
+          </ul>
+        </div>
+      ) : null}
+
       <div className="mb-9 text-center">
         <Badge tone="accent" className="mb-5">One prompt</Badge>
         <h1 className="font-display text-[36px] leading-tight text-ink-primary">

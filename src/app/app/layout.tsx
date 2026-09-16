@@ -1,4 +1,5 @@
 import { AppNav } from '@/components/app/AppNav';
+import { ConfirmBanner } from '@/components/app/ConfirmBanner';
 import { isBootstrapAdmin, requireUser } from '@/lib/auth';
 import { getKeyStatus } from '@/lib/openai/client';
 import { isSchemaInstalled } from '@/lib/supabase/errors';
@@ -13,6 +14,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
 
+  // Admins are exempt from the gate, so telling them about it would be a
+  // warning about something that is not going to happen.
+  const isAdmin = Boolean(user.profile?.is_admin) || isBootstrapAdmin(user.email);
+  const needsConfirming = !user.emailConfirmedAt && !isAdmin;
+
   // A fixed-height app frame rather than a document that grows.
   //
   // The workspace asks for the viewport's height, and on a phone it was given
@@ -23,7 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen flex-col [height:100dvh] lg:flex-row">
       <AppNav
         email={user.email}
-        isAdmin={Boolean(user.profile?.is_admin) || isBootstrapAdmin(user.email)}
+        isAdmin={isAdmin}
         credits={
           keyStatus
             ? {
@@ -38,7 +44,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             : null
         }
       />
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</main>
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+        {/* Said from the first screen rather than at the last step. The check
+            itself lives on project creation, which is where someone found out
+            after writing a prompt and answering four questions. */}
+        {needsConfirming ? <ConfirmBanner email={user.email} /> : null}
+        <div className="min-h-0 flex-1">{children}</div>
+      </main>
     </div>
   );
 }
