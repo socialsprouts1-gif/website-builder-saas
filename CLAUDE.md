@@ -20,3 +20,17 @@ one file.
 
 When a new migration is added under `supabase/migrations/`, append it to
 `supabase/setup.sql` in the same commit.
+
+## Tests
+
+`npm test` runs them; `npm run test:watch` while working. They live next to what
+they test, as `*.test.ts`.
+
+Everything here is a pure function tested through its real module — no mocked
+Supabase, no fake OpenAI. That is a deliberate limit rather than a gap to fill
+later: the parts worth testing are the ones that decide something (which step
+runs next, whether a listing is readable, whether a section is already on the
+page), and those are all reachable without a network.
+
+When a bug is found, the test comes with the fix in the same commit. Every
+regression this project has had was in code that had no test and then did.
