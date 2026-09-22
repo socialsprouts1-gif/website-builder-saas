@@ -3,13 +3,16 @@ import { Card, SectionHeader } from '@/components/ui/Card';
 import { ChatbotBuilder } from '@/components/app/ChatbotBuilder';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { env } from '@/lib/env';
+import { requestOrigin } from '@/lib/request-origin';
 
 export const metadata = { title: 'Chatbot' };
 export const dynamic = 'force-dynamic';
 
 export default async function ChatbotPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // Whatever domain the owner is looking at this on, so every link and
+  // snippet below belongs to it rather than to a build-time guess.
+  const origin = await requestOrigin();
   await requireUser();
   const supabase = await createClient();
 
@@ -80,7 +83,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
           ) : null}
           <ChatbotBuilder
             projectId={project.id}
-            siteUrlBase={env.siteUrl}
+            siteUrlBase={origin}
             initial={{
               name: chatbot?.name ?? 'Assistant',
               greeting: chatbot?.greeting ?? `Hi! Ask me anything about ${project.name}.`,

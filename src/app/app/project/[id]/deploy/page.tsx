@@ -6,13 +6,16 @@ import { DomainPanel } from '@/components/app/DomainPanel';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { loadAccountContext } from '@/lib/connectors/registry';
-import { env } from '@/lib/env';
+import { requestOrigin } from '@/lib/request-origin';
 
 export const metadata = { title: 'Deploy' };
 export const dynamic = 'force-dynamic';
 
 export default async function DeployPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // Whatever domain the owner is looking at this on, so every link and
+  // snippet below belongs to it rather than to a build-time guess.
+  const origin = await requestOrigin();
   const user = await requireUser();
 
   const supabase = await createClient();
@@ -40,7 +43,7 @@ export default async function DeployPage({ params }: { params: Promise<{ id: str
       <div className="mb-10">
         <PublishPanel
           projectId={project.id}
-          siteUrl={env.siteUrl}
+          siteUrl={origin}
           initialSlug={project.public_slug}
           initialPublished={Boolean(project.published_at)}
           initialFavicon={project.favicon_url}
