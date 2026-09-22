@@ -8,6 +8,15 @@ import { isSupabaseConfigured } from '@/lib/env';
 import { selfOrigin } from '@/lib/self-origin';
 import { pendingPage } from '@/lib/generation/kit/placeholder';
 import { decorate, loadSiteExtras } from '@/lib/site-extras';
+import { loadShop } from '@/lib/shop/load';
+import {
+  decorateWithShop,
+  improvisedPage,
+  productResponse,
+  productSlugFromPath,
+  shopSlotFor,
+  type ShopRequest,
+} from '@/lib/shop/serve';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -90,6 +99,23 @@ export async function GET(
   const versionId = request.nextUrl.searchParams.get('version');
   const files = versionId ? await getVersionFiles(versionId) : await getCurrentFiles(projectId);
 
+  // The owner looking at their own shop. Same renderer as the published site,
+  // but the frame here is sandboxed into an opaque origin and sends no cookies
+  // with its subresource requests — so it could never load a stylesheet of its
+  // own, and everything is inlined instead. Its policy allows that; the
+  // published site's policy is the other way round.
+  const shop = await loadShop(projectId).catch(() => null);
+  const shopRequest: ShopRequest | null = shop?.enabled
+    ? {
+        shop,
+        base: `/preview/${projectId}/`,
+        endpoint: `/api/shop/preview/${projectId}/orders`,
+        storageKey: `preview-${projectId}`,
+        inline: true,
+      }
+    : null;
+  const category = request.nextUrl.searchParams.get('category');
+
   const file =
     files.find((candidate) => candidate.path === requested) ??
     (requested.endsWith('/') || !requested.includes('.')
@@ -97,6 +123,33 @@ export async function GET(
       : undefined);
 
   const origin = selfOrigin(request.headers, request.nextUrl.origin);
+
+  // A shop page with no file behind it: a product, or a shop switched on for a
+  // site built before there was one.
+  const home = files.find((candidate) => candidate.path === 'index.html')?.content ?? null;
+  // Only when no real file answers this path, for the same reason as above.
+  if (shopRequest && home && !file) {
+    const shopPage = (() => {
+      const productSlug = productSlugFromPath(requested);
+      if (productSlug) return productResponse(productSlug, home, shopRequest);
+      const slot = shopSlotFor(requested);
+      return slot ? improvisedPage(slot, home, shopRequest, category) : null;
+    })();
+
+    if (shopPage) {
+      return new Response(
+        decorate(inlineAssets(shopPage, files), await loadSiteExtras(projectId, { chatbot: false })),
+        {
+          headers: {
+            'content-type': 'text/html; charset=utf-8',
+            'content-security-policy': previewCsp(origin),
+            'x-content-type-options': 'nosniff',
+            'cache-control': 'no-store',
+          },
+        },
+      );
+    }
+  }
 
   if (!file) {
     // A page the nav links to but the build has not assembled yet. The owner is
@@ -139,11 +192,15 @@ export async function GET(
   // over the page being edited is something to click by accident.
   const html =
     extension === 'html'
-      ? decorate(
+      ? decorateWithShop(
+          decorate(
           inlineAssets(file.content, files),
           // Not in visual-edit mode: a floating bubble over the page being
           // edited is something to click by accident.
-          await loadSiteExtras(projectId, { chatbot: !editorMode }),
+            await loadSiteExtras(projectId, { chatbot: !editorMode }),
+          ),
+          shopRequest,
+          category,
         )
       : file.content;
   const body =

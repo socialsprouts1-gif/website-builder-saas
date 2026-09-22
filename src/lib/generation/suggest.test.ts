@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sectionsIn, suggestNext, verticalFor } from './suggest';
+import { verticalBySlug } from './verticals';
 
 /** A page the generator would have written, marked up the way it marks up. */
 const page = (kinds: string[]) =>
@@ -31,8 +32,23 @@ describe('suggestNext', () => {
     expect(labels.some((label) => /Contact/i.test(label))).toBe(true);
   });
 
-  it('calls a shop’s services a product catalogue', () => {
-    expect(labels).toContain('Product catalogue');
+  /**
+   * It used to offer "Product catalogue" here: a static grid of pictures with
+   * prices printed under them and a button that opened an enquiry form. A
+   * retail site has a real shop now — products, a basket, a checkout — so
+   * offering the painted-on version beside it would be offering a worse copy
+   * of what the site already has.
+   */
+  it('offers a shop rather than a picture of one', () => {
+    expect(labels).not.toContain('Product catalogue');
+    expect(labels).not.toContain('Services & prices');
+    expect(labels.some((label) => /Shop/i.test(label))).toBe(true);
+  });
+
+  /** The basket and the checkout are part of the shop, not pages to write. */
+  it('never offers to build a basket or a checkout page', () => {
+    expect(labels.some((label) => /basket/i.test(label))).toBe(false);
+    expect(labels.some((label) => /checkout/i.test(label))).toBe(false);
   });
 
   // The promise that keeps the list short and keeps it honest. Scoped to
@@ -49,13 +65,14 @@ describe('suggestNext', () => {
   });
 
   it('has no pages left to offer once they all exist', () => {
-    const full = [
-      { path: 'index.html', content: page(['hero', 'gallery', 'features', 'testimonials', 'cta']) },
-      { path: 'shop.html', content: page(['hero', 'services', 'faq', 'cta']) },
-      { path: 'about.html', content: page(['hero', 'about', 'steps', 'stats']) },
-      { path: 'contact.html', content: page(['hero', 'contact', 'hours', 'cta']) },
-      { path: 'gallery.html', content: page(['hero', 'gallery']) },
-    ];
+    // Built from the vertical itself, so adding a page to the plan can never
+    // quietly leave this test asserting about a site shape that no longer
+    // exists.
+    const full = verticalBySlug('retail')!.pages.map((entry) => ({
+      path: entry.path,
+      content: page(entry.sections.length > 0 ? entry.sections : ['hero']),
+    }));
+
     const later = suggestNext(full, { hint: 'ecommerce store' });
     expect(later.filter((item) => item.kind === 'page')).toHaveLength(0);
     expect(later.some((item) => item.id === 'section:pricing')).toBe(true);

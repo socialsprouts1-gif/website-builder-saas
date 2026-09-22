@@ -6,6 +6,16 @@ import { absolutise, decorate, loadSiteExtras } from '@/lib/site-extras';
 import { renderRobots, renderSitemap, withSeoHead, type SiteFacts } from '@/lib/seo';
 import { recordVisit } from '@/lib/traffic';
 import { whatsappHref } from '@/lib/whatsapp';
+import { loadShop } from '@/lib/shop/load';
+import {
+  decorateWithShop,
+  improvisedPage,
+  productResponse,
+  productSlugFromPath,
+  shopSlotFor,
+  SHOP_ASSETS,
+  type ShopRequest,
+} from '@/lib/shop/serve';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,6 +77,87 @@ export async function GET(
 
   const files = await getCurrentFiles(project.id);
 
+  // What the shop needs, and where its links point. Read once for the request,
+  // whichever of the several shop-shaped answers below it turns out to be.
+  const shop = await loadShop(project.id).catch(() => null);
+  const shopRequest: ShopRequest | null = shop?.enabled
+    ? {
+        shop,
+        base,
+        endpoint: `/api/shop/${encodeURIComponent(slug)}/orders`,
+        storageKey: slug,
+        // A published page is a top-level document under `script-src 'self'`,
+        // so its script and stylesheet are files it loads for itself.
+        inline: false,
+      }
+    : null;
+
+  // The shop's own two assets. Named files because inline is forbidden here,
+  // and cacheable because they are the same bytes for every shop.
+  if (shopRequest && SHOP_ASSETS[wanted]) {
+    const asset = SHOP_ASSETS[wanted];
+    return new Response(asset.body, {
+      headers: {
+        'content-type': asset.type,
+        'cache-control': 'public, max-age=3600, s-maxage=86400',
+        'x-content-type-options': 'nosniff',
+      },
+    });
+  }
+
+  const category = request.nextUrl.searchParams.get('category');
+
+  const facts: SiteFacts = {
+    businessName: project.name,
+    description: project.description,
+    category: project.business_type,
+    // Not in the project row: the address and phone live in the page the model
+    // wrote. Left null rather than guessed — structured data that is wrong is
+    // worse than structured data that is thin, because it gets believed.
+    address: null,
+    phone: null,
+    faviconUrl: project.favicon_url,
+  };
+
+  /** A finished page, with the site's own extras, SEO and headers on it. */
+  const htmlResponse = async (page: string, path: string) => {
+    const extras = await loadSiteExtras(project.id);
+    const body = withSeoHead(decorate(page, extras, path), {
+      pageUrl: `${origin}${base}${path}`,
+      leadsEndpoint: `/api/leads/${encodeURIComponent(slug)}`,
+      facts,
+      whatsappHandoff:
+        extras.whatsappLeads && extras.whatsappNumber
+          ? whatsappHref(extras.whatsappNumber, null)
+          : null,
+    });
+
+    after(
+      recordVisit({
+        projectId: project.id,
+        path,
+        address:
+          request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+          request.headers.get('x-real-ip') ??
+          'unknown',
+        userAgent: request.headers.get('user-agent'),
+      }),
+    );
+
+    return new Response(body, {
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        // Short: a price or a stock count changing has to show up without
+        // waiting for a cache to age out.
+        'cache-control': 'public, max-age=15, s-maxage=30',
+        'x-content-type-options': 'nosniff',
+        'x-frame-options': 'SAMEORIGIN',
+        'referrer-policy': 'strict-origin-when-cross-origin',
+        'content-security-policy': HTML_CSP,
+      },
+    });
+  };
+
   // Written from the site as it currently stands, so a page added this morning
   // is in the sitemap this afternoon without anything being regenerated.
   if (wanted === 'sitemap.xml' || wanted === 'robots.txt') {
@@ -92,6 +183,32 @@ export async function GET(
     (wanted.endsWith('/') || !wanted.includes('.')
       ? files.find((candidate) => candidate.path === `${wanted.replace(/\/$/, '')}.html`)
       : undefined);
+
+  // A product has no file of its own — there would have to be one per product,
+  // rewritten on every price change. It is rendered from the database into the
+  // site's own shell instead.
+  const home = files.find((candidate) => candidate.path === 'index.html')?.content ?? null;
+
+  // Only when no real file answers this path: a file the owner has is always
+  // the page they meant, and a shop must never shadow one.
+  if (shopRequest && home && !file) {
+    const productSlug = productSlugFromPath(wanted);
+    if (productSlug) {
+      const page = productResponse(productSlug, home, shopRequest);
+      if (page) return htmlResponse(page, wanted);
+      // A product that was taken down. Say so on the shop's own page rather
+      // than in a 404 that looks like the whole site is broken.
+      return new Response(null, { status: 302, headers: { location: `${base}shop.html` } });
+    }
+
+    // A shop switched on for a site built before there was one: the three shop
+    // pages are assembled out of the home page's shell.
+    const slot = shopSlotFor(wanted);
+    if (slot) {
+      const page = improvisedPage(slot, home, shopRequest, category);
+      if (page) return htmlResponse(page, wanted);
+    }
+  }
 
   if (!file) {
     // Pages arrive one at a time while a site is being written, so a link into
@@ -126,27 +243,22 @@ export async function GET(
   const extension = file.path.split('.').pop()?.toLowerCase() ?? 'html';
   const isHtml = extension === 'html';
 
-  const facts: SiteFacts = {
-    businessName: project.name,
-    description: project.description,
-    category: project.business_type,
-    // Not in the project row: the address and phone live in the page the model
-    // wrote. Left null rather than guessed — structured data that is wrong is
-    // worse than structured data that is thin, because it gets believed.
-    address: null,
-    phone: null,
-    faviconUrl: project.favicon_url,
-  };
-
   const extras = isHtml ? await loadSiteExtras(project.id) : null;
 
   const body =
     isHtml && extras
       ? withSeoHead(
-          decorate(
-            absolutise(withFavicon(file.content, project.favicon_url), base),
-            extras,
-            file.path,
+          // After absolutise, never before: the shop writes its own links
+          // already pointing at this site's base, and absolutising them twice
+          // would prefix them a second time.
+          decorateWithShop(
+            decorate(
+              absolutise(withFavicon(file.content, project.favicon_url), base),
+              extras,
+              file.path,
+            ),
+            shopRequest,
+            category,
           ),
           {
             pageUrl: `${origin}${base}${file.path === 'index.html' ? '' : file.path}`,

@@ -23,6 +23,9 @@ Commit to a point of view. Two sites must not be mistakable for each other: a ca
 - density: "tight" for busy commercial sites, "airy" for calm ones, "regular" otherwise.
 - texture: "flat", "gradient", "grain" or "rings" — the decorative treatment behind the hero.
 
+THE SHOP (only when the brief says this business sells things)
+Write 8 products this business would genuinely stock. Real, specific items with real prices — "Banarasi silk saree, ₹4,500", not "Product 1". Group them into 2 to 4 categories a customer would recognise. Prices in plain rupees, no symbol. Give compareAt only where there is a genuine reduction; otherwise omit it. Leave every product without a picture — photographs are added afterwards.
+
 Reply with JSON only:
 {
   "businessName": string,
@@ -37,7 +40,8 @@ Reply with JSON only:
     "density": "tight"|"regular"|"airy",
     "texture": "flat"|"gradient"|"grain"|"rings",
     "mood": string
-  }
+  },
+  "products": [{ "title": string, "summary": string, "description": string, "price": string, "compareAt": string|null, "category": string }]
 }`;
 
 export function buildPlanPrompt(params: {
@@ -45,12 +49,16 @@ export function buildPlanPrompt(params: {
   vertical: Vertical;
   sitemap: { path: string; title: string }[];
 }): string {
+  const shop = params.vertical.shop
+    ? `\n\nThis business sells things. The site is being built with a working shop in it — a product grid, product pages, a basket and a checkout — so the "products" array is required and must be a catalogue this business would really stock.`
+    : `\n\nThis business does not sell things online. Omit "products" entirely.`;
+
   return `What the owner asked for:
 ${params.prompt}
 
 This is a ${params.vertical.label.toLowerCase()}. Tone: ${params.vertical.tone}. The one thing a visitor should do: ${params.vertical.action}.
 
-The site will have these pages, already decided: ${params.sitemap.map((page) => `${page.title} (${page.path})`).join(', ')}.`;
+The site will have these pages, already decided: ${params.sitemap.map((page) => `${page.title} (${page.path})`).join(', ')}.${shop}`;
 }
 
 /** What each kind of section needs, in the shape the renderer expects. */

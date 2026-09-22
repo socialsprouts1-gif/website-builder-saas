@@ -14,6 +14,14 @@ export interface PageSpec {
   title: string;
   description: string;
   sections: Section[];
+  /**
+   * Markup appended inside `<main>`, after the sections.
+   *
+   * One thing uses this: the empty marker a shop page carries, which is filled
+   * from the database when the page is served. It is not a way for a model to
+   * get markup into a page — nothing that reaches here was written by one.
+   */
+  extra?: string;
 }
 
 export interface SiteSpec {
@@ -87,7 +95,9 @@ function footer(site: SiteSpec): string {
 }
 
 export function renderPage(site: SiteSpec, page: PageSpec): string {
-  const sections = assignTones(page.sections).map(renderSection).join('\n');
+  const sections = [assignTones(page.sections).map(renderSection).join('\n'), page.extra ?? '']
+    .filter(Boolean)
+    .join('\n');
   const fonts = site.tokens.fonts.googleHref;
 
   return `<!doctype html>

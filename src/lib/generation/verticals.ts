@@ -1,4 +1,5 @@
 import type { SectionKind } from './kit/sections';
+import type { ShopSlot } from '@/lib/shop/inject';
 
 /**
  * What a website for this kind of business is actually made of.
@@ -15,6 +16,16 @@ export interface VerticalPage {
   path: string;
   title: string;
   sections: SectionKind[];
+  /**
+   * Where the shop renders into this page.
+   *
+   * The file is written with an empty marker in it; the grid, the basket and
+   * the checkout are filled in from the database when the page is served, so a
+   * price change is live immediately rather than at the next rebuild.
+   */
+  shopSlot?: ShopSlot;
+  /** Written as a file, but not a nav entry. A basket is not a page to browse. */
+  hidden?: boolean;
 }
 
 export interface Vertical {
@@ -26,7 +37,27 @@ export interface Vertical {
   /** What the owner wants a visitor to do. */
   action: string;
   pages: VerticalPage[];
+  /**
+   * This business sells things, so the site is built with a real shop in it:
+   * products, categories, a basket, a checkout and somewhere the orders land.
+   */
+  shop?: boolean;
 }
+
+/**
+ * The three pages a shop adds.
+ *
+ * Shop carries a hero the model writes, because a shop front needs a sentence
+ * saying what is sold here. The basket and the checkout carry only their own
+ * heading — there is nothing to say on them that the page is not already
+ * showing, and a paragraph of marketing copy above a checkout form is how
+ * carts get abandoned.
+ */
+export const SHOP_PAGES: VerticalPage[] = [
+  { path: 'shop.html', title: 'Shop', sections: ['hero'], shopSlot: 'shop' },
+  { path: 'cart.html', title: 'Your basket', sections: [], shopSlot: 'cart', hidden: true },
+  { path: 'checkout.html', title: 'Checkout', sections: [], shopSlot: 'checkout', hidden: true },
+];
 
 const CONTACT_PAGE: VerticalPage = {
   path: 'contact.html',
@@ -122,14 +153,19 @@ export const VERTICALS: Vertical[] = [
   {
     slug: 'retail',
     label: 'Boutique & retail',
-    match: ['boutique', 'shop', 'store', 'retail', 'handmade', 'jewellery', 'jewelry', 'clothing', 'saree', 'craft', 'ecommerce'],
+    match: [
+      'boutique', 'shop', 'store', 'retail', 'handmade', 'jewellery', 'jewelry', 'clothing',
+      'saree', 'craft', 'ecommerce', 'e-commerce', 'online store', 'products', 'selling',
+      'cart', 'checkout', 'd2c', 'merchandise', 'kirana', 'grocery',
+    ],
     tone: 'Considered, product-first, generous photography',
-    action: 'Shop the collection',
+    action: 'Buy something',
+    shop: true,
     pages: [
-      { path: 'index.html', title: 'Home', sections: ['hero', 'gallery', 'services', 'features', 'stats', 'testimonials', 'cta'] },
-      { path: 'shop.html', title: 'Shop', sections: ['hero', 'services', 'gallery', 'pricing', 'faq', 'cta'] },
+      { path: 'index.html', title: 'Home', sections: ['hero', 'features', 'gallery', 'stats', 'testimonials', 'cta'] },
+      ...SHOP_PAGES,
       { path: 'about.html', title: 'Our story', sections: ['hero', 'about', 'steps', 'stats', 'gallery'] },
-      { path: 'gallery.html', title: 'Gallery', sections: ['hero', 'gallery', 'testimonials', 'cta'] },
+      { path: 'faq.html', title: 'Delivery & returns', sections: ['hero', 'faq', 'cta'] },
       CONTACT_PAGE,
     ],
   },

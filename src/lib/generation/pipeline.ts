@@ -24,6 +24,8 @@ import type { Section, SectionKind } from './kit/sections';
 import { DEFAULT_VERTICAL, VERTICALS, matchVertical, type Vertical } from './verticals';
 import { pageLabel } from '@/lib/pages';
 import { createVersion, getCurrentFiles } from './storage';
+import { shopSection } from '@/lib/shop/inject';
+import { seedShop } from '@/lib/shop/seed';
 import type {
   DesignSystem,
   GenerationEvent,
@@ -344,6 +346,14 @@ export async function runBuildStep(
       verticalSlug: vertical.slug,
     };
 
+    // A shop, opened with something in it. Done here rather than at the end so
+    // the Shop page has products in it the first time it is looked at, and
+    // deliberately not awaited into the critical path of the build: a shop that
+    // fails to seed leaves a site that is still a good site.
+    if (vertical.shop) {
+      await seedShop(input.projectId, Array.isArray(raw.products) ? (raw.products as never[]) : []);
+    }
+
     const queue = vertical.pages.flatMap((page) =>
       page.sections.map((kind, index) => ({ page: page.path, index, kind })),
     );
@@ -452,6 +462,32 @@ export async function runBuildStep(
 }
 
 /**
+ * Which of a vertical's pages are written into files on this save.
+ *
+ * Only pages that actually have content are linked. A nav entry to a page that
+ * does not exist yet is a dead link on a site someone is about to show a
+ * customer; the link appears on the next save, a minute later, with the page
+ * behind it.
+ *
+ * A shop page is the exception. The basket and the checkout have no sections to
+ * wait for — everything on them is rendered from the database when they are
+ * served — so waiting for content that will never come would mean a shop whose
+ * basket link went nowhere for as long as the site existed. They are written as
+ * soon as the site has anything at all.
+ */
+export function pagesToWrite(
+  vertical: Vertical,
+  sections: Record<string, Section>,
+): Vertical['pages'] {
+  const anything = Object.keys(sections).length > 0;
+  return vertical.pages.filter(
+    (page) =>
+      page.sections.some((_unused, index) => sections[`${page.path}#${index}`]) ||
+      (Boolean(page.shopSlot) && anything),
+  );
+}
+
+/**
  * Renders the sections written so far into real files and saves them.
  *
  * Called after the homepage and again after every page, so the site on screen
@@ -463,18 +499,17 @@ async function saveSite(
   vertical: Vertical,
   sections: Record<string, Section>,
 ): Promise<{ versionId: string; pages: string[] }> {
-  // Only pages that actually have content are linked. A nav entry to a page
-  // that does not exist yet is a dead link on a site someone is about to show
-  // a customer; the link appears on the next save, a minute later, with the
-  // page behind it.
-  const written = vertical.pages.filter((page) =>
-    page.sections.some((_, index) => sections[`${page.path}#${index}`]),
-  );
+  const written = pagesToWrite(vertical, sections);
 
   const site: SiteSpec = {
     businessName: plan.businessName,
     tagline: plan.tagline,
-    pages: written.map((page) => ({ path: page.path, title: page.title })),
+    // The basket and the checkout are pages you are sent to, never pages you
+    // browse to. A link to your own empty basket in the main nav of every page
+    // is clutter; the basket in the header, with a count on it, is the answer.
+    pages: written
+      .filter((page) => !page.hidden)
+      .map((page) => ({ path: page.path, title: page.title })),
     contact: plan.contact,
     tokens: plan.tokens,
   };
@@ -496,6 +531,11 @@ async function saveSite(
         title: page.path === 'index.html' ? `${plan.businessName} — ${plan.tagline}` : `${page.title} — ${plan.businessName}`,
         description: plan.seoDescription,
         sections: body,
+        // The shop's own heading is written into the file so it can be edited
+        // like any other; only what goes under it is rendered per request.
+        extra: page.shopSlot
+          ? shopSection(page.shopSlot, page.shopSlot === 'shop' ? undefined : page.title)
+          : undefined,
       }),
     });
   }

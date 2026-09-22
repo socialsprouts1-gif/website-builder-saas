@@ -133,18 +133,16 @@ const SECTION_IDEAS: SectionIdea[] = [
 ];
 
 /**
- * A shop's "services" is a product catalogue, and calling it services would be
- * the sort of wording that makes someone think the product cannot do it.
+ * Wording, per vertical.
+ *
+ * Retail used to be here too, renaming "services" to "Product catalogue" — a
+ * grid of pictures with prices printed under them and a button that opened an
+ * enquiry form. That was the best this could do before shops were real. Now a
+ * retail site gets an actual shop, so offering the painted-on version next to
+ * it would be offering someone a worse copy of what they already have; the
+ * section is skipped for shop verticals instead.
  */
 const RENAMED: Record<string, Partial<Record<SectionKind, Pick<SectionIdea, 'label' | 'hint' | 'prompt'>>>> = {
-  retail: {
-    services: {
-      label: 'Product catalogue',
-      hint: 'Products with photos and prices',
-      prompt:
-        'Add a product catalogue section to the home page: a responsive grid of product cards, each with an image, a name, a short description and a price, and a button to enquire. Match the existing page structure and styling exactly.',
-    },
-  },
   restaurant: {
     services: {
       label: 'What we serve',
@@ -180,6 +178,10 @@ export function suggestNext(
   // page is a broken link in the navigation, not just an absence.
   for (const page of vertical.pages) {
     if (paths.has(page.path.toLowerCase())) continue;
+    // The basket and the checkout are part of the shop, not pages to write.
+    // Offering "create the Your basket page" would have someone build, by
+    // hand, a worse copy of a page the shop already renders.
+    if (page.hidden) continue;
     out.push({
       id: `page:${page.path}`,
       kind: 'page',
@@ -197,6 +199,9 @@ export function suggestNext(
     if (out.length >= MAX_SUGGESTIONS) break;
     if (idea.only && !idea.only.includes(vertical.slug)) continue;
     if (present.has(idea.kind)) continue;
+    // A shop that sells things has a catalogue already, rendered from its own
+    // products. A static "services" grid beside it is a second, worse one.
+    if (vertical.shop && idea.kind === 'services') continue;
 
     const renamed = RENAMED[vertical.slug]?.[idea.kind];
     out.push({

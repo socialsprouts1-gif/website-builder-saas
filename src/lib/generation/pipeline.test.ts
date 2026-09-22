@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { nextStep, SECTION_CONCURRENCY, fileLabel, type BuildState } from './pipeline';
-import { VERTICALS, DEFAULT_VERTICAL } from './verticals';
-import type { SectionKind } from './kit/sections';
+import { nextStep, pagesToWrite, SECTION_CONCURRENCY, fileLabel, type BuildState } from './pipeline';
+import { VERTICALS, DEFAULT_VERTICAL, verticalBySlug } from './verticals';
+import type { Section, SectionKind } from './kit/sections';
 
 /**
  * How a build advances.
@@ -101,7 +101,13 @@ describe('a whole build', () => {
     expect(result.finished).toBe(true);
     expect(result.state.queue).toEqual([]);
     expect(Object.keys(result.state.sections ?? {})).toHaveLength(result.sections);
-    for (const [path] of pages) expect(result.state.savedPages).toContain(path);
+    // Every page that has sections to wait for. A shop's basket and checkout
+    // have none — what goes on them is rendered from the database when they
+    // are served — so they never enter the queue this simulates. That they are
+    // still written is `pagesToWrite`'s job, and is checked there.
+    for (const [path, kinds] of pages) {
+      if (kinds.length > 0) expect(result.state.savedPages).toContain(path);
+    }
   });
 
   it.each(shapes)('%s writes in a handful of rounds, not one per section', (_slug, pages) => {
@@ -138,5 +144,42 @@ describe('fileLabel', () => {
     expect(fileLabel('about.html')).toBe('the About page');
     expect(fileLabel('styles.css')).toBe('the stylesheet');
     expect(fileLabel('script.js')).toBe('the page scripts');
+  });
+});
+
+/**
+ * Which pages become files.
+ *
+ * Split out from the build simulation above because it answers a different
+ * question: not "does the queue drain", but "does a page that is waiting on
+ * nothing ever get written". A shop's basket is exactly that page, and before
+ * this rule existed it would have waited for sections that were never coming.
+ */
+describe('pagesToWrite', () => {
+  const retail = verticalBySlug('retail')!;
+  const section = {} as Section;
+
+  it('writes nothing at all before the first section lands', () => {
+    expect(pagesToWrite(retail, {})).toEqual([]);
+  });
+
+  it('writes the basket and the checkout as soon as the site has anything', () => {
+    const paths = pagesToWrite(retail, { 'index.html#0': section }).map((page) => page.path);
+    expect(paths).toContain('index.html');
+    expect(paths).toContain('cart.html');
+    expect(paths).toContain('checkout.html');
+  });
+
+  /** A nav entry to a page that does not exist is a dead link. */
+  it('still waits for a page that has real sections coming', () => {
+    const paths = pagesToWrite(retail, { 'index.html#0': section }).map((page) => page.path);
+    expect(paths).not.toContain('about.html');
+    expect(paths).not.toContain('contact.html');
+  });
+
+  it('never writes a shop page for a business with no shop', () => {
+    const clinic = verticalBySlug('clinic')!;
+    const paths = pagesToWrite(clinic, { 'index.html#0': section }).map((page) => page.path);
+    expect(paths).toEqual(['index.html']);
   });
 });

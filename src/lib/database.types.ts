@@ -51,6 +51,9 @@ export type ProjectRow = {
   booking_enabled: boolean;
   booking_services: string[];
   booking_note: string | null;
+  shop_enabled: boolean;
+  shop_cod_enabled: boolean;
+  shop_payment_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -293,6 +296,72 @@ export type SiteVisitorRow = {
   visitor_hash: string;
 }
 
+/** Something a shop sells. Money is paise, always, and always an integer. */
+export type ShopProductRow = {
+  id: string;
+  project_id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  summary: string | null;
+  price_paise: number;
+  compare_at_paise: number | null;
+  category: string | null;
+  /** Hosted image URLs, card image first. */
+  images: Json;
+  /** Null means the shop does not count stock. */
+  stock: number | null;
+  active: boolean;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** What it costs to send an order, and when that becomes free. */
+export type ShopShippingRateRow = {
+  id: string;
+  project_id: string;
+  label: string;
+  note: string | null;
+  price_paise: number;
+  free_over_paise: number | null;
+  position: number;
+  active: boolean;
+  created_at: string;
+}
+
+/** An order as placed. Every total is recorded, never recomputed later. */
+export type ShopOrderRow = {
+  id: string;
+  project_id: string;
+  reference: string;
+  customer_name: string | null;
+  customer_contact: string | null;
+  customer_email: string | null;
+  address: string | null;
+  city: string | null;
+  postcode: string | null;
+  note: string | null;
+  shipping_label: string | null;
+  subtotal_paise: number;
+  shipping_paise: number;
+  total_paise: number;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ShopOrderItemRow = {
+  id: string;
+  order_id: string;
+  product_id: string | null;
+  title: string;
+  unit_paise: number;
+  quantity: number;
+  line_paise: number;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -319,6 +388,10 @@ export type Database = {
       error_events: Table<ErrorEventRow>;
       site_visits: Table<SiteVisitRow>;
       site_visitors: Table<SiteVisitorRow>;
+      shop_products: Table<ShopProductRow>;
+      shop_shipping_rates: Table<ShopShippingRateRow>;
+      shop_orders: Table<ShopOrderRow>;
+      shop_order_items: Table<ShopOrderItemRow>;
     };
     Views: Record<never, never>;
     Functions: {
