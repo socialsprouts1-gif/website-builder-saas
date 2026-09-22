@@ -21,7 +21,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
   // Whatever domain the owner is looking at this on, so every link and
   // snippet below belongs to it rather than to a build-time guess.
   const origin = await requestOrigin();
-  await requireUser();
+  const user = await requireUser();
 
   const supabase = await createClient();
   // RLS scopes this to the caller, so a hit proves ownership.
@@ -29,6 +29,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
     .from('projects')
     .select('id, name, public_slug, published_at')
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
   if (!project) notFound();
 
@@ -39,6 +40,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
     .from('projects')
     .select('shop_enabled, shop_cod_enabled, shop_payment_note, payment_url')
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   const migrationMissing = Boolean(settingsError);

@@ -15,7 +15,7 @@ export default async function ProjectConnectorsPage({ params }: { params: Promis
   const user = await requireUser();
 
   const supabase = await createClient();
-  const { data: project } = await supabase.from('projects').select('id, name').eq('id', id).maybeSingle();
+  const { data: project } = await supabase.from('projects').select('id, name').eq('id', id).eq('user_id', user.id).maybeSingle();
   if (!project) notFound();
 
   // Asked for separately and allowed to fail: the payment columns arrive in
@@ -24,6 +24,7 @@ export default async function ProjectConnectorsPage({ params }: { params: Promis
     .from('projects')
     .select('payment_url, payment_label')
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   const cards = await buildConnectorCards({ userId: user.id, scope: 'project', projectId: id });

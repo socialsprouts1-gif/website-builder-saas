@@ -47,6 +47,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .from('projects')
       .select('id, name, slug, status')
       .eq('id', id)
+      .eq('user_id', user.id)
       .maybeSingle();
     if (!project) return jsonError('Project not found', 404);
 
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .from('projects')
       .select('public_slug')
       .eq('id', id)
+      .eq('user_id', user.id)
       .maybeSingle();
 
     const body = bodySchema.parse(await request.json().catch(() => ({})));

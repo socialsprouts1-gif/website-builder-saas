@@ -35,6 +35,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     const { data: seed } = await admin
       .from('projects')
       .select('id, name, business_type, description, design_system, model')
+      // Deliberately not filtered by the caller: a template's source project
+      // belongs to whoever published it, and using one is the whole point.
+      // Reachability is decided by the template row, which is public.
       .eq('id', template.project_id)
       .maybeSingle();
     if (!seed) return jsonError('That template is not available.', 404);

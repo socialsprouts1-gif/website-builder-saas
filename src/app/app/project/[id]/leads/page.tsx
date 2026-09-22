@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
  */
 export default async function LeadsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireUser();
+  const user = await requireUser();
 
   const supabase = await createClient();
   // RLS scopes both of these to the caller, so a hit proves ownership.
@@ -29,6 +29,7 @@ export default async function LeadsPage({ params }: { params: Promise<{ id: stri
     .from('projects')
     .select('id, name, public_slug, published_at')
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
   if (!project) notFound();
 
@@ -40,6 +41,7 @@ export default async function LeadsPage({ params }: { params: Promise<{ id: stri
       'whatsapp_number, whatsapp_message, whatsapp_leads, booking_enabled, booking_services, booking_note',
     )
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   const traffic = await trafficFor(id).catch(() => null);

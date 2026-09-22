@@ -32,6 +32,7 @@ export default async function ProjectWorkspacePage({
     .from('projects')
     .select('id, name, status, model')
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
   if (!project) notFound();
 
@@ -90,6 +91,7 @@ export default async function ProjectWorkspacePage({
     .from('projects')
     .select('public_slug, published_at, favicon_url')
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   const files = await getCurrentFiles(id).catch(() => []);

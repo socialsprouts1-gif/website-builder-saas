@@ -26,6 +26,7 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
       .from('projects')
       .select('id')
       .eq('id', id)
+      .eq('user_id', user.id)
       .maybeSingle();
     if (!project) return jsonError('Project not found', 404);
 

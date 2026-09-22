@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     // this select is what proves it.
     let owned: string | undefined;
     if (projectId) {
-      const { data } = await supabase.from('projects').select('id').eq('id', projectId).maybeSingle();
+      const { data } = await supabase.from('projects').select('id').eq('id', projectId).eq('user_id', user.id).maybeSingle();
       owned = data?.id ?? undefined;
     }
 

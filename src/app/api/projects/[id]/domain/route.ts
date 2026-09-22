@@ -55,6 +55,7 @@ async function resolve(projectId: string) {
     .from('projects')
     .select('id, vercel_project_id, custom_domain')
     .eq('id', projectId)
+    .eq('user_id', user.id)
     .maybeSingle();
   if (!project) return { error: jsonError('Project not found', 404) };
 

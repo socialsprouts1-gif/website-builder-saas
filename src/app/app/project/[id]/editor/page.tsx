@@ -10,13 +10,14 @@ export const dynamic = 'force-dynamic';
 
 export default async function EditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireUser();
+  const user = await requireUser();
 
   const supabase = await createClient();
   const { data: project } = await supabase
     .from('projects')
     .select('id, name, status')
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
   if (!project) notFound();
 

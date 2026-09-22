@@ -34,6 +34,7 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
       .from('projects')
       .select('id, name, business_type, description')
       .eq('id', id)
+      .eq('user_id', user.id)
       .maybeSingle();
     if (!project) return jsonError('Project not found', 404);
 
@@ -111,6 +112,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       .from('projects')
       .select('id')
       .eq('id', id)
+      .eq('user_id', user.id)
       .maybeSingle();
     if (!project) return jsonError('Project not found', 404);
 

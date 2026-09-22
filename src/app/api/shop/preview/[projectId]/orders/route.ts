@@ -36,6 +36,7 @@ export async function POST(
       .from('projects')
       .select('id')
       .eq('id', projectId)
+      .eq('user_id', user.id)
       .maybeSingle();
     if (!project) return jsonError('Project not found', 404);
 

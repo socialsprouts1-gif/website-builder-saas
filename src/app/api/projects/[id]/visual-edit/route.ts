@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!user) return jsonError('Sign in first', 401);
 
     // RLS scopes this select to the caller, so a hit proves ownership.
-    const { data: project } = await supabase.from('projects').select('id').eq('id', projectId).maybeSingle();
+    const { data: project } = await supabase.from('projects').select('id').eq('id', projectId).eq('user_id', user.id).maybeSingle();
     if (!project) return jsonError('Project not found', 404);
 
     const body = visualEditSchema.parse(await request.json());

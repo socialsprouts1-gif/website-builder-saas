@@ -1,26 +1,10 @@
 import 'server-only';
-import { createClient } from '@/lib/supabase/server';
-import { jsonError } from '@/lib/api';
 
 /**
- * The project this request is allowed to touch.
+ * Ownership, from the one place that decides it.
  *
- * Row-level security scopes the select to the caller, so a hit is itself the
- * proof of ownership — there is no separate check to forget. Every shop route
- * the owner uses starts here and then writes with the service role, which is
- * how the public shop pages can be served without anyone holding a key.
+ * Re-exported rather than reimplemented: the shop writes orders, addresses and
+ * prices with the service role, so "is this person allowed to touch this
+ * project" has to be the same question here as everywhere else.
  */
-export async function ownedProject(
-  id: string,
-): Promise<{ projectId: string } | { error: Response }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: jsonError('Sign in first', 401) };
-
-  const { data: project } = await supabase.from('projects').select('id').eq('id', id).maybeSingle();
-  if (!project) return { error: jsonError('Project not found', 404) };
-
-  return { projectId: project.id };
-}
+export { ownedProject } from '@/lib/projects';

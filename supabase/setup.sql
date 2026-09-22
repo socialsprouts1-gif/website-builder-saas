@@ -1079,3 +1079,40 @@ create policy "owners read their order items"
       where o.id = shop_order_items.order_id and p.user_id = auth.uid()
     )
   );
+
+-- ---------------------------------------------------------------------------
+-- 0016_projects_not_public.sql
+-- ---------------------------------------------------------------------------
+
+-- Stop every signed-in person seeing every published site.
+--
+-- Migration 0008 added this, to make a published site readable by the public:
+--
+--   create policy "published projects are public"
+--     on public.projects for select
+--     using (published_at is not null);
+--
+-- It was never needed. Every path that serves a site to a stranger — the
+-- published site itself, the enquiry endpoint, the shop's checkout — reads with
+-- the service role, because the visitor has no session and must never hold a
+-- key that can read anything back. So the policy granted nothing to the public
+-- that the public did not already have, and granted a great deal to everybody
+-- else: row-level security applies to signed-in users too, so it let every
+-- Lumen account select every published project in the system.
+--
+-- What that looked like from the outside: two people, two accounts, and the
+-- same sites listed under "My sites" on both — because the sites they had in
+-- common were the published ones. The unpublished ones stayed private, which
+-- is why it read as a puzzle rather than as a leak.
+--
+-- Worse than the listing: a good deal of the app proves ownership by selecting
+-- the project through row-level security and treating a hit as proof, then
+-- writing with the service role. With this policy in place that proof was
+-- false for any published project, so one account could edit another's site.
+-- The select side is fixed here; the call sites are fixed in the same commit,
+-- so neither is the only thing standing between two accounts.
+
+drop policy if exists "published projects are public" on public.projects;
+
+-- Templates stay readable, which is the one case that genuinely is public and
+-- has its own flag rather than being inferred from a timestamp.

@@ -29,6 +29,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .from('projects')
       .select('id, name, slug, status')
       .eq('id', projectId)
+      .eq('user_id', user.id)
       .maybeSingle();
     if (!project) return jsonError('Project not found', 404);
     if (project.status !== 'ready') return jsonError('Generate the site before deploying it.', 409);

@@ -25,6 +25,7 @@ export default async function DeployPage({ params }: { params: Promise<{ id: str
       'id, name, slug, status, vercel_project_id, custom_domain, deploy_url, public_slug, published_at, favicon_url',
     )
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
   if (!project) notFound();
 

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!user) return jsonError('Sign in first', 401);
 
     // RLS scopes this to the caller, so a hit proves ownership.
-    const { data: project } = await supabase.from('projects').select('id').eq('id', id).maybeSingle();
+    const { data: project } = await supabase.from('projects').select('id').eq('id', id).eq('user_id', user.id).maybeSingle();
     if (!project) return jsonError('Project not found', 404);
 
     const body = bodySchema.parse(await request.json().catch(() => ({})));

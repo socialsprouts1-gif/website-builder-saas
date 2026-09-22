@@ -21,6 +21,12 @@ export default async function ProjectsPage() {
   const { data: projects } = await supabase
     .from('projects')
     .select('id, name, description, business_type, status, updated_at')
+    // Said out loud rather than left to a policy. This list showed every
+    // published site in the system to every signed-in account, because a
+    // policy granted select on any published project and nothing here
+    // narrowed it. The policy is gone in migration 0016; this is the second
+    // lock on the same door.
+    .eq('user_id', user.id)
     .eq('is_template', false)
     .order('updated_at', { ascending: false });
 

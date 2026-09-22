@@ -13,13 +13,14 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
   // Whatever domain the owner is looking at this on, so every link and
   // snippet below belongs to it rather than to a build-time guess.
   const origin = await requestOrigin();
-  await requireUser();
+  const user = await requireUser();
   const supabase = await createClient();
 
   const { data: project } = await supabase
     .from('projects')
     .select('id, name, status')
     .eq('id', id)
+    .eq('user_id', user.id)
     .maybeSingle();
   if (!project) notFound();
 
