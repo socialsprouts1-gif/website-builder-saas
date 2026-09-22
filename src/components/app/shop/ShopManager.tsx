@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Field, Input, Select } from '@/components/ui/Field';
+import { Field, Input } from '@/components/ui/Field';
+import { EmptyState, ErrorState } from '@/components/ui/States';
 import { cn } from '@/components/ui/cn';
 import { EMPTY_DRAFT, ProductEditor, draftOf, type ProductDraft } from './ProductEditor';
 import { categoriesOf, type Product, type ShippingRate } from '@/lib/shop/catalogue';
@@ -163,11 +164,7 @@ export function ShopManager({
         ))}
       </div>
 
-      {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorState message={error} /> : null}
 
       {tab === 'products' ? (
         <div className="space-y-4">
@@ -196,9 +193,10 @@ export function ShopManager({
           )}
 
           {products.length === 0 && editing !== 'new' ? (
-            <p className="rounded-card border border-dashed border-hairline px-4 py-10 text-center text-[13px] text-ink-muted">
-              Nothing for sale yet. Add your first product and it appears on the site straight away.
-            </p>
+            <EmptyState
+              title="Nothing for sale yet"
+              message="Add your first product and it appears on the site straight away — no rebuild, no republish."
+            />
           ) : null}
 
           <div className="space-y-2">
@@ -292,9 +290,10 @@ function Orders({
 }) {
   if (orders.length === 0) {
     return (
-      <p className="rounded-card border border-dashed border-hairline px-4 py-10 text-center text-[13px] text-ink-muted">
-        No orders yet. When someone checks out, the order and their address land here.
-      </p>
+      <EmptyState
+        title="No orders yet"
+        message="When someone checks out, their order and their delivery address land here."
+      />
     );
   }
 
@@ -433,10 +432,10 @@ function Delivery({
         ))}
 
         {rates.length === 0 ? (
-          <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[13px] text-ink-muted">
-            No delivery options yet. Without one, checkout tells customers you will arrange delivery
-            with them.
-          </p>
+          <EmptyState
+            title="No delivery options yet"
+            message="Without one, checkout tells your customers that delivery will be arranged with them afterwards."
+          />
         ) : null}
       </div>
 

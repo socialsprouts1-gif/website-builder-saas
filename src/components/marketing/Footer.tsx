@@ -18,6 +18,20 @@ const COLUMNS = [
       { href: '/signup', label: 'Start free' },
       { href: '/login', label: 'Log in' },
       { href: '/app/new', label: 'New site' },
+      { href: '/support', label: 'Support' },
+      { href: '/help', label: 'Help centre' },
+    ],
+  },
+  {
+    // The ones people look for before they pay, and the ones a payment
+    // gateway asks to see by name. The rest are one click away at /legal.
+    title: 'Legal',
+    links: [
+      { href: '/legal/terms-of-service', label: 'Terms' },
+      { href: '/legal/privacy-policy', label: 'Privacy' },
+      { href: '/legal/refund-policy', label: 'Refunds' },
+      { href: '/legal/cancellation-policy', label: 'Cancellation' },
+      { href: '/legal', label: 'All policies' },
     ],
   },
 ];
@@ -32,7 +46,7 @@ export function Footer() {
             Ship a website from a sentence. Built for small businesses who need a finished site today.
           </p>
         </div>
-        <div className="flex gap-14">
+        <div className="flex flex-wrap gap-10 sm:gap-14">
           {COLUMNS.map((column) => (
             <div key={column.title} className="space-y-3">
               <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{column.title}</p>
@@ -52,7 +66,15 @@ export function Footer() {
       <div className="border-t border-hairline">
         <div className="mx-auto flex max-w-shell flex-col gap-2 px-6 py-5 text-[12px] text-ink-muted sm:flex-row sm:justify-between">
           <span>© {new Date().getFullYear()} Lumen. Pricing in INR, billed monthly.</span>
-          <span>Public beta · v0.9</span>
+          <span className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link href="/legal/cookie-preferences" className="transition hover:text-ink-primary">
+              Cookie preferences
+            </Link>
+            <Link href="/legal/accessibility-statement" className="transition hover:text-ink-primary">
+              Accessibility
+            </Link>
+            <span>Public beta · v0.9</span>
+          </span>
         </div>
       </div>
     </footer>

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
+import { checkPassword, MIN_LENGTH } from '@/lib/password';
 
 export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
   const router = useRouter();
@@ -29,6 +30,12 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
       const supabase = createClient();
 
       if (mode === 'signup') {
+        const verdict = checkPassword(password, email);
+        if (!verdict.ok) {
+          setError(verdict.problem);
+          return;
+        }
+
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -113,17 +120,36 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
         />
       </Field>
 
-      <Field label="Password" hint={mode === 'signup' ? 'At least 8 characters.' : undefined}>
+      <Field
+        label="Password"
+        hint={mode === 'signup' ? `At least ${MIN_LENGTH} characters. Length beats punctuation.` : undefined}
+      >
         <Input
           type="password"
           required
-          minLength={8}
+          minLength={mode === 'signup' ? MIN_LENGTH : undefined}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="••••••••"
           autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
         />
       </Field>
+
+      {/* Said while they type, not after they submit — and the same rule the
+          reset-password screen uses, so an account can never be created with a
+          password that flow would refuse. */}
+      {mode === 'signup' && password.length > 0 && !checkPassword(password, email).ok ? (
+        <p className="-mt-2 text-[12px] text-[#e5a15a]">{checkPassword(password, email).problem}</p>
+      ) : null}
+
+      {/* The way back in, on the screen where people discover they need it. */}
+      {mode === 'login' ? (
+        <p className="-mt-2 text-right">
+          <Link href="/forgot-password" className="text-[12.5px] text-ink-muted transition hover:text-accent">
+            Forgotten your password?
+          </Link>
+        </p>
+      ) : null}
 
       {error ? (
         <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
