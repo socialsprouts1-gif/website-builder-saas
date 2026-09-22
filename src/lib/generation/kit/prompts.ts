@@ -1,5 +1,6 @@
 import type { SectionKind } from './sections';
 import type { Vertical } from '../verticals';
+import type { Template } from './templates';
 
 /**
  * What the model is asked for, now that it no longer writes markup.
@@ -15,13 +16,11 @@ THE BUSINESS
 - Invent a plausible, specific identity when the owner has not given one. Never "Your Business", "Acme" or "Lorem".
 - Keep the real name, address and phone number exactly as given when they are given.
 
-THE LOOK
-Commit to a point of view. Two sites must not be mistakable for each other: a candlelit bistro is dim, warm and close; a gym is loud and high-contrast; a clinic is bright and calm.
-- Every colour must be a hex value. text on bg, inkMuted on bg, and accentInk on accent must each clear WCAG AA (4.5:1).
+THE PALETTE
+The layout, the typefaces and the rhythm are already chosen — a designer picked them for this kind of business. Your one job on the look is the colour, and it must suit the template you are told about below.
+- Every colour must be a hex value. ink on bg, inkMuted on bg, and accentInk on accent must each clear WCAG AA (4.5:1).
 - accent is the single brand colour. Do not introduce a second.
-- fonts.display and fonts.body are CSS font stacks. If you name a Google font, give the exact https://fonts.googleapis.com stylesheet URL as googleHref and include a real system fallback in the stack. Otherwise set googleHref to null.
-- density: "tight" for busy commercial sites, "airy" for calm ones, "regular" otherwise.
-- texture: "flat", "gradient", "grain" or "rings" — the decorative treatment behind the hero.
+- Commit. A palette that would suit any business suits none of them.
 
 THE SHOP (only when the brief says this business sells things)
 Write 8 products this business would genuinely stock. Real, specific items with real prices — "Banarasi silk saree, ₹4,500", not "Product 1". Group them into 2 to 4 categories a customer would recognise. Prices in plain rupees, no symbol. Give compareAt only where there is a genuine reduction; otherwise omit it. Leave every product without a picture — photographs are added afterwards.
@@ -35,10 +34,6 @@ Reply with JSON only:
   "contact": { "address": string|null, "phone": string|null, "email": string|null },
   "tokens": {
     "palette": { "bg": hex, "surface": hex, "surfaceAlt": hex, "ink": hex, "inkMuted": hex, "accent": hex, "accentInk": hex, "border": string },
-    "fonts": { "display": string, "body": string, "googleHref": string|null },
-    "radius": string, "radiusLarge": string,
-    "density": "tight"|"regular"|"airy",
-    "texture": "flat"|"gradient"|"grain"|"rings",
     "mood": string
   },
   "products": [{ "title": string, "summary": string, "description": string, "price": string, "compareAt": string|null, "category": string }]
@@ -48,6 +43,7 @@ export function buildPlanPrompt(params: {
   prompt: string;
   vertical: Vertical;
   sitemap: { path: string; title: string }[];
+  template: Template;
 }): string {
   const shop = params.vertical.shop
     ? `\n\nThis business sells things. The site is being built with a working shop in it — a product grid, product pages, a basket and a checkout — so the "products" array is required and must be a catalogue this business would really stock.`
@@ -58,7 +54,11 @@ ${params.prompt}
 
 This is a ${params.vertical.label.toLowerCase()}. Tone: ${params.vertical.tone}. The one thing a visitor should do: ${params.vertical.action}.
 
-The site will have these pages, already decided: ${params.sitemap.map((page) => `${page.title} (${page.path})`).join(', ')}.${shop}`;
+The site will have these pages, already decided: ${params.sitemap.map((page) => `${page.title} (${page.path})`).join(', ')}.
+
+The design template is "${params.template.name}": ${params.template.note}
+Its type is ${params.template.shape.fonts.display.split(',')[0].replace(/"/g, '')} for headings and ${params.template.shape.fonts.body.split(',')[0].replace(/"/g, '')} for text, on a ${params.template.shape.density} rhythm with ${params.template.shape.radius === '0px' ? 'square' : 'rounded'} corners.
+The palette you write must belong to it: ${params.template.paletteBrief}${shop}`;
 }
 
 /** What each kind of section needs, in the shape the renderer expects. */

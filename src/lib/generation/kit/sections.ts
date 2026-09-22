@@ -51,8 +51,17 @@ export interface Section {
   secondaryCta?: { label: string; href: string };
   /** Alternating band background, chosen by the assembler not the model. */
   tone?: 'base' | 'surface' | 'alt';
-  layout?: 'split' | 'center';
+  /**
+   * How this kind is arranged, chosen by the template rather than the model.
+   *
+   * The old two-value `layout` is gone: a hero could be split or centred and
+   * nothing else could be anything, which is why every site had the same
+   * shape. See `layouts.ts` for what each kind can be.
+   */
+  layout?: string;
 }
+
+import { layoutFor } from './layouts';
 
 export function escapeHtml(value: string): string {
   return value
@@ -127,33 +136,89 @@ const items = (section: Section): SectionItem[] => section.items ?? [];
 // ------------------------------------------------------------- renderers --
 
 function renderHero(section: Section): string {
-  const centred = section.layout === 'center' || !safeSrc(section.image);
-  const copy = `<div class="hero__inner">
-      ${section.eyebrow ? `<p class="eyebrow" data-lumen-id="${id(section, 'eyebrow')}">${escapeHtml(section.eyebrow)}</p>` : ''}
-      <h1 data-lumen-id="${id(section, 'heading')}">${escapeHtml(section.heading ?? '')}</h1>
-      ${section.subheading ? `<p class="lead" data-lumen-id="${id(section, 'sub')}">${escapeHtml(section.subheading)}</p>` : ''}
-      <div class="cluster">${button(section.primaryCta)}${button(section.secondaryCta, true)}</div>
-    </div>`;
+  const layout = layoutFor('hero', section.layout);
+  const art = safeSrc(section.image);
+  // A split or a showcase with no photograph is a column of text beside a
+  // hole, so those fall back rather than render empty.
+  const shape = (layout === 'split' || layout === 'showcase' || layout === 'fullbleed') && !art ? 'centre' : layout;
 
-  const inner = centred
-    ? copy
-    : `<div class="split split--wide">${copy}${figure(section.image, section.heading ?? 'Photograph', ' media--tall')}</div>`;
+  const eyebrow = section.eyebrow
+    ? `<p class="eyebrow" data-lumen-id="${id(section, 'eyebrow')}">${escapeHtml(section.eyebrow)}</p>`
+    : '';
+  const title = `<h1 data-lumen-id="${id(section, 'heading')}">${escapeHtml(section.heading ?? '')}</h1>`;
+  const lead = section.subheading
+    ? `<p class="lead" data-lumen-id="${id(section, 'sub')}">${escapeHtml(section.subheading)}</p>`
+    : '';
+  const ctas = `<div class="cluster">${button(section.primaryCta)}${button(section.secondaryCta, true)}</div>`;
+  const copy = `<div class="hero__inner">${eyebrow}${title}${lead}${ctas}</div>`;
 
-  return `<section id="${escapeHtml(section.id)}" class="section hero${centred ? ' hero--center' : ''}" data-section="hero" data-lumen-id="${escapeHtml(section.id)}">
+  const open = (modifier: string, inner: string) =>
+    `<section id="${escapeHtml(section.id)}" class="section hero hero--${modifier}" data-section="hero" data-lumen-id="${escapeHtml(section.id)}">
   <div class="shell">${inner}</div>
 </section>`;
+
+  if (shape === 'centre') return open('center', copy);
+
+  if (shape === 'editorial') {
+    // Type as the subject. The headline runs oversized across the measure and
+    // the photograph sits under it as a band, the way a magazine opener does.
+    return open(
+      'editorial',
+      `<div class="hero__editorial">${eyebrow}${title}<div class="hero__editorial-foot">${lead}${ctas}</div></div>${figure(section.image, section.heading ?? 'Photograph', ' media--band')}`,
+    );
+  }
+
+  if (shape === 'fullbleed') {
+    // The photograph is the page; the words sit on it. A scrim keeps the text
+    // readable whatever the photograph turns out to be.
+    return `<section id="${escapeHtml(section.id)}" class="section hero hero--fullbleed" data-section="hero" data-lumen-id="${escapeHtml(section.id)}">
+  <div class="hero__bleed" aria-hidden style="background-image:url('${art}')"></div>
+  <div class="hero__scrim" aria-hidden></div>
+  <div class="shell hero__over">${copy}</div>
+</section>`;
+  }
+
+  if (shape === 'showcase') {
+    // The product, tilted and floating, with depth behind it.
+    return open(
+      'showcase',
+      `<div class="split split--wide">${copy}<div class="hero__showcase" data-lumen-tilt>${figure(section.image, section.heading ?? 'Photograph', ' media--float')}</div></div>`,
+    );
+  }
+
+  return open('split', `<div class="split split--wide">${copy}${figure(section.image, section.heading ?? 'Photograph', ' media--tall')}</div>`);
 }
 
 function renderAbout(section: Section): string {
-  const copy = `<div>${heading(section)}${section.body ? `<p data-lumen-id="${id(section, 'body')}">${escapeHtml(section.body)}</p>` : ''}${button(section.primaryCta, true)}</div>`;
+  const layout = layoutFor('about', section.layout);
+  const body = section.body
+    ? `<p data-lumen-id="${id(section, 'body')}">${escapeHtml(section.body)}</p>`
+    : '';
+  const copy = `<div>${heading(section)}${body}${button(section.primaryCta, true)}</div>`;
   const media = figure(section.image, section.heading ?? 'Photograph');
-  return wrap(section, media ? `<div class="split">${copy}${media}</div>` : copy);
+
+  if (layout === 'statement' || !media) {
+    // One paragraph, set large, with nothing competing. Works when the thing
+    // being said is the whole point and there is no photograph worth having.
+    return wrap(
+      section,
+      `<div class="statement">${heading(section, true)}${section.body ? `<p class="statement__text" data-lumen-id="${id(section, 'body')}">${escapeHtml(section.body)}</p>` : ''}<div class="cluster" style="justify-content:center">${button(section.primaryCta, true)}</div></div>`,
+      ' section--statement',
+    );
+  }
+
+  if (layout === 'offset') {
+    // The photograph breaks out of the column and overlaps the text block.
+    return wrap(section, `<div class="offset">${media}<div class="offset__panel">${heading(section)}${body}${button(section.primaryCta, true)}</div></div>`);
+  }
+
+  return wrap(section, `<div class="split">${copy}${media}</div>`);
 }
 
 function renderCards(section: Section, columns: 2 | 3 | 4): string {
   const cards = items(section)
     .map(
-      (item, index) => `<article class="card" data-lumen-id="${id(section, `card-${index}`)}">
+      (item, index) => `<article class="card" data-lumen-id="${id(section, `card-${index}`)}" data-lumen-tilt>
         ${figure(item.image, item.title ?? '', ' media--wide')}
         <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
         ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
@@ -164,7 +229,72 @@ function renderCards(section: Section, columns: 2 | 3 | 4): string {
   return wrap(section, `${heading(section)}<div class="grid grid--${columns}">${cards}</div>`);
 }
 
+/**
+ * A bento grid: unequal tiles, the first one large.
+ *
+ * The arrangement carries the hierarchy, so the most important thing is
+ * obviously the most important thing without anybody writing "most important"
+ * on it.
+ */
+function renderBento(section: Section): string {
+  const tiles = items(section)
+    .map(
+      (item, index) => `<article class="bento__tile${index === 0 ? ' bento__tile--lead' : ''}" data-lumen-id="${id(section, `card-${index}`)}">
+        ${figure(item.image, item.title ?? '', ' media--wide')}
+        <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
+        ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+        ${item.meta ? `<p class="card__meta">${escapeHtml(item.meta)}</p>` : ''}
+      </article>`,
+    )
+    .join('');
+  return wrap(section, `${heading(section)}<div class="bento">${tiles}</div>`);
+}
+
+/** Big numerals against the copy — a list that reads as a sequence. */
+function renderNumbered(section: Section): string {
+  const rows = items(section)
+    .map(
+      (item, index) => `<article class="numbered__row" data-lumen-id="${id(section, `card-${index}`)}">
+        <p class="numbered__index" aria-hidden>${String(index + 1).padStart(2, '0')}</p>
+        <div>
+          <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
+          ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+        </div>
+        ${item.meta ? `<span class="row__value">${escapeHtml(item.meta)}</span>` : ''}
+      </article>`,
+    )
+    .join('');
+  return wrap(section, `${heading(section)}<div class="numbered">${rows}</div>`);
+}
+
+/**
+ * A ticker: the items run past, twice over, so the loop has no seam.
+ *
+ * Paused on hover and stopped entirely for anyone who has asked for less
+ * motion — an endlessly moving band is genuinely unpleasant for some people.
+ */
+function renderTicker(section: Section, className = 'ticker'): string {
+  const chips = items(section)
+    .map(
+      (item, index) => `<span class="${className}__item" data-lumen-id="${id(section, `card-${index}`)}">
+        <strong>${escapeHtml(item.title ?? '')}</strong>${item.body ? `<span class="muted"> ${escapeHtml(item.body)}</span>` : ''}
+      </span>`,
+    )
+    .join('');
+  return wrap(
+    section,
+    `${heading(section)}<div class="${className}" data-lumen-ticker><div class="${className}__track">${chips}${chips}</div></div>`,
+    ' section--flush',
+  );
+}
+
 function renderRows(section: Section): string {
+  const layout = layoutFor(section.kind, section.layout);
+  if (layout === 'cards') return renderCards(section, 3);
+  if (layout === 'index') return renderIndex(section);
+  if (layout === 'numbered') return renderNumbered(section);
+  if (layout === 'inline') return renderInlineRows(section);
+
   const rows = items(section)
     .map(
       (item, index) => `<div class="row" data-lumen-id="${id(section, `row-${index}`)}">
@@ -176,7 +306,56 @@ function renderRows(section: Section): string {
   return wrap(section, `${heading(section)}<div class="rows">${rows}</div>`);
 }
 
+/** Days and times on one wrapped line, for a footer-ish block. */
+function renderInlineRows(section: Section): string {
+  const inline = items(section)
+    .map(
+      (item, index) => `<span class="inline-row" data-lumen-id="${id(section, `row-${index}`)}">
+        <span class="row__label">${escapeHtml(item.title ?? '')}</span>
+        ${item.meta ? `<span class="row__value">${escapeHtml(item.meta)}</span>` : ''}
+      </span>`,
+    )
+    .join('');
+  return wrap(section, `${heading(section, true)}<div class="inline-rows">${inline}</div>`);
+}
+
+/**
+ * An index: a numbered table of contents, the way a studio lists its work.
+ *
+ * Quiet and confident. Suits services that are named rather than sold.
+ */
+function renderIndex(section: Section): string {
+  const rows = items(section)
+    .map(
+      (item, index) => `<a class="index__row" href="${safeHref(item.href)}" data-lumen-id="${id(section, `row-${index}`)}">
+        <span class="index__num" aria-hidden>${String(index + 1).padStart(2, '0')}</span>
+        <span class="index__name">${escapeHtml(item.title ?? '')}</span>
+        ${item.body ? `<span class="index__note muted">${escapeHtml(item.body)}</span>` : ''}
+        ${item.meta ? `<span class="index__meta">${escapeHtml(item.meta)}</span>` : ''}
+      </a>`,
+    )
+    .join('');
+  return wrap(section, `${heading(section)}<div class="index">${rows}</div>`);
+}
+
 function renderSteps(section: Section): string {
+  const layout = layoutFor('steps', section.layout);
+
+  if (layout === 'timeline') {
+    const rows = items(section)
+      .map(
+        (item, index) => `<li class="timeline__step" data-lumen-id="${id(section, `step-${index}`)}">
+          <span class="timeline__dot" aria-hidden></span>
+          <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
+          ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+        </li>`,
+      )
+      .join('');
+    return wrap(section, `${heading(section)}<ol class="timeline">${rows}</ol>`);
+  }
+
+  if (layout === 'numbered') return renderNumbered(section);
+
   const steps = items(section)
     .map(
       (item, index) => `<article class="card" data-lumen-id="${id(section, `step-${index}`)}">
@@ -190,53 +369,166 @@ function renderSteps(section: Section): string {
 }
 
 function renderGallery(section: Section): string {
-  const tiles = items(section)
-    .map((item, index) => {
-      const media = figure(item.image, item.title ?? 'Photograph');
-      return media ? `<div data-lumen-id="${id(section, `photo-${index}`)}">${media}</div>` : '';
-    })
-    .join('');
+  const layout = layoutFor('gallery', section.layout);
+  const tile = (item: SectionItem, index: number, modifier = '') => {
+    const media = figure(item.image, item.title ?? 'Photograph', modifier);
+    if (!media) return '';
+    return `<figure class="shot${modifier ? ' shot--lead' : ''}" data-lumen-id="${id(section, `photo-${index}`)}">${media}${item.title ? `<figcaption class="shot__caption">${escapeHtml(item.title)}</figcaption>` : ''}</figure>`;
+  };
+
+  const all = items(section);
+
+  if (layout === 'mosaic') {
+    // Unequal tiles on a dense grid: the first two large, the rest filling in.
+    const tiles = all.map((item, index) => tile(item, index, index < 2 ? ' media--wide' : '')).join('');
+    return wrap(section, `${heading(section)}<div class="mosaic">${tiles}</div>`);
+  }
+
+  if (layout === 'rail') {
+    // A horizontal rail that scrolls, snapping to each photograph. Reads well
+    // on a phone, where a three-column grid becomes three tiny squares.
+    const tiles = all.map((item, index) => tile(item, index)).join('');
+    return wrap(section, `${heading(section)}<div class="rail">${tiles}</div>`, ' section--flush');
+  }
+
+  if (layout === 'stack') {
+    // Full-width photographs, one under another, each with its caption beside
+    // it. The most generous way to show work, and the slowest to scroll.
+    const tiles = all
+      .map((item, index) => {
+        const media = figure(item.image, item.title ?? 'Photograph', ' media--band');
+        if (!media) return '';
+        return `<figure class="stack__shot" data-lumen-id="${id(section, `photo-${index}`)}">${media}${item.title ? `<figcaption class="shot__caption">${escapeHtml(item.title)}</figcaption>` : ''}</figure>`;
+      })
+      .join('');
+    return wrap(section, `${heading(section)}<div class="stack">${tiles}</div>`);
+  }
+
+  const tiles = all.map((item, index) => tile(item, index)).join('');
   return wrap(section, `${heading(section)}<div class="grid grid--3">${tiles}</div>`);
 }
 
 function renderTestimonials(section: Section): string {
-  const quotes = items(section)
-    .map((item, index) => {
-      const stars = Number(item.meta) > 0 ? '★'.repeat(Math.min(5, Math.round(Number(item.meta)))) : '';
-      return `<figure class="card quote" data-lumen-id="${id(section, `quote-${index}`)}">
-        ${stars ? `<p class="stars">${stars}</p>` : ''}
+  const layout = layoutFor('testimonials', section.layout);
+  const stars = (meta: string | undefined) =>
+    Number(meta) > 0 ? `<p class="stars">${'★'.repeat(Math.min(5, Math.round(Number(meta))))}</p>` : '';
+
+  const all = items(section);
+
+  if (layout === 'feature' && all.length > 0) {
+    // One review, set large, with the rest reduced to a line each. A wall of
+    // three equal quotes is read as decoration; one is read.
+    const [lead, ...rest] = all;
+    const others = rest
+      .map(
+        (item, index) => `<figure class="quote quote--small" data-lumen-id="${id(section, `quote-${index + 1}`)}">
+          <blockquote>${escapeHtml(item.body ?? '')}</blockquote>
+          <figcaption class="quote__author">${escapeHtml(item.title ?? '')}</figcaption>
+        </figure>`,
+      )
+      .join('');
+    return wrap(
+      section,
+      `${heading(section)}<div class="quote-feature">
+        <figure class="quote quote--lead" data-lumen-id="${id(section, 'quote-0')}">
+          ${stars(lead.meta)}
+          <blockquote class="quote__text">${escapeHtml(lead.body ?? '')}</blockquote>
+          <figcaption class="quote__author">${escapeHtml(lead.title ?? '')}</figcaption>
+        </figure>
+        ${others ? `<div class="quote-feature__rest">${others}</div>` : ''}
+      </div>`,
+    );
+  }
+
+  if (layout === 'ticker') {
+    const cards = all
+      .map(
+        (item, index) => `<figure class="quote quote--chip" data-lumen-id="${id(section, `quote-${index}`)}">
+          ${stars(item.meta)}
+          <blockquote>${escapeHtml(item.body ?? '')}</blockquote>
+          <figcaption class="quote__author">${escapeHtml(item.title ?? '')}</figcaption>
+        </figure>`,
+      )
+      .join('');
+    return wrap(
+      section,
+      `${heading(section)}<div class="ticker" data-lumen-ticker><div class="ticker__track">${cards}${cards}</div></div>`,
+      ' section--flush',
+    );
+  }
+
+  const quotes = all
+    .map(
+      (item, index) => `<figure class="card quote" data-lumen-id="${id(section, `quote-${index}`)}">
+        ${stars(item.meta)}
         <blockquote class="quote__text">${escapeHtml(item.body ?? '')}</blockquote>
         <figcaption class="quote__author">${escapeHtml(item.title ?? '')}</figcaption>
-      </figure>`;
-    })
+      </figure>`,
+    )
     .join('');
   return wrap(section, `${heading(section)}<div class="grid grid--3">${quotes}</div>`);
 }
 
 function renderStats(section: Section): string {
-  const stats = items(section)
-    .map(
-      (item, index) => `<div data-lumen-id="${id(section, `stat-${index}`)}">
-        <p class="stat__value">${escapeHtml(item.title ?? '')}</p>
-        <p class="stat__label">${escapeHtml(item.body ?? '')}</p>
-      </div>`,
-    )
-    .join('');
-  return wrap(section, `${heading(section)}<div class="grid grid--4">${stats}</div>`);
+  const layout = layoutFor('stats', section.layout);
+
+  // The numeral carries a data attribute so the script can count up to it.
+  const stat = (item: SectionItem, index: number, extra = '') =>
+    `<div class="${extra}" data-lumen-id="${id(section, `stat-${index}`)}">
+      <p class="stat__value" data-lumen-count>${escapeHtml(item.title ?? '')}</p>
+      <p class="stat__label">${escapeHtml(item.body ?? '')}</p>
+    </div>`;
+
+  const all = items(section);
+
+  if (layout === 'cards') {
+    const cards = all.map((item, index) => stat(item, index, 'card stat-card')).join('');
+    return wrap(section, `${heading(section)}<div class="grid grid--4">${cards}</div>`);
+  }
+
+  if (layout === 'inline') {
+    // A single line of figures separated by rules, sitting under a heading
+    // rather than in a band of their own.
+    const inline = all.map((item, index) => stat(item, index, 'stat-inline__item')).join('');
+    return wrap(section, `${heading(section)}<div class="stat-inline">${inline}</div>`);
+  }
+
+  const band = all.map((item, index) => stat(item, index)).join('');
+  return wrap(section, `${heading(section)}<div class="grid grid--4 stat-band">${band}</div>`);
 }
 
 function renderPricing(section: Section): string {
-  const plans = items(section)
+  const layout = layoutFor('pricing', section.layout);
+  const all = items(section);
+
+  if (layout === 'table') {
+    const rows = all
+      .map(
+        (item, index) => `<div class="ptable__row" data-lumen-id="${id(section, `plan-${index}`)}">
+          <span class="ptable__name">${escapeHtml(item.title ?? '')}</span>
+          <span class="ptable__note muted">${escapeHtml(item.body ?? '')}</span>
+          <span class="ptable__price">${escapeHtml(item.meta ?? '')}</span>
+          <a class="btn btn--ghost" href="${safeHref(item.href)}">Choose</a>
+        </div>`,
+      )
+      .join('');
+    return wrap(section, `${heading(section, true)}<div class="ptable">${rows}</div>`);
+  }
+
+  // The middle one is the one most people should pick, so it is raised.
+  const feature = all.length === 3 ? 1 : -1;
+  const plans = all
     .map(
-      (item, index) => `<article class="card" data-lumen-id="${id(section, `plan-${index}`)}">
+      (item, index) => `<article class="card plan${index === feature ? ' plan--feature' : ''}" data-lumen-id="${id(section, `plan-${index}`)}">
+        ${index === feature ? '<p class="plan__flag">Most popular</p>' : ''}
         <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
         <p class="stat__value">${escapeHtml(item.meta ?? '')}</p>
         ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
-        <p><a class="btn btn--ghost" href="${safeHref(item.href)}">Choose</a></p>
+        <p><a class="btn${index === feature ? '' : ' btn--ghost'}" href="${safeHref(item.href)}">Choose</a></p>
       </article>`,
     )
     .join('');
-  return wrap(section, `${heading(section, true)}<div class="grid grid--3">${plans}</div>`);
+  return wrap(section, `${heading(section, true)}<div class="grid grid--3 plans">${plans}</div>`);
 }
 
 function renderFaq(section: Section): string {
@@ -252,6 +544,7 @@ function renderFaq(section: Section): string {
 }
 
 function renderContact(section: Section): string {
+  const layout = layoutFor('contact', section.layout);
   const details = items(section)
     .map(
       (item, index) => `<div class="row" data-lumen-id="${id(section, `detail-${index}`)}">
@@ -269,22 +562,72 @@ function renderContact(section: Section): string {
       <p class="muted" data-lumen-form-status role="status"></p>
     </form>`;
 
+  if (layout === 'stacked') {
+    // Details first as a quiet line, then a wide form. Suits a page whose
+    // whole job is the form.
+    return wrap(
+      section,
+      `${heading(section, true)}<div class="contact-stack"><div class="rows rows--inline">${details}</div>${form}</div>`,
+    );
+  }
+
   return wrap(section, `${heading(section)}<div class="split">${form}<div class="rows">${details}</div></div>`);
 }
 
 function renderCta(section: Section): string {
+  const layout = layoutFor('cta', section.layout);
   const inner = `<div class="section__head section__head--center">
       <h2 data-lumen-id="${id(section, 'heading')}">${escapeHtml(section.heading ?? '')}</h2>
       ${section.subheading ? `<p class="lead" data-lumen-id="${id(section, 'sub')}">${escapeHtml(section.subheading)}</p>` : ''}
       <div class="cluster" style="justify-content:center">${button(section.primaryCta)}${button(section.secondaryCta, true)}</div>
     </div>`;
+
+  if (layout === 'panel') {
+    // A raised slab in the accent colour, sitting inside the page rather than
+    // spanning it. Reads as an offer rather than as a footer.
+    return wrap(section, `<div class="cta-panel">${inner}</div>`);
+  }
+
+  if (layout === 'full') {
+    // Edge to edge, with the decorative treatment behind it.
+    return `<section id="${escapeHtml(section.id)}" class="section cta-full" data-section="cta" data-lumen-id="${escapeHtml(section.id)}">
+  <div class="shell">${inner}</div>
+</section>`;
+  }
+
   return wrap(section, inner);
+}
+
+/** The card-shaped kinds, which share four arrangements between them. */
+function renderPanels(section: Section, columns: 2 | 3 | 4): string {
+  const layout = layoutFor(section.kind, section.layout);
+  if (layout === 'bento') return renderBento(section);
+  if (layout === 'numbered') return renderNumbered(section);
+  if (layout === 'ticker') return renderTicker(section);
+  if (layout === 'rail') return renderRail(section, columns);
+  return renderCards(section, columns);
+}
+
+/** Cards on a snapping horizontal rail rather than wrapped into a grid. */
+function renderRail(section: Section, columns: 2 | 3 | 4): string {
+  const cards = items(section)
+    .map(
+      (item, index) => `<article class="card rail__card" data-lumen-id="${id(section, `card-${index}`)}">
+        ${figure(item.image, item.title ?? '', ' media--wide')}
+        <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
+        ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+        ${item.meta ? `<p class="card__meta">${escapeHtml(item.meta)}</p>` : ''}
+      </article>`,
+    )
+    .join('');
+  if (!cards) return renderCards(section, columns);
+  return wrap(section, `${heading(section)}<div class="rail">${cards}</div>`, ' section--flush');
 }
 
 const RENDERERS: Record<SectionKind, (section: Section) => string> = {
   hero: renderHero,
   about: renderAbout,
-  features: (section) => renderCards(section, 3),
+  features: (section) => renderPanels(section, 3),
   services: renderRows,
   steps: renderSteps,
   gallery: renderGallery,
@@ -292,7 +635,7 @@ const RENDERERS: Record<SectionKind, (section: Section) => string> = {
   stats: renderStats,
   pricing: renderPricing,
   menu: renderRows,
-  team: (section) => renderCards(section, 4),
+  team: (section) => renderPanels(section, 4),
   faq: renderFaq,
   hours: renderRows,
   contact: renderContact,

@@ -18,6 +18,8 @@ import {
 import { PLAN_SYSTEM, SECTION_SYSTEM, buildPlanPrompt, buildSectionPrompt } from './kit/prompts';
 import { normaliseTokens, type DesignTokens } from './kit/tokens';
 import { renderStylesheet } from './kit/stylesheet';
+import { chooseTemplate, templateById, type Template } from './kit/templates';
+import { layoutFor } from './kit/layouts';
 import { renderPage, SITE_SCRIPT, type SiteSpec } from './kit/page';
 import { hasContent, parseSection } from './kit/parse';
 import type { Section, SectionKind } from './kit/sections';
@@ -98,6 +100,15 @@ export interface SitePlan {
   contact: { address?: string; phone?: string; email?: string };
   tokens: DesignTokens;
   verticalSlug: string;
+  /**
+   * The template this site is built from.
+   *
+   * It decides the arrangement of every section, the type pairing, the rhythm
+   * and how much the page moves — not just its colours. Chosen once, at plan
+   * time, and carried through every later step so a site written over four
+   * invocations is one design rather than four.
+   */
+  templateId: string;
 }
 
 export interface BuildState {
@@ -298,6 +309,13 @@ export async function runBuildStep(
     const vertical = matchVertical(`${input.businessType ?? ''} ${input.prompt}`);
     const sitemap = vertical.pages.map((page) => ({ path: page.path, title: page.title }));
 
+    // And the look comes from a template rather than from the model. Asking a
+    // model for "a palette" produced sites that differed only in their colours,
+    // because the shape was identical every time. The template decides the
+    // shape; the model is left with the one judgement it is actually good at,
+    // which is what this particular business should sound and feel like.
+    const template = chooseTemplate(vertical.slug, `${input.businessType ?? ''} ${input.prompt}`);
+
     const planModel = catalog.fast?.id ?? model;
     const response = await callWithRetry(async () => {
       return client.chat.completions.create({
@@ -306,7 +324,7 @@ export async function runBuildStep(
           { role: 'system', content: PLAN_SYSTEM },
           {
             role: 'user',
-            content: `${buildPlanPrompt({ prompt: input.prompt, vertical, sitemap })}\n\n${buildBriefPrompt(
+            content: `${buildPlanPrompt({ prompt: input.prompt, vertical, sitemap, template })}\n\n${buildBriefPrompt(
               {
                 prompt: input.prompt,
                 businessType: input.businessType,
@@ -342,8 +360,19 @@ export async function runBuildStep(
         phone: str(contact.phone) || undefined,
         email: str(contact.email) || undefined,
       },
-      tokens: normaliseTokens(raw.tokens),
+      // The model writes the palette; everything else about the look comes
+      // from the template, so a serif display face and a tight grid cannot
+      // end up disagreeing with each other.
+      tokens: {
+        ...normaliseTokens(raw.tokens),
+        fonts: template.shape.fonts,
+        radius: template.shape.radius,
+        radiusLarge: template.shape.radiusLarge,
+        density: template.shape.density,
+        texture: template.shape.texture,
+      },
       verticalSlug: vertical.slug,
+      templateId: template.id,
     };
 
     // A shop, opened with something in it. Done here rather than at the end so
@@ -514,15 +543,24 @@ async function saveSite(
     tokens: plan.tokens,
   };
 
+  const template = templateById(plan.templateId);
+
   const files: SiteFile[] = [
-    { path: 'styles.css', content: renderStylesheet(plan.tokens) },
+    { path: 'styles.css', content: renderStylesheet(plan.tokens, template) },
     { path: 'script.js', content: SITE_SCRIPT },
   ];
 
   for (const page of written) {
+    // The template's arrangement is applied here rather than written into the
+    // section when it was generated, so changing a template later re-lays an
+    // existing site out instead of needing every section rewritten.
     const body = page.sections
       .map((_, index) => sections[`${page.path}#${index}`])
-      .filter((section): section is Section => Boolean(section));
+      .filter((section): section is Section => Boolean(section))
+      .map((section) => ({
+        ...section,
+        layout: layoutFor(section.kind, template.layouts[section.kind]),
+      }));
 
     files.push({
       path: page.path,

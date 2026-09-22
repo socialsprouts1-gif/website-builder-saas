@@ -1,5 +1,6 @@
 import type { DesignTokens } from './tokens';
 import { escapeHtml, renderSection, safeHref, type Section } from './sections';
+import { PREMIUM_SCRIPT } from './premium';
 
 /**
  * Assembling sections into a page.
@@ -244,4 +245,5 @@ export const SITE_SCRIPT = `(function () {
     node.textContent = String(new Date().getFullYear());
   });
 })();
+${PREMIUM_SCRIPT}
 `;

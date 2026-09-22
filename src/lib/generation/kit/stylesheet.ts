@@ -1,4 +1,6 @@
 import type { DesignTokens } from './tokens';
+import { premiumCss } from './premium';
+import { DEFAULT_TEMPLATE, type Template } from './templates';
 
 /**
  * The component library, as one stylesheet.
@@ -16,7 +18,7 @@ const DENSITY = {
   airy: { section: '7.5rem', gap: '2.25rem' },
 } as const;
 
-export function renderStylesheet(tokens: DesignTokens): string {
+export function renderStylesheet(tokens: DesignTokens, template: Template = DEFAULT_TEMPLATE): string {
   const { palette: p, fonts } = tokens;
   const density = DENSITY[tokens.density];
 
@@ -226,6 +228,7 @@ ${textureCss(tokens)}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+${premiumCss(template.motion, template.depth)}
 `;
 }
 
