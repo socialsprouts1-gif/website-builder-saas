@@ -64,6 +64,8 @@ The palette you write must belong to it: ${params.template.paletteBrief}${shop}`
 
 /** What each kind of section needs, in the shape the renderer expects. */
 const SECTION_BRIEF: Record<SectionKind, string> = {
+  announcement:
+    'One line above everything else — an offer, a notice, or the thing worth interrupting for ("Open Sundays from 1 November", "Free first consultation this month"). Put it in body, at most twelve words. primaryCta is optional and is a single short link. No items, no heading.',
   hero: 'The opening screen. heading is the single strongest sentence on the site — what this business is, not a slogan about excellence. subheading is one plain sentence. primaryCta is the main action; secondaryCta is optional and quieter. No items.',
   about: 'Who they are, in body: two or three sentences of real specifics, not adjectives. heading names it. No items.',
   features: 'items: 3 cards. Each title is a short noun phrase, body one sentence. meta is optional and short.',
@@ -78,6 +80,12 @@ const SECTION_BRIEF: Record<SectionKind, string> = {
   faq: 'items: 5 real questions a customer actually asks before buying. title is the question, body the answer in two sentences.',
   hours: 'items: one row per day, Monday to Sunday. title is the day, meta the hours ("10am – 8pm" or "Closed").',
   contact: 'items: the ways to reach them — Phone, WhatsApp, Email, Address, each with body as the value and href as tel:/mailto: where it applies. A contact form is added automatically.',
+  logos:
+    'items: 4 to 6 names that vouch for this business — certifications, associations, accreditations, the brands it carries, or the tools it works with. title is the name exactly as it is written; meta is two or three words saying what it is. Name only what the brief actually gives you: an invented accreditation is the worst thing on the page. heading is optional and short.',
+  split:
+    'A claim and the specifics behind it. heading is the claim. body is one or two sentences making it concrete. items: 3 or 4 points, each with a title of two to four words and a body of one sentence. This is not a card grid — each point must say something different.',
+  beforeafter:
+    'items: 3 real results. title is what the customer came in for, body one sentence on what changed, meta how long it took or what it cost. Leave image and href empty — the photographs are attached later. Claim no result the brief does not support.',
   cta: 'A closing band. heading is a direct invitation, subheading one line, primaryCta the action. No items.',
 };
 

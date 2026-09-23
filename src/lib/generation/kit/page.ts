@@ -104,7 +104,14 @@ function footer(site: SiteSpec): string {
 }
 
 export function renderPage(site: SiteSpec, page: PageSpec): string {
-  const rendered = assignTones(page.sections).map(renderSection);
+  // The announcement bar belongs above the navigation and outside <main>: it is
+  // a notice about the site, not content of the page, and dropping it into the
+  // section rhythm would give it a band colour and a heading level it should
+  // not have. A template that names it anywhere in its list still gets it here.
+  const banner = page.sections.filter((section) => section.kind === 'announcement');
+  const body = page.sections.filter((section) => section.kind !== 'announcement');
+
+  const rendered = assignTones(body).map(renderSection);
   const at = page.extra
     ? Math.min(Math.max(page.extraAfter ?? rendered.length, 0), rendered.length)
     : rendered.length;
@@ -112,6 +119,7 @@ export function renderPage(site: SiteSpec, page: PageSpec): string {
   const sections = [...rendered.slice(0, at), page.extra ?? '', ...rendered.slice(at)]
     .filter(Boolean)
     .join('\n');
+  const announcement = banner.slice(0, 1).map(renderSection).join('');
   const fonts = site.tokens.fonts.googleHref;
 
   return `<!doctype html>
@@ -129,7 +137,7 @@ ${fonts ? `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-${nav(site, page.path)}
+${announcement}${nav(site, page.path)}
 <main id="main">
 ${sections}
 </main>

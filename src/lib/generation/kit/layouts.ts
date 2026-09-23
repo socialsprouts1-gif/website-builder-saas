@@ -16,21 +16,25 @@ import type { SectionKind } from './sections';
  */
 
 export const LAYOUTS = {
+  announcement: ['bar', 'centred'],
   hero: ['split', 'centre', 'fullbleed', 'editorial', 'showcase'],
   about: ['split', 'offset', 'statement'],
-  features: ['cards', 'bento', 'numbered', 'ticker'],
+  features: ['cards', 'bento', 'numbered', 'ticker', 'checks'],
   services: ['rows', 'cards', 'index', 'numbered'],
   steps: ['cards', 'timeline', 'numbered'],
-  gallery: ['grid', 'mosaic', 'rail', 'stack'],
+  gallery: ['grid', 'mosaic', 'rail', 'stack', 'feed'],
   testimonials: ['cards', 'feature', 'ticker'],
   stats: ['band', 'cards', 'inline'],
   pricing: ['cards', 'table'],
   menu: ['rows', 'cards', 'index', 'numbered'],
   team: ['cards', 'rail'],
   faq: ['list', 'split'],
-  hours: ['rows', 'inline'],
+  hours: ['rows', 'inline', 'location'],
   contact: ['split', 'stacked'],
   cta: ['band', 'panel', 'full'],
+  logos: ['row', 'grid', 'band'],
+  split: ['points', 'columns', 'media'],
+  beforeafter: ['pairs', 'stack'],
 } as const satisfies Record<SectionKind, readonly string[]>;
 
 export type LayoutFor<K extends SectionKind> = (typeof LAYOUTS)[K][number];

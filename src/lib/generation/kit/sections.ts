@@ -11,6 +11,7 @@
  */
 
 export const SECTION_KINDS = [
+  'announcement',
   'hero',
   'about',
   'features',
@@ -26,6 +27,14 @@ export const SECTION_KINDS = [
   'hours',
   'contact',
   'cta',
+  // Added so a template can describe a whole page rather than seven blocks.
+  // A dental site needs certifications and before-and-after; a SaaS site needs
+  // the problem stated before the solution and the tools it plugs into. Those
+  // are not variations of "features" — they are different things, and squeezing
+  // them into cards is exactly what made every generated page look the same.
+  'logos',
+  'split',
+  'beforeafter',
 ] as const;
 
 export type SectionKind = (typeof SECTION_KINDS)[number];
@@ -294,6 +303,7 @@ function renderRows(section: Section): string {
   if (layout === 'index') return renderIndex(section);
   if (layout === 'numbered') return renderNumbered(section);
   if (layout === 'inline') return renderInlineRows(section);
+  if (layout === 'location') return renderLocation(section);
 
   const rows = items(section)
     .map(
@@ -307,6 +317,27 @@ function renderRows(section: Section): string {
 }
 
 /** Days and times on one wrapped line, for a footer-ish block. */
+/**
+ * Opening hours beside where the place actually is.
+ *
+ * "Location / Opening hours" is one question, not two, and splitting it across
+ * two sections is how a visitor ends up scrolling back up to check.
+ */
+function renderLocation(section: Section): string {
+  const rows = items(section)
+    .map(
+      (item, index) => `<div class="row" data-lumen-id="${id(section, `row-${index}`)}">
+        <span class="row__label">${escapeHtml(item.title ?? '')}</span>
+        ${item.meta ? `<span class="row__value">${escapeHtml(item.meta)}</span>` : ''}
+      </div>`,
+    )
+    .join('');
+  const where = section.body
+    ? `<div class="split__claim"><p class="lead" data-lumen-id="${id(section, 'body')}">${escapeHtml(section.body)}</p>${button(section.primaryCta)}</div>`
+    : '';
+  return wrap(section, `${heading(section)}<div class="where">${where}<div class="rows">${rows}</div></div>`);
+}
+
 function renderInlineRows(section: Section): string {
   const inline = items(section)
     .map(
@@ -402,6 +433,13 @@ function renderGallery(section: Section): string {
       })
       .join('');
     return wrap(section, `${heading(section)}<div class="stack">${tiles}</div>`);
+  }
+
+  if (layout === 'feed') {
+    // Square tiles, six across: the social-gallery shape a restaurant or a
+    // salon expects near the bottom of the page.
+    const tiles = all.map((item, index) => tile(item, index)).join('');
+    return wrap(section, `${heading(section)}<div class="feed">${tiles}</div>`);
   }
 
   const tiles = all.map((item, index) => tile(item, index)).join('');
@@ -601,11 +639,31 @@ function renderCta(section: Section): string {
 /** The card-shaped kinds, which share four arrangements between them. */
 function renderPanels(section: Section, columns: 2 | 3 | 4): string {
   const layout = layoutFor(section.kind, section.layout);
+  if (layout === 'checks') return renderChecks(section);
   if (layout === 'bento') return renderBento(section);
   if (layout === 'numbered') return renderNumbered(section);
   if (layout === 'ticker') return renderTicker(section);
   if (layout === 'rail') return renderRail(section, columns);
   return renderCards(section, columns);
+}
+
+/**
+ * A ticked list in two columns.
+ *
+ * What "why choose us" actually wants to be: eight short reasons somebody can
+ * scan in four seconds, rather than three cards padded out to equal length.
+ */
+function renderChecks(section: Section): string {
+  const list = items(section)
+    .map(
+      (item, index) => `<li data-lumen-id="${id(section, `check-${index}`)}">
+        <span class="check__tick" aria-hidden>✓</span>
+        <span><span class="row__label">${escapeHtml(item.title ?? '')}</span>${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}</span>
+      </li>`,
+    )
+    .join('');
+  if (!list) return renderCards(section, 3);
+  return wrap(section, `${heading(section)}<ul class="checks">${list}</ul>`);
 }
 
 /** Cards on a snapping horizontal rail rather than wrapped into a grid. */
@@ -624,7 +682,115 @@ function renderRail(section: Section, columns: 2 | 3 | 4): string {
   return wrap(section, `${heading(section)}<div class="rail">${cards}</div>`, ' section--flush');
 }
 
+/**
+ * The slim bar above everything: one line, optionally a link.
+ *
+ * Not a `<section>` — it sits outside the page's rhythm, carries no heading and
+ * must not take a band colour, so it renders its own element.
+ */
+function renderAnnouncement(section: Section): string {
+  const layout = layoutFor('announcement', section.layout);
+  const line = section.body ?? section.heading ?? '';
+  if (!line) return '';
+  const link = section.primaryCta?.label
+    ? `<a href="${safeHref(section.primaryCta.href)}">${escapeHtml(section.primaryCta.label)}</a>`
+    : '';
+  return `<aside class="announce announce--${escapeHtml(layout)}" data-section="announcement" data-lumen-id="${escapeHtml(section.id)}">
+  <div class="shell announce__inner"><p data-lumen-id="${id(section, 'body')}">${escapeHtml(line)}</p>${link}</div>
+</aside>`;
+}
+
+/**
+ * The row of names that says somebody else already trusts this.
+ *
+ * Certifications for a clinic, the tools a SaaS plugs into, the brands a
+ * dealership carries. Set as type rather than as images: a generated site has
+ * no rights to anybody's logo, and a row of grey rectangles waiting for files
+ * that never arrive is worse than a row of names that reads correctly today.
+ */
+function renderLogos(section: Section): string {
+  const layout = layoutFor('logos', section.layout);
+  const marks = items(section)
+    .map(
+      (item, index) => `<li class="mark" data-lumen-id="${id(section, `mark-${index}`)}">
+        <span class="mark__name">${escapeHtml(item.title ?? '')}</span>
+        ${item.meta ? `<span class="mark__meta">${escapeHtml(item.meta)}</span>` : ''}
+      </li>`,
+    )
+    .join('');
+  if (!marks) return '';
+  const head = section.heading ? heading(section, layout === 'band') : '';
+  return wrap(section, `${head}<ul class="marks marks--${escapeHtml(layout)}">${marks}</ul>`);
+}
+
+/**
+ * A statement on one side, the points that support it on the other.
+ *
+ * The most reusable shape on a business site and the one that was missing:
+ * why choose us, the problem before the solution, what the technology means,
+ * how the insurance works, what the market is doing. Each of those is a claim
+ * plus three specifics, and none of them is three identical cards.
+ */
+function renderSplit(section: Section): string {
+  const layout = layoutFor('split', section.layout);
+  const points = items(section)
+    .map(
+      (item, index) => `<li data-lumen-id="${id(section, `point-${index}`)}">
+        <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
+        ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+      </li>`,
+    )
+    .join('');
+
+  const claim = `<div class="split__claim">
+    ${heading(section)}
+    ${section.body ? `<p class="lead" data-lumen-id="${id(section, 'body')}">${escapeHtml(section.body)}</p>` : ''}
+    ${button(section.primaryCta)}
+  </div>`;
+
+  if (layout === 'media') {
+    return wrap(
+      section,
+      `<div class="split">${claim}${figure(section.image, section.heading ?? '', ' media--tall')}</div>`,
+    );
+  }
+
+  const list = points ? `<ul class="points points--${escapeHtml(layout)}">${points}</ul>` : '';
+  return wrap(section, `<div class="split">${claim}${list}</div>`);
+}
+
+/**
+ * Paired results: what it was, what it became.
+ *
+ * The images are attached later, like the gallery's. What the model writes is
+ * the pair of captions, which is the part that has to be true.
+ */
+function renderBeforeAfter(section: Section): string {
+  const layout = layoutFor('beforeafter', section.layout);
+  const pairs = items(section)
+    .map(
+      (item, index) => `<figure class="pair" data-lumen-id="${id(section, `pair-${index}`)}">
+        <div class="pair__frames">
+          <div class="pair__frame">${figure(item.image, `${item.title ?? ''} — before`, ' media--wide') || '<div class="media media--wide"></div>'}<span class="pair__tag">Before</span></div>
+          <div class="pair__frame">${figure(item.href, `${item.title ?? ''} — after`, ' media--wide') || '<div class="media media--wide"></div>'}<span class="pair__tag pair__tag--after">After</span></div>
+        </div>
+        <figcaption>
+          <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
+          ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+          ${item.meta ? `<p class="card__meta">${escapeHtml(item.meta)}</p>` : ''}
+        </figcaption>
+      </figure>`,
+    )
+    .join('');
+  if (!pairs) return '';
+  return wrap(section, `${heading(section)}<div class="pairs pairs--${escapeHtml(layout)}">${pairs}</div>`);
+}
+
 const RENDERERS: Record<SectionKind, (section: Section) => string> = {
+  announcement: renderAnnouncement,
+  logos: renderLogos,
+  split: renderSplit,
+  beforeafter: renderBeforeAfter,
   hero: renderHero,
   about: renderAbout,
   features: (section) => renderPanels(section, 3),
