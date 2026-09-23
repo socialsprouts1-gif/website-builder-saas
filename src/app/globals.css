@@ -208,3 +208,30 @@ body {
     transition: none;
   }
 }
+
+/*
+ * A site miniature, scaled to whatever column it is dropped into.
+ *
+ * The mock is drawn at a fixed 1000px design width because its proportions are
+ * the point — it has to be scaled, not reflowed. The scale comes from container
+ * query units so one rule covers a phone and a wide desktop, and it lives here
+ * rather than in an inline style because React drops a `transform` it cannot
+ * serialise and the mock then renders at 1000px inside a narrower frame.
+ */
+.lumen-mock-frame {
+  container-type: inline-size;
+  width: 100%;
+  overflow: hidden;
+}
+
+.lumen-mock-frame > * {
+  transform-origin: top left;
+  /* The fallback first, for a browser without length division in calc(): the
+     mock comes out small rather than cropped. */
+  transform: scale(0.62);
+  /* Dividing by 1000px, not by 1000: scale() takes a number, and a length
+     divided by a unitless number is still a length, so the unitless form is
+     rejected outright and the mock renders at full size inside a smaller
+     frame. */
+  transform: scale(calc(100cqw / 1000px));
+}

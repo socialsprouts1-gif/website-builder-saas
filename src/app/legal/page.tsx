@@ -1,11 +1,13 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { COMPANY, LEGAL_GROUPS, documentsInGroup, detail, missingCompanyDetails } from '@/lib/legal';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Legal',
-  description: 'Lumen’s terms, privacy policy, refund and cancellation policies, and how we handle data.',
-};
+  description:
+    'Lumen’s terms, privacy policy, refund and cancellation policies, and how we handle data.',
+  path: '/legal',
+});
 
 const BLURB: Record<string, string> = {
   Policies: 'The agreement between you and Lumen, and what happens to your data and your money.',

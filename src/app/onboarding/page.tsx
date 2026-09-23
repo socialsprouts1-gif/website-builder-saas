@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { CATEGORIES } from '@/lib/categories';
 import { requireUser } from '@/lib/auth';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'One quick question' };
+export const metadata = noIndex('One quick question');
 
 /**
  * The entire onboarding. One question, then straight into building —

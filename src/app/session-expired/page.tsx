@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
 import { StatusScreen } from '@/components/status/StatusScreen';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Signed out' };
+export const metadata = noIndex('Signed out');
 
 export default function SessionExpiredPage() {
   return (

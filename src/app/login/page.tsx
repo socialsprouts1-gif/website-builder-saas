@@ -1,11 +1,16 @@
 import { Suspense } from 'react';
-import type { Metadata } from 'next';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ButtonLink } from '@/components/ui/Button';
 import { isSupabaseConfigured } from '@/lib/env';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Log in' };
+export const metadata = pageMetadata({
+  title: 'Log in',
+  description:
+    'Log in to Lumen to keep building, editing and publishing your sites.',
+  path: '/login',
+});
 
 export default function LoginPage() {
   return (

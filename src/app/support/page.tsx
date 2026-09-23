@@ -1,11 +1,12 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { COMPANY } from '@/lib/legal/company';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Support',
   description: 'How to reach a person at Lumen, and what to tell them.',
-};
+  path: '/support',
+});
 
 /**
  * Where to write, and what to say.

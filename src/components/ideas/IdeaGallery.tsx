@@ -6,6 +6,7 @@ import { CategoryChip } from '@/components/ui/CategoryChip';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/components/ui/cn';
 import { IDEAS, promptFor, type Idea } from '@/lib/ideas';
+import { industryForIdea } from '@/lib/industries';
 import { CATEGORIES } from '@/lib/categories';
 import { SiteMock, MOCK_SIZE } from '@/components/ideas/SiteMock';
 
@@ -65,6 +66,7 @@ function IdeaCard({
 }) {
   const [copied, setCopied] = useState(false);
   const prompt = promptFor(idea);
+  const industry = industryForIdea(idea.slug);
   const start = `/app/new?category=${idea.category}&prompt=${encodeURIComponent(prompt)}`;
 
   return (
@@ -103,6 +105,14 @@ function IdeaCard({
           <Button size="sm" variant="secondary" onClick={onToggle}>
             {open ? 'Hide the brief' : 'See the brief'}
           </Button>
+          {industry ? (
+            <Link
+              href={`/for/${industry.slug}`}
+              className="text-[13px] text-ink-muted transition hover:text-ink-primary"
+            >
+              More on {industry.name.toLowerCase()} →
+            </Link>
+          ) : null}
         </div>
 
         {open ? (

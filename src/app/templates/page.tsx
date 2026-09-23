@@ -1,15 +1,16 @@
-import type { Metadata } from 'next';
 import { TopNav } from '@/components/marketing/TopNav';
 import { Footer } from '@/components/marketing/Footer';
 import { TemplateGallery, type TemplateCard } from '@/components/marketing/TemplateGallery';
 import { getSessionUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/env';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Templates',
   description: 'Start from a finished site, then make it yours in chat.',
-};
+  path: '/templates',
+});
 
 export const dynamic = 'force-dynamic';
 

@@ -1,13 +1,15 @@
-import type { Metadata } from 'next';
 import { TopNav } from '@/components/marketing/TopNav';
 import { Footer } from '@/components/marketing/Footer';
 import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'How it works',
-  description: 'From one sentence to a deployed website: the four steps Lumen runs for you.',
-};
+  description:
+    'From one sentence to a deployed website: the four steps Lumen runs for you.',
+  path: '/how-it-works',
+});
 
 const STEPS = [
   {

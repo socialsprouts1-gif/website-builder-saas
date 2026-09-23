@@ -1,14 +1,21 @@
 import type { MetadataRoute } from 'next';
-import { env } from '@/lib/env';
+import { canonicalUrl, publicPages } from '@/lib/metadata';
 
+/**
+ * Every page worth indexing, as the one file a search engine asks for first.
+ *
+ * It used to list eight URLs and knew nothing about the legal library, the help
+ * and support pages or the per-industry pages — so the only way Google could
+ * find them was by following a link, and on a domain with no inbound links
+ * there is nothing to follow from.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ['', '/how-it-works', '/ideas', '/showcase', '/templates', '/pricing', '/login', '/signup'];
   const lastModified = new Date();
 
-  return routes.map((route) => ({
-    url: `${env.siteUrl}${route}`,
+  return publicPages().map((page) => ({
+    url: canonicalUrl(page.path),
     lastModified,
-    changeFrequency: route === '' ? 'weekly' : 'monthly',
-    priority: route === '' ? 1 : 0.7,
+    changeFrequency: page.changeFrequency,
+    priority: page.priority,
   }));
 }

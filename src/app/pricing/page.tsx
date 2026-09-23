@@ -1,14 +1,17 @@
-import type { Metadata } from 'next';
 import { TopNav } from '@/components/marketing/TopNav';
 import { Footer } from '@/components/marketing/Footer';
 import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { DAILY_PLATFORM_CREDITS, PRO_DAILY_PLATFORM_CREDITS, PLAN_PRICE_LABEL } from '@/lib/env';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { pageMetadata } from '@/lib/metadata';
+import { breadcrumbJsonLd, softwareApplicationJsonLd } from '@/lib/structured-data';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Pricing',
   description: 'One plan. ₹500 a month. Everything included.',
-};
+  path: '/pricing',
+});
 
 const INCLUDED = [
   `${PRO_DAILY_PLATFORM_CREDITS} credits a day — around twenty sites, or one site and a long afternoon of changes`,
@@ -52,6 +55,16 @@ const FAQ = [
 export default function PricingPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          softwareApplicationJsonLd(),
+          breadcrumbJsonLd([
+            { name: 'Lumen', path: '' },
+            { name: 'Pricing', path: '/pricing' },
+          ]),
+        ]}
+      />
+
       <div className="relative">
         <div className="lumen-glow-field" aria-hidden />
         <TopNav />

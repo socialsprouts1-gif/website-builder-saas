@@ -4,14 +4,27 @@ import { HeroPrompt } from '@/components/marketing/HeroPrompt';
 import { BetaBadge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { CodeWindow } from '@/components/ui/CodeWindow';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { getSessionUser } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/env';
+import { pageMetadata } from '@/lib/metadata';
+import { organizationJsonLd, softwareApplicationJsonLd, webSiteJsonLd } from '@/lib/structured-data';
+
+export const metadata = pageMetadata({
+  title: 'Lumen — Ship a website from a sentence.',
+  description:
+    'Lumen is an AI website builder for small businesses. Describe your business in a sentence and it writes the design system, the copy, every page and an online shop if you need one — then publishes it.',
+  path: '',
+  absoluteTitle: true,
+});
 
 export default async function HomePage() {
   const user = isSupabaseConfigured ? await getSessionUser() : null;
 
   return (
     <>
+      <JsonLd data={[organizationJsonLd(), webSiteJsonLd(), softwareApplicationJsonLd()]} />
+
       <div className="relative">
         <div className="lumen-glow-field" aria-hidden />
         <TopNav signedIn={Boolean(user)} />

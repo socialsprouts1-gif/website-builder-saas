@@ -49,6 +49,40 @@ function resolveSiteUrl(): string {
   return 'http://localhost:3000';
 }
 
+/**
+ * The one address the public web knows this site by.
+ *
+ * Deliberately not the same question as `siteUrl`. That one answers "where can
+ * this deployment reach itself", so it follows the deployment: a preview build
+ * has to talk to the preview. A canonical URL answers the opposite question —
+ * "which single address should a search engine credit" — and the answer has to
+ * be the same on every deployment, or the preview URL, the .vercel.app address
+ * and the real domain all get indexed as three copies of the same site and none
+ * of them ranks.
+ *
+ * NEXT_PUBLIC_SITE_URL still wins, so this is a default and not a hard-coding.
+ */
+const CANONICAL_ORIGIN = 'https://www.lumensite.in';
+
+function resolveCanonicalOrigin(): string {
+  if (PUBLIC.siteUrl) return withScheme(PUBLIC.siteUrl);
+  if (process.env.NODE_ENV === 'production') return CANONICAL_ORIGIN;
+  return resolveSiteUrl();
+}
+
+/**
+ * Whether this deployment should be in a search index at all.
+ *
+ * Vercel gives every branch and every commit a public URL. Left to itself that
+ * is a dozen indexable copies of the marketing site, all competing with the
+ * real one. Only the production deployment says yes; anything else serves
+ * `Disallow: /`.
+ */
+function resolveIndexable(): boolean {
+  const vercelEnv = read('VERCEL_ENV');
+  return !vercelEnv || vercelEnv === 'production';
+}
+
 /** Vercel's variables carry no scheme; a configured value usually does. */
 function withScheme(value: string): string {
   const trimmed = value.replace(/\/+$/, '');
@@ -58,6 +92,22 @@ function withScheme(value: string): string {
 
 export const env = {
   siteUrl: resolveSiteUrl(),
+
+  /** Where canonical URLs, the sitemap and social previews point. */
+  canonicalOrigin: resolveCanonicalOrigin(),
+
+  /** False on preview deployments, which have no business being indexed. */
+  indexable: resolveIndexable(),
+
+  /**
+   * The meta tags Search Console and Bing Webmaster Tools ask for. Read from
+   * the environment so verifying the domain is a variable and a redeploy
+   * rather than a code change.
+   */
+  verification: {
+    google: read('GOOGLE_SITE_VERIFICATION'),
+    bing: read('BING_SITE_VERIFICATION'),
+  },
 
   supabase: {
     url: PUBLIC.supabaseUrl,

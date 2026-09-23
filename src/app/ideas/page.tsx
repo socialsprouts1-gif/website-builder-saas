@@ -1,15 +1,16 @@
-import type { Metadata } from 'next';
 import { TopNav } from '@/components/marketing/TopNav';
 import { Footer } from '@/components/marketing/Footer';
 import { IdeaGallery, IdeaFooterNote } from '@/components/ideas/IdeaGallery';
 import { getSessionUser } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/env';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Ideas',
   description:
     'What a website for your kind of business should look like — worked examples for restaurants, gyms, salons, clinics, shops and more.',
-};
+  path: '/ideas',
+});
 
 export const dynamic = 'force-dynamic';
 

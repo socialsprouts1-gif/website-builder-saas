@@ -1,11 +1,16 @@
 import { Suspense } from 'react';
-import type { Metadata } from 'next';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ButtonLink } from '@/components/ui/Button';
 import { isSupabaseConfigured } from '@/lib/env';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Create your account' };
+export const metadata = pageMetadata({
+  title: 'Create your account',
+  description:
+    'Create a free Lumen account and build your first website from a sentence. No card needed to build one and look at it.',
+  path: '/signup',
+});
 
 export default function SignupPage() {
   return (

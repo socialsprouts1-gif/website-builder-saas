@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Forgot password' };
+export const metadata = noIndex('Forgot password');
 
 export default function ForgotPasswordPage() {
   return (

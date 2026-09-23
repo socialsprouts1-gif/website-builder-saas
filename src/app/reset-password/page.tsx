@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Set a new password' };
+export const metadata = noIndex('Set a new password');
 
 export default function ResetPasswordPage() {
   return (

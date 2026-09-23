@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
 import { StatusScreen } from '@/components/status/StatusScreen';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Payment pending' };
+export const metadata = noIndex('Payment pending');
 
 /**
  * The state people are most likely to panic in: money has left, and nothing

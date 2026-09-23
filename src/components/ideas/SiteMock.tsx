@@ -11,6 +11,12 @@ import type { Idea, Palette, ShowcaseItem } from '@/lib/ideas';
  *
  * Server-rendered on purpose: it is static markup, so the gallery costs no
  * JavaScript and no iframes.
+ *
+ * Nothing in here is a heading tag, though several things are drawn to look
+ * like one. A mock on a page that has its own <h1> would otherwise give that
+ * page a second, louder <h1> saying something about a fictional restaurant —
+ * which is what the topic of the page then looks like to a search engine, and
+ * what a screen reader reads out when it lists the headings.
  */
 
 const WIDTH = 1000;
@@ -113,7 +119,7 @@ function Editorial({ idea }: { idea: Idea }) {
   return (
     <>
       <div className="grid grid-cols-[1.55fr_1fr] items-end gap-12 px-14 pb-10 pt-8">
-        <h1
+        <div
           style={{
             fontFamily: idea.direction.display,
             fontSize: 74,
@@ -122,7 +128,7 @@ function Editorial({ idea }: { idea: Idea }) {
           }}
         >
           {idea.headline}
-        </h1>
+        </div>
         <div className="flex flex-col gap-4 pb-3">
           <p style={{ color: p.muted, fontSize: 17, lineHeight: 1.5 }}>{idea.tagline}</p>
           <Lines p={p} count={3} />
@@ -146,9 +152,9 @@ function Grid({ idea }: { idea: Idea }) {
   return (
     <>
       <div className="flex flex-col items-center gap-5 px-24 pb-9 pt-10 text-center">
-        <h1 style={{ fontFamily: idea.direction.display, fontSize: 56, lineHeight: 1.03, letterSpacing: '-0.02em' }}>
+        <div style={{ fontFamily: idea.direction.display, fontSize: 56, lineHeight: 1.03, letterSpacing: '-0.02em' }}>
           {idea.headline}
-        </h1>
+        </div>
         <p style={{ color: p.muted, fontSize: 18 }}>{idea.tagline}</p>
         <span
           className="rounded-full px-8 py-3"
@@ -183,9 +189,9 @@ function Split({ idea }: { idea: Idea }) {
     <>
       <div className="grid grid-cols-2 items-center gap-12 px-14 pb-8 pt-6">
         <div className="flex flex-col gap-6">
-          <h1 style={{ fontFamily: idea.direction.display, fontSize: 58, lineHeight: 1.02, letterSpacing: '-0.02em' }}>
+          <div style={{ fontFamily: idea.direction.display, fontSize: 58, lineHeight: 1.02, letterSpacing: '-0.02em' }}>
             {idea.headline}
-          </h1>
+          </div>
           <p style={{ color: p.muted, fontSize: 18, lineHeight: 1.5 }}>{idea.tagline}</p>
           <span
             className="w-fit rounded-full px-7 py-3"
@@ -212,7 +218,7 @@ function Poster({ idea }: { idea: Idea }) {
   return (
     <>
       <div className="flex flex-col items-center gap-7 px-16 pb-10 pt-12 text-center">
-        <h1
+        <div
           style={{
             fontFamily: idea.direction.display,
             fontSize: 96,
@@ -223,7 +229,7 @@ function Poster({ idea }: { idea: Idea }) {
           }}
         >
           {idea.headline}
-        </h1>
+        </div>
         <p style={{ color: p.muted, fontSize: 19 }}>{idea.tagline}</p>
         <span
           className="rounded-full px-10 py-4"
@@ -249,9 +255,9 @@ function Catalog({ idea }: { idea: Idea }) {
   return (
     <>
       <div className="flex items-end justify-between px-14 pb-8 pt-6">
-        <h1 style={{ fontFamily: idea.direction.display, fontSize: 50, lineHeight: 1, letterSpacing: '-0.02em' }}>
+        <div style={{ fontFamily: idea.direction.display, fontSize: 50, lineHeight: 1, letterSpacing: '-0.02em' }}>
           {idea.headline}
-        </h1>
+        </div>
         <p style={{ color: p.muted, fontSize: 17 }}>{idea.tagline}</p>
       </div>
       {[0, 1].map((row) => (
@@ -277,9 +283,9 @@ function Directory({ idea }: { idea: Idea }) {
   return (
     <>
       <div className="flex items-end justify-between px-14 pb-7 pt-6">
-        <h1 style={{ fontFamily: idea.direction.display, fontSize: 46, lineHeight: 1, letterSpacing: '-0.02em' }}>
+        <div style={{ fontFamily: idea.direction.display, fontSize: 46, lineHeight: 1, letterSpacing: '-0.02em' }}>
           {idea.headline}
-        </h1>
+        </div>
         <p style={{ color: p.muted, fontSize: 17 }}>{idea.tagline}</p>
       </div>
       <div className="flex flex-col gap-4 px-14">

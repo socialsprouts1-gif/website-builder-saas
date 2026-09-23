@@ -10,7 +10,6 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        base: 'var(--bg-base)',
         raised: 'var(--surface-raised)',
         accent: {
           DEFAULT: 'var(--accent)',
@@ -23,6 +22,22 @@ const config: Config = {
           muted: 'var(--text-muted)',
         },
         hairline: 'var(--border-subtle)',
+      },
+      /**
+       * The page background, and only the background.
+       *
+       * It used to live in `colors`, which meant Tailwind generated a
+       * `.text-base { color: var(--bg-base) }` utility alongside the
+       * `text-base` font size — and the colour won, because textColor is
+       * registered after fontSize. Anything written `sm:text-base` on a dark
+       * page turned the same colour as the page and vanished; the home page's
+       * hero paragraph was invisible above 640px for exactly this reason, on
+       * desktop only, which is why it survived so long.
+       *
+       * Declaring it here keeps `bg-base` and takes `text-base` back.
+       */
+      backgroundColor: {
+        base: 'var(--bg-base)',
       },
       borderColor: {
         DEFAULT: 'var(--border-subtle)',

@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
 import { StatusScreen } from '@/components/status/StatusScreen';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Not yours to open' };
+export const metadata = noIndex('Not yours to open');
 
 export default function ForbiddenPage() {
   return (

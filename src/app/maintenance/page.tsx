@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
 import { StatusScreen } from '@/components/status/StatusScreen';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Back shortly' };
+export const metadata = noIndex('Back shortly');
 
 /**
  * Shown while Lumen is deliberately down.

@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
@@ -6,8 +5,9 @@ import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { isSupabaseConfigured, isBillingConfigured, isPlatformKeyConfigured } from '@/lib/env';
 import { isSchemaInstalled } from '@/lib/supabase/errors';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Finish setting up Lumen' };
+export const metadata = noIndex('Finish setting up Lumen');
 export const dynamic = 'force-dynamic';
 
 /**

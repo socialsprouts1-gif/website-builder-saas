@@ -23,6 +23,19 @@ const COLUMNS = [
     ],
   },
   {
+    // The per-trade pages are two clicks from anywhere because of this column:
+    // a crawler that lands on a policy page can still reach every one of them.
+    title: 'By trade',
+    links: [
+      { href: '/for/restaurant-website', label: 'Restaurants' },
+      { href: '/for/online-store', label: 'Online stores' },
+      { href: '/for/gym-website', label: 'Gyms' },
+      { href: '/for/salon-website', label: 'Salons' },
+      { href: '/for/plumber-website', label: 'Trades' },
+      { href: '/for', label: 'All trades' },
+    ],
+  },
+  {
     // The ones people look for before they pay, and the ones a payment
     // gateway asks to see by name. The rest are one click away at /legal.
     title: 'Legal',

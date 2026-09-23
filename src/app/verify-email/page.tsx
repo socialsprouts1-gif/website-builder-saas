@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { ResendConfirmation } from '@/components/auth/ResendConfirmation';
 import { getCurrentUser } from '@/lib/auth';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Confirm your email' };
+export const metadata = noIndex('Confirm your email');
 export const dynamic = 'force-dynamic';
 
 /**

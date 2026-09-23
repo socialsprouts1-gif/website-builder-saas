@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
 import { StatusScreen } from '@/components/status/StatusScreen';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Payment failed' };
+export const metadata = noIndex('Payment failed');
 
 /**
  * Says the one thing somebody in this position most wants to know — that

@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
 import { StatusScreen } from '@/components/status/StatusScreen';
+import { noIndex } from '@/lib/metadata';
 
-export const metadata: Metadata = { title: 'Payment received' };
+export const metadata = noIndex('Payment received');
 
 export default function PaymentSuccessPage() {
   return (

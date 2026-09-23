@@ -1,10 +1,11 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Help centre',
   description: 'How each part of Lumen works, in the order you meet it.',
-};
+  path: '/help',
+});
 
 /**
  * The help centre.
