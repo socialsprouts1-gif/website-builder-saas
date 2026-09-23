@@ -122,7 +122,29 @@ describe('before and after', () => {
   });
 
   it('holds the frames open before the photographs arrive', () => {
-    expect(html).toContain('class="media media--wide"');
+    expect(html).toContain('media--empty');
+  });
+});
+
+describe('a section whose photographs have not arrived yet', () => {
+  /**
+   * The gallery used to drop every item that had no image, so before the
+   * photography step ran it rendered as a heading over nothing — a hole in the
+   * page on every generated site. The slot holds its shape instead.
+   */
+  it('keeps the gallery from becoming a heading over nothing', () => {
+    const html = renderSection(
+      section({ kind: 'gallery', heading: 'A look around', items: [{ title: 'The room' }, { title: 'The bar' }] }),
+    );
+    expect(html.match(/media--empty/g)?.length).toBe(2);
+    expect(html).toContain('The room');
+  });
+
+  it('holds both frames of a before-and-after open', () => {
+    const html = renderSection(
+      section({ kind: 'beforeafter', heading: 'Results', items: [{ title: 'Chipped tooth' }] }),
+    );
+    expect(html.match(/media--empty/g)?.length).toBe(2);
   });
 });
 

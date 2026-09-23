@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { env } from './env';
 import { INDUSTRIES } from './industries';
+import { BLUEPRINTS } from './templates';
 import { LEGAL_DOCUMENTS } from './legal';
 
 /**
@@ -72,6 +73,12 @@ export function publicPages(): PublicPage[] {
   // The pages that answer the question people actually type.
   for (const industry of INDUSTRIES) {
     pages.push({ path: `/for/${industry.slug}`, priority: 0.8, changeFrequency: 'monthly' });
+  }
+
+  // Every template has a page of its own, and each one is a page somebody
+  // searching for "dental clinic website template" should be able to land on.
+  for (const blueprint of BLUEPRINTS) {
+    pages.push({ path: `/templates/${blueprint.id}`, priority: 0.6, changeFrequency: 'monthly' });
   }
 
   // Fifteen real documents. They rank for nothing, and they are a large part of

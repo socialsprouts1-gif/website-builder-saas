@@ -128,6 +128,18 @@ function figure(image: string | undefined, alt: string, modifier = ''): string {
   return `<div class="media${modifier}"><img src="${src}" alt="${escapeHtml(alt)}" loading="lazy" /></div>`;
 }
 
+/**
+ * The frame a photograph will go in, before there is a photograph.
+ *
+ * A gallery whose items have no image used to render as a heading and nothing
+ * else — a hole in the page, on every site, until somebody ran the photography
+ * step. An empty-looking section is worse than a plain one, so the slot holds
+ * its shape and its proportions and reads as deliberate.
+ */
+function emptyMedia(modifier = ''): string {
+  return `<div class="media media--empty${modifier}" aria-hidden></div>`;
+}
+
 function toneClass(section: Section): string {
   if (section.tone === 'surface') return ' section--surface';
   if (section.tone === 'alt') return ' section--alt';
@@ -402,8 +414,7 @@ function renderSteps(section: Section): string {
 function renderGallery(section: Section): string {
   const layout = layoutFor('gallery', section.layout);
   const tile = (item: SectionItem, index: number, modifier = '') => {
-    const media = figure(item.image, item.title ?? 'Photograph', modifier);
-    if (!media) return '';
+    const media = figure(item.image, item.title ?? 'Photograph', modifier) || emptyMedia(modifier);
     return `<figure class="shot${modifier ? ' shot--lead' : ''}" data-lumen-id="${id(section, `photo-${index}`)}">${media}${item.title ? `<figcaption class="shot__caption">${escapeHtml(item.title)}</figcaption>` : ''}</figure>`;
   };
 
@@ -427,8 +438,7 @@ function renderGallery(section: Section): string {
     // it. The most generous way to show work, and the slowest to scroll.
     const tiles = all
       .map((item, index) => {
-        const media = figure(item.image, item.title ?? 'Photograph', ' media--band');
-        if (!media) return '';
+        const media = figure(item.image, item.title ?? 'Photograph', ' media--band') || emptyMedia(' media--band');
         return `<figure class="stack__shot" data-lumen-id="${id(section, `photo-${index}`)}">${media}${item.title ? `<figcaption class="shot__caption">${escapeHtml(item.title)}</figcaption>` : ''}</figure>`;
       })
       .join('');
@@ -771,8 +781,8 @@ function renderBeforeAfter(section: Section): string {
     .map(
       (item, index) => `<figure class="pair" data-lumen-id="${id(section, `pair-${index}`)}">
         <div class="pair__frames">
-          <div class="pair__frame">${figure(item.image, `${item.title ?? ''} — before`, ' media--wide') || '<div class="media media--wide"></div>'}<span class="pair__tag">Before</span></div>
-          <div class="pair__frame">${figure(item.href, `${item.title ?? ''} — after`, ' media--wide') || '<div class="media media--wide"></div>'}<span class="pair__tag pair__tag--after">After</span></div>
+          <div class="pair__frame">${figure(item.image, `${item.title ?? ''} — before`, ' media--wide') || emptyMedia(' media--wide')}<span class="pair__tag">Before</span></div>
+          <div class="pair__frame">${figure(item.href, `${item.title ?? ''} — after`, ' media--wide') || emptyMedia(' media--wide')}<span class="pair__tag pair__tag--after">After</span></div>
         </div>
         <figcaption>
           <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>

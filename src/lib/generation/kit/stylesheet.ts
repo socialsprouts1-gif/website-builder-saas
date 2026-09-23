@@ -148,6 +148,10 @@ p:last-child { margin-bottom: 0; }
   aspect-ratio: 4 / 3;
 }
 .media img { width: 100%; height: 100%; object-fit: cover; }
+.media--empty {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, var(--surface-alt)), var(--surface-alt) 65%);
+}
 .media--tall { aspect-ratio: 3 / 4; }
 .media--wide { aspect-ratio: 16 / 9; }
 
