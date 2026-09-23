@@ -11,12 +11,23 @@ import {
   buildInterviewPrompt,
   normaliseQuestions,
 } from '@/lib/generation/interview';
+import { MAX_BRIEF } from '@/lib/validation';
+import { sectionBrief } from '@/lib/generation/brief';
 
 export const runtime = 'nodejs';
 export const maxDuration = 45;
 
+/**
+ * The same ceiling the brief itself has.
+ *
+ * This is the first endpoint the new-site screen calls — Continue asks for the
+ * questions before anything is built — so its own, lower limit was the one
+ * people actually hit. Raising the brief and leaving this at two thousand
+ * meant a long brief was still refused, just by a different route, with an
+ * error that named a number nothing on screen explained.
+ */
 const bodySchema = z.object({
-  prompt: z.string().trim().min(3).max(2000),
+  prompt: z.string().trim().min(3).max(MAX_BRIEF),
   category: z.string().max(64).nullable().optional(),
   hasScreenshot: z.boolean().optional(),
 });
@@ -56,7 +67,10 @@ export async function POST(request: NextRequest) {
         {
           role: 'user',
           content: buildInterviewPrompt({
-            prompt: body.prompt,
+            // The gist is enough to decide what to ask about, and this runs on
+            // the fast model at no charge — sending twenty thousand characters
+            // to it would cost more than the build it is meant to improve.
+            prompt: sectionBrief(body.prompt),
             businessType: body.category,
             hasScreenshot: Boolean(body.hasScreenshot),
           }),
