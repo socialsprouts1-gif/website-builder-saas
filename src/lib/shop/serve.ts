@@ -102,7 +102,7 @@ export function decorateWithShop(
  * can edit everything around the marker.
  */
 export function improvisedPage(
-  slot: ShopSlot,
+  slot: PageSlot,
   indexHtml: string,
   request: ShopRequest,
   category: string | null,
@@ -142,11 +142,19 @@ export function productResponse(
   return page ? decorateWithShop(page, request, null) : null;
 }
 
+/**
+ * The slots that are whole pages.
+ *
+ * Featured products and category tiles are bands on somebody else's page, so
+ * they can never be the answer to a request for a page.
+ */
+export type PageSlot = 'shop' | 'cart' | 'checkout';
+
 /** Which shop page a path is asking for, if any. */
-export function shopSlotFor(path: string): ShopSlot | null {
+export function shopSlotFor(path: string): PageSlot | null {
   const wanted = path.replace(/^\/+/, '').toLowerCase();
   for (const [slot, page] of Object.entries(SHOP_PAGES)) {
-    if (wanted === page.path) return slot as ShopSlot;
+    if (wanted === page.path) return slot as PageSlot;
   }
   return null;
 }

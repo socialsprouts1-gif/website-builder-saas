@@ -46,6 +46,7 @@ ALWAYS ASK, wherever it is not already answered:
 - Imagery: whether Lumen should generate illustrations and graphics, or the owner will upload their own photos later, or a mix. Offer those as options.
 - The one thing a visitor should do — call, book, order, enquire, visit, sign up.
 - The real business name and the town or area it serves.
+- Their WhatsApp number, with id "whatsapp" and kind "text". Say plainly what it is for: enquiries and orders from the website arrive on WhatsApp, which is where most Indian small businesses actually read them. Make clear it can be left blank and added later. Ask it last, and never ask it twice.
 
 GOOD QUESTIONS
 - Concrete and answerable in one tap. Offer 2 to 5 options that are real choices, not "yes/no/maybe".
@@ -158,4 +159,29 @@ export function applyAnswers(prompt: string, answers: Answer[]): string {
     'The owner answered these questions about it:',
     ...useful.map((answer) => `- ${answer.question} → ${answer.answer.trim()}`),
   ].join('\n');
+}
+
+/**
+ * The WhatsApp number out of the interview answers.
+ *
+ * A setting rather than a sentence. Folded only into the brief it would end up
+ * as copy on a page and nowhere the product could use it — so it is read out
+ * here and saved against the project, which is what makes enquiries and orders
+ * actually arrive on somebody's phone.
+ *
+ * Matched by id first and by the wording of the question second, because the
+ * model writes the questions and does not always use the id it was asked for.
+ */
+export function whatsappFromAnswers(
+  answers: { question: string; answer: string; id?: string }[],
+): string | null {
+  const looksLikeIt = (entry: { question: string; id?: string }) =>
+    entry.id === 'whatsapp' || /whats\s?app/i.test(entry.question);
+
+  for (const entry of answers) {
+    if (!looksLikeIt(entry)) continue;
+    const digits = (entry.answer ?? '').replace(/[^\d]/g, '');
+    if (digits.length >= 10) return entry.answer.trim();
+  }
+  return null;
 }

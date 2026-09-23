@@ -1,4 +1,13 @@
-import { cartPage, checkoutPage, escapeHtml, productPage, shopGrid, type ShopLinks } from './render';
+import {
+  cartPage,
+  categoryTiles,
+  checkoutPage,
+  escapeHtml,
+  featuredProducts,
+  productPage,
+  shopGrid,
+  type ShopLinks,
+} from './render';
 import type { Product, ShippingRate } from './catalogue';
 
 /**
@@ -38,10 +47,18 @@ export interface ShopView {
   inline: boolean;
 }
 
-/** The three pages a shop adds, and what each marker renders into. */
-export type ShopSlot = 'shop' | 'cart' | 'checkout';
+/**
+ * Everywhere a shop renders into a page.
+ *
+ * The first three are pages of their own. The last two are bands that sit on
+ * a page the shop does not own — the home page, almost always — because an
+ * e-commerce home page with no products on it and a link to a Shop page is a
+ * brochure with a shop bolted to the side.
+ */
+export type ShopSlot = 'shop' | 'cart' | 'checkout' | 'featured' | 'categories';
 
-export const SHOP_PAGES: Record<ShopSlot, { path: string; title: string }> = {
+/** The slots that are whole pages, and what those pages are called. */
+export const SHOP_PAGES: Record<'shop' | 'cart' | 'checkout', { path: string; title: string }> = {
   shop: { path: 'shop.html', title: 'Shop' },
   cart: { path: 'cart.html', title: 'Your basket' },
   checkout: { path: 'checkout.html', title: 'Checkout' },
@@ -72,7 +89,7 @@ export function shopSection(slot: ShopSlot, heading?: string): string {
 </section>`;
 }
 
-const MARKER = /<div\s+data-lumen-shop=["'](shop|cart|checkout)["']\s*>\s*<\/div>/gi;
+const MARKER = /<div\s+data-lumen-shop=["'](shop|cart|checkout|featured|categories)["']\s*>\s*<\/div>/gi;
 
 export function hasShopMarker(html: string): boolean {
   MARKER.lastIndex = 0;
@@ -81,6 +98,8 @@ export function hasShopMarker(html: string): boolean {
 
 /** What a marker becomes. */
 function slotHtml(slot: ShopSlot, view: ShopView, category: string | null): string {
+  if (slot === 'featured') return featuredProducts(view.products, { links: view.links });
+  if (slot === 'categories') return categoryTiles(view.products, { links: view.links });
   if (slot === 'cart') return cartPage(view.links);
   if (slot === 'checkout') {
     return checkoutPage({

@@ -120,6 +120,76 @@ export function productCard(product: Product, links: ShopLinks): string {
 </article>`;
 }
 
+/**
+ * The products a shop leads with, on its own home page.
+ *
+ * An e-commerce home page that shows no products and offers a link to a Shop
+ * page is a brochure with a shop bolted to the side. Every real one — every
+ * one worth copying — puts stock on the first screen, because the whole job of
+ * that page is to get somebody looking at something they might buy.
+ *
+ * Rendered from the live catalogue like everything else, so a price change or
+ * a new arrival shows on the home page immediately.
+ */
+export function featuredProducts(
+  products: Product[],
+  options: { links: ShopLinks; limit?: number; heading?: string },
+): string {
+  const shown = sellableProducts(products).slice(0, options.limit ?? 8);
+  if (shown.length === 0) return '';
+
+  const cards = shown.map((product) => productCard(product, options.links)).join('\n');
+
+  return `<div class="shop-featured">
+  <div class="shop-featured__head">
+    <h2 data-lumen-id="featured-heading">${escapeHtml(options.heading ?? 'Shop the collection')}</h2>
+    <a class="shop-featured__all" href="${options.links.base}shop.html">See everything →</a>
+  </div>
+  <div class="shop-grid">${cards}</div>
+</div>`;
+}
+
+/**
+ * The departments, as something to press.
+ *
+ * A picture and a name each, taken from the first product in that category, so
+ * the tiles are of real stock rather than of an icon somebody drew. This is how
+ * a customer who does not yet know what they want gets into the shop.
+ */
+export function categoryTiles(
+  products: Product[],
+  options: { links: ShopLinks; heading?: string },
+): string {
+  const all = sellableProducts(products);
+  const names = categoriesOf(all);
+  if (names.length < 2) return '';
+
+  const tiles = names
+    .slice(0, 8)
+    .map((category) => {
+      const inIt = all.filter((product) => inCategory(product, category));
+      const cover = inIt.map((product) => safeImage(product.images[0])).find(Boolean);
+      const href = `${options.links.base}shop.html?category=${encodeURIComponent(category)}`;
+
+      return `<a class="shop-cat" href="${href}" data-lumen-id="category-${escapeHtml(category.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}">
+      <span class="shop-cat__image">${cover ? `<img src="${cover}" alt="" loading="lazy" />` : ''}</span>
+      <span class="shop-cat__body">
+        <span class="shop-cat__name">${escapeHtml(category)}</span>
+        <span class="shop-cat__count">${inIt.length} item${inIt.length === 1 ? '' : 's'}</span>
+      </span>
+    </a>`;
+    })
+    .join('');
+
+  return `<div class="shop-cats">
+  <div class="shop-featured__head">
+    <h2 data-lumen-id="categories-heading">${escapeHtml(options.heading ?? 'Shop by department')}</h2>
+    <a class="shop-featured__all" href="${options.links.base}shop.html">All departments →</a>
+  </div>
+  <div class="shop-cats__grid">${tiles}</div>
+</div>`;
+}
+
 /** The row of categories above the grid. Absent when a shop has only one. */
 export function categoryBar(products: Product[], active: string | null, links: ShopLinks): string {
   const categories = categoriesOf(products);
@@ -333,6 +403,11 @@ export function checkoutPage(options: {
     <p>Your order number is <strong data-shop-reference></strong>. Please keep it to hand.</p>
     <p data-shop-done-note></p>
     <p><a class="btn" data-shop-pay hidden>Pay now</a></p>
+    <!-- Sent by the customer, not by us: no API, no business account, and the
+         owner ends up in a real conversation with the person who ordered. The
+         order is already recorded, so this is a confirmation rather than the
+         thing that delivers it. -->
+    <p><a class="btn btn--ghost" data-shop-whatsapp target="_blank" rel="noopener" hidden>Send this order on WhatsApp</a></p>
     <p><a class="btn btn--ghost" href="${options.links.base}shop.html">Back to the shop</a></p>
   </div>
 </div>`;

@@ -18,11 +18,19 @@ export interface PageSpec {
   /**
    * Markup appended inside `<main>`, after the sections.
    *
-   * One thing uses this: the empty marker a shop page carries, which is filled
+   * One thing uses this: the empty markers a shop carries, which are filled
    * from the database when the page is served. It is not a way for a model to
    * get markup into a page — nothing that reaches here was written by one.
    */
   extra?: string;
+  /**
+   * Where the extra goes, counted in sections.
+   *
+   * Appended at the end by default, which is right for a page that is nothing
+   * but a shop. On a home page it belongs directly under the hero: products
+   * below the closing call to action are products nobody scrolls to.
+   */
+  extraAfter?: number;
 }
 
 export interface SiteSpec {
@@ -96,7 +104,12 @@ function footer(site: SiteSpec): string {
 }
 
 export function renderPage(site: SiteSpec, page: PageSpec): string {
-  const sections = [assignTones(page.sections).map(renderSection).join('\n'), page.extra ?? '']
+  const rendered = assignTones(page.sections).map(renderSection);
+  const at = page.extra
+    ? Math.min(Math.max(page.extraAfter ?? rendered.length, 0), rendered.length)
+    : rendered.length;
+
+  const sections = [...rendered.slice(0, at), page.extra ?? '', ...rendered.slice(at)]
     .filter(Boolean)
     .join('\n');
   const fonts = site.tokens.fonts.googleHref;

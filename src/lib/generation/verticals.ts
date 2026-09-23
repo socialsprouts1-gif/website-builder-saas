@@ -26,6 +26,14 @@ export interface VerticalPage {
   shopSlot?: ShopSlot;
   /** Written as a file, but not a nav entry. A basket is not a page to browse. */
   hidden?: boolean;
+  /**
+   * Shop bands rendered into this page, after its sections.
+   *
+   * The home page of a shop carries the products and the departments; they are
+   * filled from the catalogue when the page is served, like everything else
+   * about a shop.
+   */
+  shopBands?: readonly ShopSlot[];
 }
 
 export interface Vertical {
@@ -53,6 +61,15 @@ export interface Vertical {
  * showing, and a paragraph of marketing copy above a checkout form is how
  * carts get abandoned.
  */
+/**
+ * The shop bands a home page carries.
+ *
+ * Products first, then the departments. Not a link to a Shop page: an
+ * e-commerce home page whose first screen has nothing to buy on it is a
+ * brochure, and every shop worth copying puts stock above the fold.
+ */
+export const SHOP_HOME_SLOTS = ['featured', 'categories'] as const;
+
 export const SHOP_PAGES: VerticalPage[] = [
   { path: 'shop.html', title: 'Shop', sections: ['hero'], shopSlot: 'shop' },
   { path: 'cart.html', title: 'Your basket', sections: [], shopSlot: 'cart', hidden: true },
@@ -162,7 +179,12 @@ export const VERTICALS: Vertical[] = [
     action: 'Buy something',
     shop: true,
     pages: [
-      { path: 'index.html', title: 'Home', sections: ['hero', 'features', 'gallery', 'stats', 'testimonials', 'cta'] },
+      {
+        path: 'index.html',
+        title: 'Home',
+        sections: ['hero', 'features', 'testimonials', 'cta'],
+        shopBands: SHOP_HOME_SLOTS,
+      },
       ...SHOP_PAGES,
       { path: 'about.html', title: 'Our story', sections: ['hero', 'about', 'steps', 'stats', 'gallery'] },
       { path: 'faq.html', title: 'Delivery & returns', sections: ['hero', 'faq', 'cta'] },
@@ -260,7 +282,12 @@ export const VERTICALS: Vertical[] = [
     action: 'Place an order',
     shop: true,
     pages: [
-      { path: 'index.html', title: 'Home', sections: ['hero', 'features', 'about', 'stats', 'testimonials', 'cta'] },
+      {
+        path: 'index.html',
+        title: 'Home',
+        sections: ['hero', 'features', 'about', 'testimonials', 'cta'],
+        shopBands: SHOP_HOME_SLOTS,
+      },
       ...SHOP_PAGES,
       { path: 'about.html', title: 'Our farm', sections: ['hero', 'about', 'steps', 'gallery'] },
       { path: 'faq.html', title: 'Delivery', sections: ['hero', 'faq', 'cta'] },

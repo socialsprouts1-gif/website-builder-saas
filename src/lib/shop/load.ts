@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { normaliseWhatsApp } from '@/lib/whatsapp';
 import type { Product, ShippingRate } from './catalogue';
 
 /**
@@ -22,6 +23,8 @@ export interface ShopData {
   codEnabled: boolean;
   paymentUrl: string | null;
   paymentNote: string | null;
+  /** Where an order is handed over, when the owner gave a number. */
+  whatsappNumber: string | null;
 }
 
 export const NO_SHOP: ShopData = {
@@ -31,6 +34,7 @@ export const NO_SHOP: ShopData = {
   codEnabled: true,
   paymentUrl: null,
   paymentNote: null,
+  whatsappNumber: null,
 };
 
 type ProductRow = {
@@ -107,7 +111,7 @@ export async function loadShop(projectId: string): Promise<ShopData> {
 
   const { data: settings } = await admin
     .from('projects')
-    .select('shop_enabled, shop_cod_enabled, shop_payment_note, payment_url')
+    .select('shop_enabled, shop_cod_enabled, shop_payment_note, payment_url, whatsapp_number')
     .eq('id', projectId)
     .maybeSingle();
 
@@ -138,6 +142,7 @@ export async function loadShop(projectId: string): Promise<ShopData> {
     codEnabled: settings.shop_cod_enabled !== false,
     paymentUrl: typeof settings.payment_url === 'string' ? settings.payment_url : null,
     paymentNote: typeof settings.shop_payment_note === 'string' ? settings.shop_payment_note : null,
+    whatsappNumber: normaliseWhatsApp(settings.whatsapp_number),
   };
 }
 

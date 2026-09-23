@@ -2,8 +2,23 @@ import { z } from 'zod';
 
 /** Every API boundary validates with one of these (spec Section 16). */
 
+/** How much somebody may write about their business in one go. */
+export const MAX_BRIEF = 20_000;
+
+/** And in one chat message, which is an instruction rather than a brief. */
+export const MAX_CHAT_MESSAGE = 8_000;
+
 export const createProjectSchema = z.object({
-  prompt: z.string().trim().min(3, 'Tell Lumen a little more.').max(2000),
+  /**
+   * The brief, as long as somebody wants to write it.
+   *
+   * It was 2,000 characters, which is about three paragraphs — and the people
+   * who write more than that are exactly the people who know what they want,
+   * so refusing them was refusing the best briefs the product gets. The full
+   * text reaches the planner; the per-section calls get a trimmed version, so
+   * a long brief costs one large request rather than twenty.
+   */
+  prompt: z.string().trim().min(3, 'Tell Lumen a little more.').max(MAX_BRIEF),
   category: z.string().max(64).nullable().optional(),
   model: z.string().max(120).nullable().optional(),
   inputMode: z.enum(['prompt', 'screenshot', 'voice', 'template', 'google']).default('prompt'),
@@ -156,7 +171,7 @@ export const chatbotConfigSchema = z.object({
 });
 
 export const chatbotAskSchema = z.object({
-  message: z.string().trim().min(1).max(1000),
+  message: z.string().trim().min(1).max(MAX_CHAT_MESSAGE),
   sessionId: z.string().min(6).max(120),
 });
 

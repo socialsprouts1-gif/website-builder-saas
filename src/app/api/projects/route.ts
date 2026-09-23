@@ -9,7 +9,8 @@ import { categoryBySlug } from '@/lib/categories';
 import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/errors';
 import { getAllowance } from '@/lib/allowance';
 import { ensureUserProfile } from '@/lib/profile';
-import { applyAnswers } from '@/lib/generation/interview';
+import { applyAnswers, whatsappFromAnswers } from '@/lib/generation/interview';
+import { normaliseWhatsApp } from '@/lib/whatsapp';
 import { OWN_MATERIAL_MARK } from '@/lib/generation/prompts';
 import { lookupPlace } from '@/lib/google/places';
 import { seedFromPlace } from '@/lib/google/seed';
@@ -53,6 +54,11 @@ export async function POST(request: NextRequest) {
     // The interview answers become part of the brief rather than a separate
     // input, so every downstream stage sees them without changing shape.
     let brief = applyAnswers(body.prompt, body.answers ?? []);
+
+    // Except the WhatsApp number, which is a setting rather than a sentence.
+    // Folding it only into the brief would put it in the page's copy and
+    // nowhere the product could use it, so it is read out here and saved.
+    const whatsapp = whatsappFromAnswers(body.answers ?? []);
 
     // Their own visiting card is the fastest way they will ever give us their
     // phone number; someone else's website is not theirs to copy. Which of the
@@ -114,6 +120,19 @@ export async function POST(request: NextRequest) {
     if (projectError || !project) {
       if (isMissingTableError(projectError)) throw new SchemaNotInstalledError();
       return jsonError(projectError?.message ?? 'Could not create project', 500);
+    }
+
+    // Set now rather than after the build, so the very first enquiry or order
+    // has somewhere to go. Allowed to fail quietly: these columns arrive in
+    // migration 0013 and a site is still worth building without them.
+    if (whatsapp) {
+      const number = normaliseWhatsApp(whatsapp);
+      if (number) {
+        await admin
+          .from('projects')
+          .update({ whatsapp_number: number, whatsapp_leads: true })
+          .eq('id', project.id);
+      }
     }
 
     // A Google listing is resolved and imported here, before the job is queued,

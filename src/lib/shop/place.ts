@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logError } from '@/lib/errors';
 import { orderReference, orderTotals, type CartRequest } from './cart';
 import { formatRupees } from './money';
+import { whatsappHref } from '@/lib/whatsapp';
 import type { ShopData } from './load';
 
 /**
@@ -20,6 +21,16 @@ export interface PlacedOrder {
   totalPaise: number;
   paymentUrl: string | null;
   note: string;
+  /**
+   * The order, ready to send to the shop on WhatsApp.
+   *
+   * Sent by the customer rather than by us, which needs no API, no approval
+   * and no business account — and means the owner gets a real conversation
+   * with the person who ordered, on the app they actually read. The order is
+   * already recorded before this is offered, so a customer who never presses
+   * it has still placed their order.
+   */
+  whatsappUrl: string | null;
 }
 
 export interface OrderRequest {
@@ -146,12 +157,70 @@ export async function placeOrder(request: OrderRequest): Promise<PlacedOrder> {
     reference,
     totalPaise: totals.totalPaise,
     paymentUrl: request.shop.paymentUrl,
+    whatsappUrl: request.shop.whatsappNumber
+      ? whatsappHref(
+          request.shop.whatsappNumber,
+          orderMessage({
+            reference,
+            customer: request.customer,
+            lines: totals.lines.map((line) => ({
+              title: line.product.title,
+              quantity: line.quantity,
+              linePaise: line.linePaise,
+            })),
+            shippingLabel: totals.rate?.label ?? null,
+            shippingPaise: totals.shippingPaise,
+            totalPaise: totals.totalPaise,
+          }),
+        )
+      : null,
     note: request.shop.paymentUrl
       ? `Please pay ${formatRupees(totals.totalPaise)} using the button below, quoting ${reference}.`
       : request.shop.codEnabled
         ? `${formatRupees(totals.totalPaise)} to pay on delivery. We will call you to confirm.`
         : `${formatRupees(totals.totalPaise)} in total. We will be in touch to arrange payment.`,
   };
+}
+
+/**
+ * The order as the owner will read it on their phone.
+ *
+ * Written to be understood at a glance and acted on without opening anything
+ * else: what was ordered, what it comes to, where it is going and who to ring.
+ */
+export function orderMessage(order: {
+  reference: string;
+  customer: { name: string; contact: string; address: string; city: string; postcode: string; note: string };
+  lines: { title: string; quantity: number; linePaise: number }[];
+  shippingLabel: string | null;
+  shippingPaise: number;
+  totalPaise: number;
+}): string {
+  const items = order.lines
+    .map((line) => `• ${line.title} × ${line.quantity} — ${formatRupees(line.linePaise)}`)
+    .join('\n');
+
+  const where = [order.customer.address, order.customer.city, order.customer.postcode]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(', ');
+
+  return [
+    `New order ${order.reference}`,
+    '',
+    items,
+    order.shippingLabel
+      ? `${order.shippingLabel}: ${order.shippingPaise === 0 ? 'Free' : formatRupees(order.shippingPaise)}`
+      : '',
+    `Total: ${formatRupees(order.totalPaise)}`,
+    '',
+    order.customer.name ? `Name: ${order.customer.name}` : '',
+    order.customer.contact ? `Phone: ${order.customer.contact}` : '',
+    where ? `Deliver to: ${where}` : '',
+    order.customer.note.trim() ? `Note: ${order.customer.note.trim()}` : '',
+  ]
+    .filter((line) => line !== '')
+    .join('\n');
 }
 
 /** The customer's own words, plus anything the shop should know about the order. */

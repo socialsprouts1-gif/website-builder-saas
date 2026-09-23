@@ -326,6 +326,12 @@ export const SHOP_SCRIPT = `(function () {
           pay.setAttribute('href', payload.paymentUrl);
           pay.removeAttribute('hidden');
         }
+
+        var chat = host.querySelector('[data-shop-whatsapp]');
+        if (chat && payload.whatsappUrl) {
+          chat.setAttribute('href', payload.whatsappUrl);
+          chat.removeAttribute('hidden');
+        }
         form.setAttribute('hidden', '');
         if (done) done.removeAttribute('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });

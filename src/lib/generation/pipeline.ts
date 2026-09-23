@@ -20,13 +20,14 @@ import { normaliseTokens, type DesignTokens } from './kit/tokens';
 import { renderStylesheet } from './kit/stylesheet';
 import { chooseTemplate, templateById, type Template } from './kit/templates';
 import { layoutFor } from './kit/layouts';
+import { sectionBrief } from './brief';
 import { renderPage, SITE_SCRIPT, type SiteSpec } from './kit/page';
 import { hasContent, parseSection } from './kit/parse';
 import type { Section, SectionKind } from './kit/sections';
 import { DEFAULT_VERTICAL, VERTICALS, matchVertical, type Vertical } from './verticals';
 import { pageLabel } from '@/lib/pages';
 import { createVersion, getCurrentFiles } from './storage';
-import { shopSection } from '@/lib/shop/inject';
+import { shopSection, type ShopSlot } from '@/lib/shop/inject';
 import { seedShop } from '@/lib/shop/seed';
 import { photographCatalogue } from '@/lib/shop/photograph';
 import type {
@@ -457,7 +458,10 @@ export async function runBuildStep(
             audience: plan.audience,
             vertical,
             pageTitle: page?.title ?? 'Home',
-            brief: input.prompt,
+            // The gist, not the whole thing. A twenty-thousand-character brief
+            // sent to every one of two dozen section calls is paid for two
+            // dozen times; the planner already read all of it.
+            brief: sectionBrief(input.prompt),
             sitemap: vertical.pages.map((entry) => ({ path: entry.path, title: entry.title })),
           }),
         );
@@ -620,7 +624,12 @@ async function saveSite(
         // like any other; only what goes under it is rendered per request.
         extra: page.shopSlot
           ? shopSection(page.shopSlot, page.shopSlot === 'shop' ? undefined : page.title)
-          : undefined,
+          : page.shopBands
+            ? page.shopBands.map((slot: ShopSlot) => shopSection(slot)).join('\n')
+            : undefined,
+        // Directly under the hero on a home page. Products below the closing
+        // call to action are products nobody scrolls to.
+        extraAfter: page.shopBands ? 1 : undefined,
       }),
     });
   }
