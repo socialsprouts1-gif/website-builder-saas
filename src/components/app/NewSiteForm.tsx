@@ -6,6 +6,7 @@ import { PromptBar, type PromptAttachment } from '@/components/ui/PromptBar';
 import { CategoryChip } from '@/components/ui/CategoryChip';
 import { Button } from '@/components/ui/Button';
 import { CATEGORIES, categoryBySlug } from '@/lib/categories';
+import { RecommendedTemplates } from '@/components/templates/RecommendedTemplates';
 import { cn } from '@/components/ui/cn';
 import type { ModelOption } from '@/lib/openai/models';
 import { InterviewStep } from '@/components/app/InterviewStep';
@@ -397,6 +398,12 @@ export function NewSiteForm({
           </p>
         </div>
       ) : null}
+
+      {/* Three templates for what has been typed so far. A structure somebody
+          chose and looked at beats one a model invented and they discovered
+          afterwards — and this costs no credits, because the industry is
+          detected from words rather than asked for. */}
+      {mode === 'describe' ? <RecommendedTemplates prompt={prompt} /> : null}
 
       <PromptBar
         value={prompt}

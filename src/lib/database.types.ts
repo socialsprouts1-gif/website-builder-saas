@@ -54,6 +54,8 @@ export type ProjectRow = {
   shop_enabled: boolean;
   shop_cod_enabled: boolean;
   shop_payment_note: string | null;
+  /** The template this site was built from (migration 0017). */
+  blueprint_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -84,6 +86,8 @@ export type GenerationJobRow = {
   error: string | null;
   /** Live progress a returning browser can read: {stage, message, files}. */
   progress: Json | null;
+  /** The template this build fills in (migration 0017). */
+  blueprint_id: string | null;
   created_at: string;
   completed_at: string | null;
 }

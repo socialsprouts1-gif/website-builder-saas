@@ -13,6 +13,8 @@ import { applyAnswers, whatsappFromAnswers } from '@/lib/generation/interview';
 import { normaliseWhatsApp } from '@/lib/whatsapp';
 import { OWN_MATERIAL_MARK } from '@/lib/generation/prompts';
 import { lookupPlace } from '@/lib/google/places';
+import { blueprintById } from '@/lib/templates';
+import { detailsBrief } from '@/lib/templates/details';
 import { seedFromPlace } from '@/lib/google/seed';
 
 export const runtime = 'nodejs';
@@ -55,10 +57,22 @@ export async function POST(request: NextRequest) {
     // input, so every downstream stage sees them without changing shape.
     let brief = applyAnswers(body.prompt, body.answers ?? []);
 
+    // A template chosen from the library. Only an id that exists is kept: the
+    // structure of the site hangs off this, so a typo has to degrade to the old
+    // behaviour rather than to a site with no pages.
+    const blueprint = blueprintById(body.blueprint);
+
+    // The business details form, read as facts rather than as a prompt. It goes
+    // in front of whatever was typed, because it is the more reliable half.
+    if (body.details) {
+      const facts = detailsBrief(body.details);
+      brief = brief.trim() ? `${facts}\n\n${brief}` : facts;
+    }
+
     // Except the WhatsApp number, which is a setting rather than a sentence.
     // Folding it only into the brief would put it in the page's copy and
     // nowhere the product could use it, so it is read out here and saved.
-    const whatsapp = whatsappFromAnswers(body.answers ?? []);
+    const whatsapp = body.details?.whatsapp?.trim() || whatsappFromAnswers(body.answers ?? []);
 
     // Their own visiting card is the fastest way they will ever give us their
     // phone number; someone else's website is not theirs to copy. Which of the
@@ -110,9 +124,10 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         name: 'Untitled site',
         slug: `site-${Date.now().toString(36)}`,
-        business_type: category?.label ?? body.category ?? null,
+        business_type: body.details?.businessType ?? category?.label ?? body.category ?? null,
         status: 'generating',
         model: body.model ?? null,
+        ...(blueprint ? { blueprint_id: blueprint.id } : {}),
       })
       .select('id')
       .single();
@@ -197,6 +212,7 @@ export async function POST(request: NextRequest) {
         // listing's facts are in the brief, which is what actually matters.
         input_mode: body.inputMode === 'google' ? 'prompt' : body.inputMode,
         prompt_text: brief,
+        ...(blueprint ? { blueprint_id: blueprint.id } : {}),
         screenshot_url: screenshotUrl,
         model_used: body.model ?? null,
       })

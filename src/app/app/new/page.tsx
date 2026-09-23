@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { NewSiteForm } from '@/components/app/NewSiteForm';
+import { TemplateSetupForm } from '@/components/templates/TemplateSetupForm';
+import { blueprintById, blueprintCard } from '@/lib/templates';
 import { Badge } from '@/components/ui/Badge';
 import { CreditMeter } from '@/components/app/CreditMeter';
 import { requireUser } from '@/lib/auth';
@@ -15,10 +17,11 @@ export const dynamic = 'force-dynamic';
 export default async function NewSitePage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; template?: string }>;
 }) {
   const user = await requireUser();
-  const { category } = await searchParams;
+  const { category, template } = await searchParams;
+  const blueprint = blueprintById(template);
 
   // Remembered here rather than in onboarding, so the choice survives coming
   // back later without onboarding needing an action that can fail invisibly.
@@ -90,6 +93,30 @@ export default async function NewSitePage({
         </div>
       ) : null}
 
+      {blueprint ? (
+        <div className="mb-9">
+          <Link href="/templates" className="text-[12.5px] text-ink-muted transition hover:text-ink-primary">
+            ← All templates
+          </Link>
+          <Badge tone="accent" className="mb-5 mt-4">
+            {blueprintCard(blueprint).industryLabel} template
+          </Badge>
+          <h1 className="font-display text-[34px] leading-tight text-ink-primary">
+            Tell Lumen about <em className="italic text-accent">your business.</em>
+          </h1>
+          <p className="mt-3 max-w-lg text-sm text-ink-secondary">
+            {blueprint.name} already decides the pages, the sections and the design —{' '}
+            {blueprintCard(blueprint).sections} sections across {blueprintCard(blueprint).pages} pages.
+            Nothing below is a prompt to get right; they are facts only you have.
+          </p>
+          <p className="mt-2 text-[13px] text-ink-muted">
+            <Link href={`/templates/${blueprint.id}`} className="text-accent hover:underline">
+              Look at it again
+            </Link>{' '}
+            first, if you like.
+          </p>
+        </div>
+      ) : (
       <div className="mb-9 text-center">
         <Badge tone="accent" className="mb-5">One prompt</Badge>
         <h1 className="font-display text-[36px] leading-tight text-ink-primary">
@@ -106,13 +133,14 @@ export default async function NewSitePage({
           — name, hours, photos and reviews, already filled in.
         </p>
         <p className="mt-2 text-[13px] text-ink-muted">
-          Not sure what to ask for?{' '}
-          <Link href="/ideas" className="text-accent hover:underline">
-            See what a site for your kind of business looks like
-          </Link>
-          .
+          Or{' '}
+          <Link href="/templates" className="text-accent hover:underline">
+            start from a template
+          </Link>{' '}
+          — it decides the pages and the design, so you only answer questions about your business.
         </p>
       </div>
+      )}
 
       {noKeyAtAll || outOfQuota ? (
         <div className="mb-6 rounded-card border border-accent/30 bg-accent-soft px-5 py-4 text-[13px] text-ink-secondary">
@@ -152,13 +180,26 @@ export default async function NewSitePage({
         </div>
       ) : null}
 
-      <Suspense fallback={<div className="h-72" />}>
-        <NewSiteForm
-          models={{ quality: catalog.quality, fast: catalog.fast, all: catalog.all }}
-          defaultModel={user.profile?.default_model ?? null}
-          defaultCategory={category ?? user.profile?.onboarding_business_type ?? null}
+      {blueprint ? (
+        <TemplateSetupForm
+          template={{
+            id: blueprint.id,
+            name: blueprint.name,
+            industryLabel: blueprintCard(blueprint).industryLabel,
+            action: blueprint.action,
+            sections: blueprintCard(blueprint).sections,
+            pages: blueprintCard(blueprint).pages,
+          }}
         />
-      </Suspense>
+      ) : (
+        <Suspense fallback={<div className="h-72" />}>
+          <NewSiteForm
+            models={{ quality: catalog.quality, fast: catalog.fast, all: catalog.all }}
+            defaultModel={user.profile?.default_model ?? null}
+            defaultCategory={category ?? user.profile?.onboarding_business_type ?? null}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

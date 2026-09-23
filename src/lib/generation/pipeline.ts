@@ -25,6 +25,7 @@ import { renderPage, SITE_SCRIPT, type SiteSpec } from './kit/page';
 import { hasContent, parseSection } from './kit/parse';
 import type { Section, SectionKind } from './kit/sections';
 import { DEFAULT_VERTICAL, VERTICALS, matchVertical, type Vertical } from './verticals';
+import { blueprintById, blueprintDesign, blueprintVertical } from '@/lib/templates';
 import { pageLabel } from '@/lib/pages';
 import { createVersion, getCurrentFiles } from './storage';
 import { shopSection, type ShopSlot } from '@/lib/shop/inject';
@@ -78,6 +79,16 @@ export interface GenerationInput {
   screenshotDataUrl?: string | null;
   requestedModel?: string | null;
   inputMode: 'prompt' | 'screenshot' | 'voice' | 'template';
+  /**
+   * The template this build fills in, if one was chosen.
+   *
+   * When it is set the structure stops being a judgement: the pages, their
+   * sections and the design system all come from the blueprint and the model is
+   * left writing this business's words into them. When it is not, everything
+   * behaves exactly as it did — which is what every project built before
+   * templates existed still relies on.
+   */
+  blueprintId?: string | null;
 }
 
 /**
@@ -113,6 +124,14 @@ export interface SitePlan {
    * invocations is one design rather than four.
    */
   templateId: string;
+  /**
+   * The template this site was built from, when one was chosen.
+   *
+   * Carried on the plan rather than looked up again, so a section rebuilt an
+   * hour later lands in the architecture the owner previewed rather than in
+   * whatever a fresh match would have produced.
+   */
+  blueprintId?: string;
 }
 
 export interface BuildState {
@@ -202,9 +221,33 @@ export function fileLabel(path: string): string {
 }
 
 /** The plan's sitemap, from the vertical it was matched to. */
-function verticalOf(state: BuildState): Vertical {
+/**
+ * The page architecture the rest of this build works from.
+ *
+ * A build is four separate invocations, and each one has to arrive at the same
+ * answer. The blueprint is asked first: resolving the slug alone would hand the
+ * section and publish steps the vertical's default pages, so a site planned
+ * with a fourteen-section clinic template would have been written and saved as
+ * the old seven-section one — the template would have decided nothing.
+ */
+export function verticalOf(state: BuildState): Vertical {
+  const blueprint = blueprintById(state.plan?.blueprintId);
+  if (blueprint) return blueprintVertical(blueprint);
   const slug = state.plan?.verticalSlug;
   return (slug && VERTICAL_BY_SLUG[slug]) || DEFAULT_VERTICAL;
+}
+
+/**
+ * The design this build draws with, for the same reason.
+ *
+ * `templateId` on a blueprint build is the blueprint's own id, which is not a
+ * design template id — looked up directly it finds nothing and silently falls
+ * back to the default, which is every site in the library coming out looking
+ * like the same one.
+ */
+export function designOf(plan: SitePlan): Template {
+  const blueprint = blueprintById(plan.blueprintId);
+  return blueprint ? blueprintDesign(blueprint) : templateById(plan.templateId);
 }
 
 const VERTICAL_BY_SLUG: Record<string, Vertical> = Object.fromEntries(
@@ -323,15 +366,28 @@ export async function runBuildStep(
 
     // The sitemap comes from the vertical, not the model: what a salon site is
     // made of is knowledge, not a judgement call to be re-made every time.
-    const vertical = matchVertical(`${input.businessType ?? ''} ${input.prompt}`);
-    const sitemap = vertical.pages.map((page) => ({ path: page.path, title: page.title }));
+    //
+    // A chosen template goes further and settles it completely — its pages and
+    // its sections are the ones somebody picked off a card and previewed, and
+    // nothing here is allowed to quietly drop a treatments page because the
+    // brief did not mention treatments. Without one, this is the old
+    // behaviour: match the vertical, choose a design from the brief.
+    const blueprint = blueprintById(input.blueprintId);
+    const vertical = blueprint
+      ? blueprintVertical(blueprint)
+      : matchVertical(`${input.businessType ?? ''} ${input.prompt}`);
+    const sitemap = vertical.pages
+      .filter((page) => !page.hidden)
+      .map((page) => ({ path: page.path, title: page.title }));
 
     // And the look comes from a template rather than from the model. Asking a
     // model for "a palette" produced sites that differed only in their colours,
     // because the shape was identical every time. The template decides the
     // shape; the model is left with the one judgement it is actually good at,
     // which is what this particular business should sound and feel like.
-    const template = chooseTemplate(vertical.slug, `${input.businessType ?? ''} ${input.prompt}`);
+    const template = blueprint
+      ? blueprintDesign(blueprint)
+      : chooseTemplate(vertical.slug, `${input.businessType ?? ''} ${input.prompt}`);
 
     const planModel = catalog.fast?.id ?? model;
     const response = await callWithRetry(async () => {
@@ -391,6 +447,7 @@ export async function runBuildStep(
       verticalSlug: vertical.slug,
       shop: Boolean(vertical.shop),
       templateId: template.id,
+      blueprintId: blueprint?.id,
     };
 
     // A shop, opened with something in it. Done here rather than at the end so
@@ -594,7 +651,7 @@ async function saveSite(
     tokens: plan.tokens,
   };
 
-  const template = templateById(plan.templateId);
+  const template = designOf(plan);
 
   const files: SiteFile[] = [
     { path: 'styles.css', content: renderStylesheet(plan.tokens, template) },

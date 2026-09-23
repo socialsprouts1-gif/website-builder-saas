@@ -217,6 +217,7 @@ export async function runNextStep(
         screenshotDataUrl: job.screenshot_url,
         requestedModel: job.model_used,
         inputMode: job.input_mode,
+        blueprintId: job.blueprint_id,
       },
       emitFile,
       say: (message: string) => void commit({ message, files: [...files], expected }),

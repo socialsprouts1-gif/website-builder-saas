@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { businessDetailsSchema } from '@/lib/templates/details';
 
 /** Every API boundary validates with one of these (spec Section 16). */
 
@@ -56,6 +57,16 @@ export const createProjectSchema = z.object({
     })
     .optional(),
   templateSlug: z.string().max(120).nullable().optional(),
+  /**
+   * The blueprint this site is built from.
+   *
+   * When it is set, the structure stops being a judgement the model makes: the
+   * pages, their sections and the design system all come from the template and
+   * the model is left writing this business's words into them.
+   */
+  blueprint: z.string().max(64).nullable().optional(),
+  /** The business details form, folded into the brief server-side. */
+  details: businessDetailsSchema.optional(),
   /** Replies to the pre-build interview, folded into the brief server-side. */
   answers: z
     .array(
