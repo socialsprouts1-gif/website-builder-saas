@@ -1,27 +1,27 @@
 import Link from 'next/link';
 import { cn } from './cn';
 
-/** Three connected nodes forming a spark — the Lumen mark. */
-export function LogoMark({ size = 28 }: { size?: number }) {
+/**
+ * The Lumen mark: the folded L on its near-black tile. It is artwork rather
+ * than a drawing in code, so it stays the same mark here, in the browser tab
+ * and on a phone's home screen — see `src/app/icon.png`, `apple-icon.png` and
+ * `favicon.ico`, which are cut from the same file.
+ *
+ * The tile's rounded corners are transparent in the PNG, so the mark sits on a
+ * dark surface as the green L alone and on a light one as the full tile.
+ */
+export function LogoMark({ size = 28, className }: { size?: number; className?: string }) {
   return (
-    <span
-      className="inline-flex items-center justify-center rounded-[8px] bg-accent"
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/lumen-mark.png"
+      alt=""
+      width={size}
+      height={size}
+      className={cn('select-none', className)}
       style={{ width: size, height: size }}
       aria-hidden
-    >
-      <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="4" r="2.1" fill="var(--accent-ink)" />
-        <circle cx="4.2" cy="14.4" r="2.1" fill="var(--accent-ink)" />
-        <circle cx="15.8" cy="14.4" r="2.1" fill="var(--accent-ink)" />
-        <path
-          d="M10 4 4.2 14.4M10 4l5.8 10.4M4.2 14.4h11.6"
-          stroke="var(--accent-ink)"
-          strokeWidth="1.1"
-          strokeLinecap="round"
-          opacity="0.55"
-        />
-      </svg>
-    </span>
+    />
   );
 }
 

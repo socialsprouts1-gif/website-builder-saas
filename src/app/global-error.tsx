@@ -32,7 +32,11 @@ export default function GlobalError({
         }}
       >
         <div style={{ maxWidth: '26rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8a8a80' }}>
+          {/* Straight from /public: this boundary replaces the root layout, so
+              the fewer moving parts between here and the mark, the better. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/lumen-mark.png" alt="" width={44} height={44} style={{ width: 44, height: 44 }} />
+          <p style={{ fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8a8a80', margin: '0.6rem 0 0' }}>
             Lumen
           </p>
           <h1 style={{ fontSize: '1.9rem', lineHeight: 1.2, margin: '0.75rem 0 0' }}>

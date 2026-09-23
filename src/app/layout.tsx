@@ -28,6 +28,13 @@ export const metadata: Metadata = {
     title: 'Lumen — Ship a website from a sentence.',
     description: 'One prompt in, a production-grade website out.',
     type: 'website',
+    images: [{ url: '/lumen-mark.png', width: 512, height: 512, alt: 'Lumen' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Lumen — Ship a website from a sentence.',
+    description: 'One prompt in, a production-grade website out.',
+    images: ['/lumen-mark.png'],
   },
 };
 
