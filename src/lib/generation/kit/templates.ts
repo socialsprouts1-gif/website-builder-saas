@@ -367,9 +367,27 @@ export function templateById(id: string | null | undefined): Template {
   return TEMPLATES.find((template) => template.id === id) ?? DEFAULT_TEMPLATE;
 }
 
-/** The templates that suit a vertical, best first, always ending in the house style. */
+/**
+ * The templates that suit a vertical, best first, always ending in the house
+ * style.
+ *
+ * Ranked by how central the trade is to the template, not by where the
+ * template happens to sit in the list above. That ordering was a real bug:
+ * Atelier mentions retail fourth in its list but is declared first in the
+ * catalogue, so every shop ever built came out as an editorial boutique —
+ * cream paper, a serif headline four lines deep — when Vitrine, whose only
+ * trade is retail, was sitting right there. Somebody asking for a marketplace
+ * got a lookbook.
+ */
 export function templatesFor(verticalSlug: string): Template[] {
-  const matched = TEMPLATES.filter((template) => template.verticals.includes(verticalSlug));
+  const rank = (template: Template) => {
+    const index = template.verticals.indexOf(verticalSlug);
+    return index === -1 ? Number.POSITIVE_INFINITY : index;
+  };
+
+  const matched = TEMPLATES.filter((template) => template.verticals.includes(verticalSlug)).sort(
+    (a, b) => rank(a) - rank(b),
+  );
   const rest = TEMPLATES.filter((template) => !matched.includes(template));
   return [...matched, ...rest];
 }
@@ -387,6 +405,9 @@ export function chooseTemplate(verticalSlug: string, brief: string): Template {
   const words = ` ${brief.toLowerCase()} `;
 
   const asked: [RegExp, string][] = [
+    // A marketplace is not a boutique. Density, a grid and a basket, rather
+    // than one enormous serif sentence and a lot of paper.
+    [/\b(marketplace|amazon|flipkart|superstore|department store|catalogue|catalog|every categor\w+|multi[- ]?vendor)\b/, 'vitrine'],
     [/\b(luxur\w*|premium|high[- ]end|elegant|boutique|expensive)\b/, 'estate'],
     [/\b(editorial|magazine|minimal\w*|understated|gallery)\b/, 'atelier'],
     [/\b(bold|loud|energetic|powerful|strong|intense)\b/, 'forge'],

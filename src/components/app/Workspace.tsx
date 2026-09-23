@@ -957,6 +957,28 @@ export function Workspace({
                       ? ` · ${Math.min(written.saved, written.expected)} of ${written.expected} pages saved`
                       : ''}
                   </p>
+                  {/* Everything it has done, in order, under the line saying
+                      what it is doing now.
+                      One progress line that replaces itself gives no sense of
+                      whether a build is moving or stuck, and no record of what
+                      was made. This is the list somebody actually wants while
+                      they wait: what has landed, and what is landing. */}
+                  {builtFiles.length > 0 ? (
+                    <ul className="max-h-48 space-y-1 overflow-y-auto border-t border-hairline pt-2.5">
+                      {builtFiles.map((entry, index) => (
+                        <li
+                          key={`${entry}-${index}`}
+                          className="flex items-center gap-2 text-[12px] leading-relaxed text-ink-muted"
+                        >
+                          <span className="text-accent" aria-hidden>
+                            ✓
+                          </span>
+                          <span className="truncate">{entry}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+
                   <p className="text-[12.5px] leading-relaxed text-ink-muted">
                     Want something specific? Type it below, or attach your photos and logo with{' '}
                     <strong className="text-ink-secondary">Add</strong>. It runs the moment this finishes.

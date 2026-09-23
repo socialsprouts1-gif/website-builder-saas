@@ -28,6 +28,7 @@ import { pageLabel } from '@/lib/pages';
 import { createVersion, getCurrentFiles } from './storage';
 import { shopSection } from '@/lib/shop/inject';
 import { seedShop } from '@/lib/shop/seed';
+import { photographCatalogue } from '@/lib/shop/photograph';
 import type {
   DesignSystem,
   GenerationEvent,
@@ -100,6 +101,8 @@ export interface SitePlan {
   contact: { address?: string; phone?: string; email?: string };
   tokens: DesignTokens;
   verticalSlug: string;
+  /** This business sells things, so there is a catalogue to photograph. */
+  shop?: boolean;
   /**
    * The template this site is built from.
    *
@@ -121,9 +124,18 @@ export interface BuildState {
   published?: boolean;
   /** Pages already rendered into files, so a finished page is saved once. */
   savedPages?: string[];
+  /**
+   * Whether the shop's products have been photographed.
+   *
+   * A shop whose every product is a grey placeholder looks broken, not
+   * unfinished — and "generate product images" is the thing people ask for by
+   * name. It runs last, after the site is already viewable, because it is the
+   * slowest part of a build and nobody should wait on it to see their site.
+   */
+  photographed?: boolean;
 }
 
-export type BuildStep = 'plan' | 'section' | 'publish';
+export type BuildStep = 'plan' | 'section' | 'publish' | 'photos';
 
 export interface StepOutcome {
   state: BuildState;
@@ -172,7 +184,11 @@ export function nextStep(state: BuildState): BuildStep | null {
 
   const unsaved = [...finished].some((page) => !pending.has(page) && !saved.has(page));
 
-  if (queue.length === 0) return unsaved || !state.published ? 'publish' : null;
+  if (queue.length === 0) {
+    if (unsaved || !state.published) return 'publish';
+    // Everything is written and saved. A shop still needs its photographs.
+    return state.plan.shop && !state.photographed ? 'photos' : null;
+  }
   return unsaved ? 'publish' : 'section';
 }
 
@@ -372,6 +388,7 @@ export async function runBuildStep(
         texture: template.shape.texture,
       },
       verticalSlug: vertical.slug,
+      shop: Boolean(vertical.shop),
       templateId: template.id,
     };
 
@@ -472,6 +489,34 @@ export async function runBuildStep(
     };
   }
 
+  if (step === 'photos') {
+    // The site is already saved and on screen. This only fills in the pictures
+    // the shop grid is currently showing placeholders for.
+    const result = await photographCatalogue({
+      projectId: input.projectId,
+      userId: input.userId,
+      business: plan.businessName,
+      onProgress: (done, total) => {
+        say?.(`Photographing the products — ${done} of ${total}…`);
+        emitFile(`product photograph ${done} of ${total}`);
+      },
+    }).catch(() => ({ photographed: 0, failed: 0 }));
+
+    emitFile(`${result.photographed} product photographs`);
+
+    const nextState: BuildState = { ...state, photographed: true };
+    return {
+      state: nextState,
+      next: nextStep(nextState),
+      stage: 'done',
+      message:
+        result.photographed > 0
+          ? `Photographed ${result.photographed} product${result.photographed === 1 ? '' : 's'}. Your site is ready.`
+          : 'Your site is ready.',
+      published: true,
+    };
+  }
+
   // publish
   const { versionId, pages } = await saveSite(input, plan, vertical, state.sections ?? {});
   const nextState: BuildState = { ...state, published: true, savedPages: pages };
@@ -484,7 +529,9 @@ export async function runBuildStep(
     message:
       remaining > 0
         ? `${pages.length} page${pages.length === 1 ? '' : 's'} live — writing ${remaining} more section${remaining > 1 ? 's' : ''}…`
-        : 'Your site is ready.',
+        : nextStep(nextState) === 'photos'
+          ? 'Every page is written. Photographing the products…'
+          : 'Your site is ready.',
     versionId,
     published: true,
   };

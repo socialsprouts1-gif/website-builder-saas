@@ -118,3 +118,33 @@ describe('coverage across industries', () => {
     }
   });
 });
+
+describe('the template a shop actually gets', () => {
+  /**
+   * The bug this ranking exists for. Atelier mentions retail fourth in its
+   * list but is declared first in the catalogue, so every shop came out as an
+   * editorial boutique — cream paper, a serif headline four lines deep —
+   * while Vitrine, whose only trade is retail, sat unused.
+   */
+  it('gives a shop the template built for shops, not the one that merely mentions them', () => {
+    expect(templatesFor('retail')[0].id).toBe('vitrine');
+    expect(templatesFor('salon')[0].id).toBe('atelier');
+    expect(templatesFor('restaurant')[0].id).toBe('kiln');
+    expect(templatesFor('agriculture')[0].id).toBe('harvest');
+  });
+
+  it('ranks by how central the trade is to the template', () => {
+    // Atelier lists salon first and retail second, so it leads for salons and
+    // never for shops.
+    const forSalon = templatesFor('salon').map((template) => template.id);
+    expect(forSalon.indexOf('atelier')).toBeLessThan(forSalon.indexOf('vitrine'));
+  });
+
+  it.each([
+    ['fully e-commerce website like Amazon with all categories and add to cart'],
+    ['a marketplace selling everything'],
+    ['a department store with every category'],
+  ])('reads "%s" as a marketplace rather than a boutique', (brief) => {
+    expect(chooseTemplate('retail', brief).id).toBe('vitrine');
+  });
+});

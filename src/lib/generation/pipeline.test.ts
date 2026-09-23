@@ -183,3 +183,41 @@ describe('pagesToWrite', () => {
     expect(paths).toEqual(['index.html']);
   });
 });
+
+/**
+ * The step that photographs a shop.
+ *
+ * It runs last on purpose: it is the slowest and most expensive part of a
+ * build, and the site is already saved and on screen before it starts, so
+ * nobody waits on it to see what they asked for.
+ */
+describe('nextStep with a shop to photograph', () => {
+  const base = (over: Partial<BuildState>): BuildState => ({
+    plan: { shop: true } as never,
+    queue: [],
+    sections: { 'index.html#0': {} as never },
+    savedPages: ['index.html'],
+    published: true,
+    ...over,
+  });
+
+  it('photographs once everything is written and saved', () => {
+    expect(nextStep(base({}))).toBe('photos');
+  });
+
+  it('is finished once the photographs are done', () => {
+    expect(nextStep(base({ photographed: true }))).toBeNull();
+  });
+
+  it('never photographs a business that does not sell anything', () => {
+    expect(nextStep(base({ plan: { shop: false } as never }))).toBeNull();
+    expect(nextStep(base({ plan: {} as never }))).toBeNull();
+  });
+
+  /** Pages first. A photograph of a product on a site with no Contact page
+   *  is the wrong thing to have spent the time on. */
+  it('waits for every page before it photographs anything', () => {
+    expect(nextStep(base({ queue: [{ page: 'about.html', index: 0, kind: 'hero' }] }))).toBe('section');
+    expect(nextStep(base({ published: false }))).toBe('publish');
+  });
+});

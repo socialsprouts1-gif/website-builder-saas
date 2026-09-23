@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultRates, toProductRows } from './seed';
+import { defaultRates, MAX_STARTERS, toProductRows } from './seed';
 
 describe('toProductRows', () => {
   it('turns a starter catalogue into rows with paise prices', () => {
@@ -62,9 +62,15 @@ describe('toProductRows', () => {
     expect(rows.map((row) => row.position)).toEqual([0, 1]);
   });
 
-  it('will not fill a shop with a hundred invented products', () => {
-    const many = Array.from({ length: 40 }, (_unused, index) => ({ title: `Item ${index}`, price: '100' }));
-    expect(toProductRows('p', many).length).toBeLessThanOrEqual(12);
+  /**
+   * A shop opens with enough to look like a shop, and stops well short of
+   * letting one enthusiastic reply fill it with a hundred invented things.
+   */
+  it('opens with a full grid but does not run away', () => {
+    const many = Array.from({ length: 80 }, (_unused, index) => ({ title: `Item ${index}`, price: '100' }));
+    expect(toProductRows('p', many)).toHaveLength(MAX_STARTERS);
+    expect(MAX_STARTERS).toBeGreaterThanOrEqual(16);
+    expect(MAX_STARTERS).toBeLessThanOrEqual(30);
   });
 
   it('is empty for a business that sells nothing', () => {

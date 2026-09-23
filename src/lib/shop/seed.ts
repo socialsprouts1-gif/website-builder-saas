@@ -17,6 +17,15 @@ import { uniqueSlug } from './catalogue';
  * is still a good site, so nothing in here is allowed to fail a build.
  */
 
+/**
+ * How many products a new shop opens with.
+ *
+ * Eight was enough to prove a shop worked and nowhere near enough to look
+ * like one. A grid of eight tiles reads as a demonstration; a grid that fills
+ * the page and carries four or five categories reads as a shop.
+ */
+export const MAX_STARTERS = 24;
+
 export interface StarterProduct {
   title: string;
   summary?: string;
@@ -51,7 +60,7 @@ export function toProductRows(
   const taken: string[] = [];
   const rows = [];
 
-  for (const starter of starters.slice(0, 12)) {
+  for (const starter of starters.slice(0, MAX_STARTERS)) {
     const title = String(starter.title ?? '').trim().slice(0, 140);
     const price = parseRupees(starter.price ?? null);
     if (!title || price === null || price === 0) continue;

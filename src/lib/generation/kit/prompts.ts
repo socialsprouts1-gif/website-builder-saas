@@ -23,7 +23,8 @@ The layout, the typefaces and the rhythm are already chosen — a designer picke
 - Commit. A palette that would suit any business suits none of them.
 
 THE SHOP (only when the brief says this business sells things)
-Write 8 products this business would genuinely stock. Real, specific items with real prices — "Banarasi silk saree, ₹4,500", not "Product 1". Group them into 2 to 4 categories a customer would recognise. Prices in plain rupees, no symbol. Give compareAt only where there is a genuine reduction; otherwise omit it. Leave every product without a picture — photographs are added afterwards.
+Write 16 to 24 products this business would genuinely stock — enough to fill a shop page rather than demonstrate one. Real, specific items with real prices and real specifications: "Stainless steel insulated bottle, 1 L, ₹1,299", not "Product 1". Group them into 4 to 6 categories a customer would recognise, with several products in each. If the brief describes a broad store or marketplace, spread them across genuinely different departments.
+Prices in plain rupees, no symbol. Give compareAt only where there is a genuine reduction; otherwise omit it. Write summary as the one line under the product name and description as two or three sentences about materials, size and use. Leave every product without a picture — they are photographed afterwards.
 
 Reply with JSON only:
 {
