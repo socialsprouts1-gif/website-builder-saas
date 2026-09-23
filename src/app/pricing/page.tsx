@@ -2,7 +2,12 @@ import { TopNav } from '@/components/marketing/TopNav';
 import { Footer } from '@/components/marketing/Footer';
 import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { DAILY_PLATFORM_CREDITS, PRO_DAILY_PLATFORM_CREDITS, PLAN_PRICE_LABEL } from '@/lib/env';
+import {
+  CREDIT_COST,
+  DAILY_PLATFORM_CREDITS,
+  PRO_DAILY_PLATFORM_CREDITS,
+  PLAN_PRICE_LABEL,
+} from '@/lib/env';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { pageMetadata } from '@/lib/metadata';
 import { breadcrumbJsonLd, softwareApplicationJsonLd } from '@/lib/structured-data';
@@ -92,7 +97,7 @@ export default function PricingPage() {
           </p>
           <ul className="mt-6 space-y-2.5">
             {[
-              'Building a site costs 3 credits, each change costs 1',
+              `Building a site costs ${CREDIT_COST.generation} credits, each change costs ${CREDIT_COST.chat_edit}`,
               'Your allowance resets every day at midnight UTC',
               'Unlimited when you bring your own OpenAI key',
               'Export or deploy anything you build — the code is yours',

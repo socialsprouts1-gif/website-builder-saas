@@ -235,3 +235,16 @@ body {
      frame. */
   transform: scale(calc(100cqw / 1000px));
 }
+
+/*
+ * The demo's preview pane.
+ *
+ * It scrolls like the viewport it is pretending to be, and fades at the bottom
+ * edge so a row of text cut in half reads as "there is more below" rather than
+ * as a rendering bug.
+ */
+.lumen-demo-viewport {
+  scrollbar-width: thin;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
