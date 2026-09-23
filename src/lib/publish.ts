@@ -38,3 +38,25 @@ export function slugCandidate(base: string, attempt: number): string {
 export function publicUrl(siteUrl: string, slug: string): string {
   return `${siteUrl.replace(/\/+$/, '')}/s/${slug}`;
 }
+
+/**
+ * The origin a published link should be handed out on.
+ *
+ * It used to be `window.location.origin` — whatever host the owner happened to
+ * be looking at. That is right on a preview deployment, where there is no other
+ * address, and wrong everywhere else: an owner working on the apex got apex
+ * links for every site they published, and if the apex is misconfigured then
+ * every link they sent a customer was broken while the app in front of them
+ * worked perfectly.
+ *
+ * So: the configured public address wins whenever there is one. A localhost or
+ * an unset value is not an address anybody can visit, and falls back to where
+ * the owner actually is.
+ */
+export function shareOrigin(canonical: string | null | undefined, current: string): string {
+  const trimmed = canonical?.trim().replace(/\/+$/, '') ?? '';
+  if (!trimmed) return current;
+  if (!/^https:\/\//.test(trimmed)) return current;
+  if (/^https:\/\/(localhost|127\.0\.0\.1|\[::1\])/.test(trimmed)) return current;
+  return trimmed;
+}

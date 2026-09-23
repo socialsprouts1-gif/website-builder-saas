@@ -7,6 +7,8 @@ import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { loadAccountContext } from '@/lib/connectors/registry';
 import { requestOrigin } from '@/lib/request-origin';
+import { shareOrigin } from '@/lib/publish';
+import { env } from '@/lib/env';
 
 export const metadata = { title: 'Deploy' };
 export const dynamic = 'force-dynamic';
@@ -15,7 +17,11 @@ export default async function DeployPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   // Whatever domain the owner is looking at this on, so every link and
   // snippet below belongs to it rather than to a build-time guess.
-  const origin = await requestOrigin();
+  // The link on this page is the one an owner copies and sends to a customer,
+  // so it is the configured public address rather than the host they happen to
+  // be on. `requestOrigin()` is still right for anything the deployment sends
+  // to itself, which is what it exists for.
+  const origin = shareOrigin(env.canonicalOrigin, await requestOrigin());
   const user = await requireUser();
 
   const supabase = await createClient();

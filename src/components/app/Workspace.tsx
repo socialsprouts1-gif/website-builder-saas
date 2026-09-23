@@ -61,6 +61,7 @@ export function Workspace({
   publicSlug,
   published,
   favicon,
+  canonicalOrigin,
   blockMenu,
 }: {
   projectId: string;
@@ -83,6 +84,13 @@ export function Workspace({
   publicSlug: string | null;
   published: boolean;
   favicon: string | null;
+  /**
+   * The address this deployment is publicly known by.
+   *
+   * Handed down from the server so a published link is the one that works,
+   * rather than whichever host the owner is looking at.
+   */
+  canonicalOrigin: string | null;
   /** The sections the visual editor can add. Authored on the server. */
   blockMenu: BlockMenuItem[];
 }) {
@@ -1265,6 +1273,7 @@ export function Workspace({
                 initialSlug={publicSlug}
                 initialPublished={published}
                 initialFavicon={favicon}
+                canonicalOrigin={canonicalOrigin}
                 openSignal={publishSignal}
               />
             </>

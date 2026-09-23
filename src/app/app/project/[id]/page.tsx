@@ -1,3 +1,4 @@
+import { env } from '@/lib/env';
 import { notFound } from 'next/navigation';
 import { Workspace } from '@/components/app/Workspace';
 import { requireUser } from '@/lib/auth';
@@ -107,6 +108,7 @@ export default async function ProjectWorkspacePage({
 
   return (
     <Workspace
+      canonicalOrigin={env.canonicalOrigin}
       projectId={project.id}
       projectName={project.name}
       initialStatus={project.status}

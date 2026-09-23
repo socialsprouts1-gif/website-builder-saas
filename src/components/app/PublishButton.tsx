@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { normaliseSlug, publicUrl } from '@/lib/publish';
+import { normaliseSlug, publicUrl, shareOrigin } from '@/lib/publish';
 import { cn } from '@/components/ui/cn';
 
 /**
@@ -28,6 +28,7 @@ export function PublishButton({
   initialSlug,
   initialPublished,
   initialFavicon = null,
+  canonicalOrigin = null,
   onPublished,
   openSignal = 0,
 }: {
@@ -36,6 +37,8 @@ export function PublishButton({
   initialSlug: string | null;
   initialPublished: boolean;
   initialFavicon?: string | null;
+  /** The address this deployment is publicly known by, from the server. */
+  canonicalOrigin?: string | null;
   onPublished?: (url: string) => void;
   /** Bump to open the panel from elsewhere, such as the finished-site prompt. */
   openSignal?: number;
@@ -51,10 +54,12 @@ export function PublishButton({
   // After publishing, the link is the point. "Change the address" goes back.
   const [editing, setEditing] = useState(false);
 
-  // The address is whatever domain this is being used on, not a build-time
-  // constant: the same app answers on a preview URL and on its own domain, and
-  // a link that points at the wrong one is worse than no link.
-  useEffect(() => setOrigin(window.location.origin), []);
+  // The configured public address wins over wherever the owner happens to be.
+  // A preview deployment has no other address and falls back to this one, but
+  // an owner working on an apex that is misconfigured must not be handed apex
+  // links for every site they publish — the app in front of them works and
+  // every link they send a customer does not.
+  useEffect(() => setOrigin(shareOrigin(canonicalOrigin, window.location.origin)), [canonicalOrigin]);
 
   useEffect(() => {
     if (openSignal > 0) setOpen(true);
