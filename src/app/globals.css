@@ -210,30 +210,41 @@ body {
 }
 
 /*
- * A site miniature, scaled to whatever column it is dropped into.
+ * A page miniature, scaled to whatever column it is dropped into.
  *
- * The mock is drawn at a fixed 1000px design width because its proportions are
- * the point — it has to be scaled, not reflowed. The scale comes from container
- * query units so one rule covers a phone and a wide desktop, and it lives here
- * rather than in an inline style because React drops a `transform` it cannot
- * serialise and the mock then renders at 1000px inside a narrower frame.
+ * Used by the template library, the marketing previews and the site cards in
+ * the app. All three draw a page at a fixed design width — its proportions are
+ * the point, so it has to be scaled rather than reflowed — and set that width
+ * on `--frame-width`.
+ *
+ * Two rules here matter more than they look.
+ *
+ * The child is taken out of flow. `overflow: hidden` clips what is painted, but
+ * a box with an automatic width still sizes itself to its contents, and a grid
+ * track's `1fr` has a min-content floor. So an 800px iframe inside a hidden,
+ * auto-width wrapper made the whole card 800px wide inside a 393px phone, and
+ * the app panned sideways into empty space. Absolute positioning is what stops
+ * it contributing a width at all.
+ *
+ * And the scale divides by a length, not a number. `scale()` takes a number; a
+ * length over a unitless value is still a length, so the unitless form is
+ * rejected outright and the page renders full size inside a smaller frame. The
+ * fixed fallback above it is for a browser without length division in calc().
  */
-.lumen-mock-frame {
+.lumen-scale-frame {
+  position: relative;
   container-type: inline-size;
   width: 100%;
   overflow: hidden;
 }
 
-.lumen-mock-frame > * {
+.lumen-scale-frame > * {
+  position: absolute;
+  top: 0;
+  left: 0;
   transform-origin: top left;
-  /* The fallback first, for a browser without length division in calc(): the
-     mock comes out small rather than cropped. */
-  transform: scale(0.62);
-  /* Dividing by 1000px, not by 1000: scale() takes a number, and a length
-     divided by a unitless number is still a length, so the unitless form is
-     rejected outright and the mock renders at full size inside a smaller
-     frame. */
-  transform: scale(calc(100cqw / 1000px));
+  transform: scale(0.4);
+  transform: scale(calc(100cqw / var(--frame-width, 1000px)));
 }
 
 /*

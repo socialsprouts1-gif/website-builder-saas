@@ -86,7 +86,14 @@ export function SiteCard({ site }: { site: SiteSummary }) {
         tabIndex={ready ? 0 : -1}
         aria-hidden={!ready}
       >
-        <div className="aspect-[16/10] overflow-hidden rounded-t-card border-b border-hairline bg-[var(--bg-base-deep)]">
+        {/* `.lumen-scale-frame` takes the iframe out of flow and scales it to
+            the column. It used to be an in-flow 800px box inside a hidden
+            wrapper, which sized the whole card to 800px on a 393px phone and
+            made the app pan sideways into empty space. */}
+        <div
+          className="lumen-scale-frame aspect-[16/10] rounded-t-card border-b border-hairline bg-[var(--bg-base-deep)]"
+          style={{ ['--frame-width' as string]: '800px' }}
+        >
           {ready ? (
             <iframe
               src={`/preview/${site.id}/index.html`}
@@ -94,10 +101,10 @@ export function SiteCard({ site }: { site: SiteSummary }) {
               loading="lazy"
               sandbox="allow-scripts"
               tabIndex={-1}
-              className="pointer-events-none h-[500px] w-[800px] origin-top-left scale-[0.42] border-0 bg-white"
+              className="pointer-events-none h-[500px] w-[800px] border-0 bg-white"
             />
           ) : (
-            <div className="flex h-full items-center justify-center px-6 text-center text-[12px] text-ink-muted">
+            <div className="flex h-full w-full items-center justify-center px-6 text-center text-[12px] text-ink-muted">
               {site.status === 'generating' ? 'Building…' : stopped ? 'Never finished' : 'No preview yet'}
             </div>
           )}

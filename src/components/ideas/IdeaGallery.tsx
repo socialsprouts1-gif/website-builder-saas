@@ -145,20 +145,20 @@ function IdeaCard({
 }
 
 /**
- * The mock is drawn at full page width and scaled down, so its proportions are
- * a real page's rather than a squashed card's.
+ * The mock is drawn at full page width and scaled to the card, so its
+ * proportions are a real page's rather than a squashed card's. A fixed scale
+ * left it cropped on a phone, where the card is half the width it assumed.
  */
 function Preview({ idea }: { idea: Idea }) {
-  const scale = 0.52;
   return (
     <div
-      className="relative overflow-hidden border-b border-hairline"
-      style={{ height: MOCK_SIZE.height * scale }}
+      className="lumen-scale-frame border-b border-hairline"
+      style={{
+        aspectRatio: `${MOCK_SIZE.width} / ${MOCK_SIZE.height}`,
+        ['--frame-width' as string]: `${MOCK_SIZE.width}px`,
+      }}
     >
-      <div
-        className="origin-top-left"
-        style={{ transform: `scale(${scale})`, width: MOCK_SIZE.width, height: MOCK_SIZE.height }}
-      >
+      <div style={{ width: MOCK_SIZE.width, height: MOCK_SIZE.height }}>
         <SiteMock idea={idea} />
       </div>
     </div>

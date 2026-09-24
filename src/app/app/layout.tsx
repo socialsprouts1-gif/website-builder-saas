@@ -44,7 +44,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             : null
         }
       />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+      {/* The app is a frame, not a document, so it never pans sideways. A
+          panel that genuinely needs more width than the phone has — a wide
+          table, a code view — scrolls inside itself; the shell around it does
+          not move. Without this, one over-wide element anywhere slides the
+          whole app off the screen and leaves half of it unreachable. */}
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
         {/* Said from the first screen rather than at the last step. The check
             itself lives on project creation, which is where someone found out
             after writing a prompt and answering four questions. */}

@@ -159,23 +159,27 @@ function TemplateCardView({ card }: { card: BlueprintCard }) {
     <article className="flex h-full flex-col overflow-hidden rounded-card border border-hairline bg-raised">
       <Link
         href={`/templates/${card.id}`}
-        className="group relative block overflow-hidden border-b border-hairline bg-[var(--bg-base-deep)]"
-        style={{ height: 210 }}
+        className="group block border-b border-hairline"
+        aria-label={`Preview the ${card.name} template`}
       >
         {/* A real render of the template, scaled into the card. It is an iframe
             rather than a screenshot so it can never be out of date, and it is
             inert — pointer events go to the link, not the page inside. */}
-        <iframe
-          src={`/api/blueprints/${card.id}/index.html`}
-          title={`${card.name} preview`}
-          loading="lazy"
-          tabIndex={-1}
-          aria-hidden
-          sandbox="allow-scripts"
-          className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
-          style={{ width: 1280, height: 1280, transform: 'scale(0.31)' }}
-        />
-        <span className="absolute inset-0 transition group-hover:bg-white/[0.04]" />
+        <span
+          className="lumen-scale-frame block aspect-[4/3] bg-[var(--bg-base-deep)]"
+          style={{ ['--frame-width' as string]: '1280px' }}
+        >
+          <iframe
+            src={`/api/blueprints/${card.id}/index.html`}
+            title={`${card.name} preview`}
+            loading="lazy"
+            tabIndex={-1}
+            aria-hidden
+            sandbox="allow-scripts"
+            className="pointer-events-none border-0"
+            style={{ width: 1280, height: 960 }}
+          />
+        </span>
       </Link>
 
       <div className="flex flex-1 flex-col gap-3 p-5">
