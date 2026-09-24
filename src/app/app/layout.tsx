@@ -1,8 +1,10 @@
 import { AppNav } from '@/components/app/AppNav';
 import { ConfirmBanner } from '@/components/app/ConfirmBanner';
+import { MigrationBanner } from '@/components/app/MigrationBanner';
 import { isBootstrapAdmin, requireUser } from '@/lib/auth';
 import { getKeyStatus } from '@/lib/openai/client';
 import { isSchemaInstalled } from '@/lib/supabase/errors';
+import { missingFeatures } from '@/lib/supabase/features';
 import { redirect } from 'next/navigation';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +15,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!(await isSchemaInstalled())) redirect('/setup');
 
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
+
+  // Which migrations are missing, and what each one costs. Cached, so this is
+  // one query a minute across the whole app rather than one per request.
+  const missing = await missingFeatures().catch(() => []);
 
   // Admins are exempt from the gate, so telling them about it would be a
   // warning about something that is not going to happen.
@@ -54,6 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             itself lives on project creation, which is where someone found out
             after writing a prompt and answering four questions. */}
         {needsConfirming ? <ConfirmBanner email={user.email} /> : null}
+        <MigrationBanner missing={missing} />
         <div className="min-h-0 flex-1">{children}</div>
       </main>
     </div>

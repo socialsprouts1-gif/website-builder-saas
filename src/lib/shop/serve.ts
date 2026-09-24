@@ -13,6 +13,7 @@ import {
   withShopScript,
   type ShopSlot,
   type ShopView,
+  stripShopMarkers,
 } from './inject';
 import { SHOP_CSS } from './styles';
 import { SHOP_SCRIPT } from './script';
@@ -73,7 +74,10 @@ export function decorateWithShop(
   request: ShopRequest | null,
   category: string | null,
 ): string {
-  if (!request || !request.shop.enabled) return html;
+  // No shop to serve. The markers are left behind as empty sections with
+  // headings and nothing under them, so they come out rather than being shown
+  // as holes — see stripShopMarkers.
+  if (!request || !request.shop.enabled) return stripShopMarkers(html);
 
   const view = viewOf(request);
   const filled = fillShopMarkers(html, view, category);

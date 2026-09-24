@@ -13,7 +13,9 @@ import { applyAnswers, whatsappFromAnswers } from '@/lib/generation/interview';
 import { normaliseWhatsApp } from '@/lib/whatsapp';
 import { OWN_MATERIAL_MARK } from '@/lib/generation/prompts';
 import { lookupPlace } from '@/lib/google/places';
-import { blueprintById } from '@/lib/templates';
+import { blueprintById, blueprintSellsThings } from '@/lib/templates';
+import { matchVertical } from '@/lib/generation/verticals';
+import { missingFeatures } from '@/lib/supabase/features';
 import { detailsBrief } from '@/lib/templates/details';
 import { seedFromPlace } from '@/lib/google/seed';
 
@@ -107,6 +109,33 @@ export async function POST(request: NextRequest) {
         lines.push(`Sites to match the look and layout of: ${assets.referenceUrls.join(', ')}`);
       }
       if (lines.length > 0) brief = `${brief}\n\n${lines.join('\n\n')}`;
+    }
+
+    // A build that cannot do the thing it was asked for must not be charged
+    // for.
+    //
+    // This is what produced a clothing shop with no product cards, no product
+    // pages, no basket and no checkout: every read in the shop is written to
+    // survive a missing table, so the build succeeded, spent the credits, and
+    // said the site was ready. The reads stay forgiving — a database part-way
+    // through its migrations must still serve somebody their home page — but
+    // starting a shop build against one is refused here, where nothing has
+    // been spent yet.
+    const willSell = blueprint
+      ? blueprintSellsThings(blueprint)
+      : Boolean(matchVertical(`${body.details?.businessType ?? ''} ${brief}`).shop);
+
+    const missing = await missingFeatures();
+    const blocking = missing.filter(
+      (feature) => feature.id === 'shop' && willSell,
+    );
+    if (blocking.length > 0) {
+      return jsonError(
+        `This is a site that sells things, and the shop tables are not installed yet, so it would be built with no products, no basket and no checkout. Run supabase/setup.sql in the Supabase SQL editor — it adds ${blocking
+          .map((feature) => feature.migration)
+          .join(', ')} — and build it again. Nothing has been charged.`,
+        422,
+      );
     }
 
     // projects.user_id references public.users; make sure that row exists

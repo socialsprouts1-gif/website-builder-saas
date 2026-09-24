@@ -96,6 +96,25 @@ export function hasShopMarker(html: string): boolean {
   return MARKER.test(html);
 }
 
+/**
+ * A page that was built for a shop, served without one.
+ *
+ * The markers are empty divs waiting to be filled on each request. Left in
+ * place with nothing to fill them, they render as sections with padding,
+ * headings and nothing underneath — holes in the page, which is what a
+ * clothing site looked like when it was built against a database that had no
+ * product tables.
+ *
+ * A site without a working shop should read as a finished site that does not
+ * sell online, not as a broken one. So the whole band goes, heading and all.
+ */
+const SHOP_SECTION =
+  /<section[^>]*data-section=["']shop["'][\s\S]*?<div\s+data-lumen-shop=["'](?:shop|cart|checkout|featured|categories)["']\s*><\/div>[\s\S]*?<\/section>/gi;
+
+export function stripShopMarkers(html: string): string {
+  return html.replace(SHOP_SECTION, '').replace(MARKER, '');
+}
+
 /** What a marker becomes. */
 function slotHtml(slot: ShopSlot, view: ShopView, category: string | null): string {
   if (slot === 'featured') return featuredProducts(view.products, { links: view.links });
