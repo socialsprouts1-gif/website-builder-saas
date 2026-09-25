@@ -60,10 +60,38 @@ Reply with JSON only, in this exact shape:
 
 A "text" question has an empty options array. Ids are short lowercase slugs, unique within the set.`;
 
+/**
+ * A template the owner already chose, as the interviewer needs to see it.
+ *
+ * The questions worth asking change completely once a template is picked.
+ * Nothing about the look is still open — so asking about it wastes one of the
+ * nine questions and implies a choice that will not be honoured — and the
+ * pages are already drawn, which means the interview's whole job becomes
+ * collecting the facts those particular sections need: the prices for a prices
+ * band, the names for a team band, the questions for an FAQ.
+ */
+export interface InterviewTemplate {
+  /** The template's own name. */
+  name: string;
+  /** The industry it is filed under, in words. */
+  industry: string;
+  /** The kinds of business it was drawn for. */
+  businessTypes: string[];
+  /** The one action the whole site is built around. */
+  action: string;
+  /** Page titles, in the order they appear in the nav. */
+  pages: string[];
+  /** What the sections on those pages need supplied, in plain words. */
+  needs: string[];
+  /** Whether it has a catalogue, a basket and a checkout. */
+  sells: boolean;
+}
+
 export function buildInterviewPrompt(params: {
   prompt: string;
   businessType?: string | null;
   hasScreenshot: boolean;
+  template?: InterviewTemplate | null;
 }): string {
   const lines = [`What they asked for: ${params.prompt}`];
   if (params.businessType) lines.push(`Category they picked: ${params.businessType}`);
@@ -72,6 +100,35 @@ export function buildInterviewPrompt(params: {
       'They also uploaded a reference screenshot, so do not ask about overall layout or visual style — that is already settled.',
     );
   }
+
+  const template = params.template;
+  if (template) {
+    const about: string[] = [
+      `They already chose a template, so the design and the structure are settled. It is a ${template.industry.toLowerCase()} site drawn for a ${template.businessTypes
+        .join(' or ')
+        .toLowerCase()}, with ${template.pages.length} pages — ${template.pages.join(
+        ', ',
+      )} — built around one action: ${template.action}.`,
+      'Do not ask about colours, style, layout, which pages to include, or how many sections there should be. All of that is already decided, and a question about it would imply a choice that will not be honoured.',
+    ];
+    if (template.needs.length > 0) {
+      about.push(
+        `Those pages have places for ${template.needs.join(
+          '; ',
+        )}. Ask for whichever of those cannot be written without them — the actual items, the actual prices, the actual names — never whether they would like such a section.`,
+      );
+    }
+    if (template.sells) {
+      about.push(
+        'It is a shop, with a catalogue, a basket and a checkout. Ask what they sell and roughly what it costs, and how it reaches the customer — delivery, pickup, or both.',
+      );
+    }
+    about.push(
+      'Still ask for the real business name, the town it serves, and the WhatsApp number, exactly as instructed above.',
+    );
+    lines.push('', ...about);
+  }
+
   return lines.join('\n');
 }
 

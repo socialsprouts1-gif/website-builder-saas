@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { businessDetailsSchema } from '@/lib/templates/details';
 
 /** Every API boundary validates with one of these (spec Section 16). */
 
@@ -65,8 +64,6 @@ export const createProjectSchema = z.object({
    * the model is left writing this business's words into them.
    */
   blueprint: z.string().max(64).nullable().optional(),
-  /** The business details form, folded into the brief server-side. */
-  details: businessDetailsSchema.optional(),
   /** Replies to the pre-build interview, folded into the brief server-side. */
   answers: z
     .array(

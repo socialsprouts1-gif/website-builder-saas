@@ -13,6 +13,8 @@ import {
 } from '@/lib/generation/interview';
 import { MAX_BRIEF } from '@/lib/validation';
 import { sectionBrief } from '@/lib/generation/brief';
+import { blueprintById } from '@/lib/templates';
+import { blueprintInterview } from '@/lib/templates/interview';
 
 export const runtime = 'nodejs';
 export const maxDuration = 45;
@@ -30,6 +32,14 @@ const bodySchema = z.object({
   prompt: z.string().trim().min(3).max(MAX_BRIEF),
   category: z.string().max(64).nullable().optional(),
   hasScreenshot: z.boolean().optional(),
+  /**
+   * The template they picked, if they came in from the library.
+   *
+   * It changes what there is to ask: the pages, the sections and the design are
+   * all settled, so the questions become entirely about the facts those
+   * particular sections need somebody to supply.
+   */
+  blueprint: z.string().max(64).nullable().optional(),
 });
 
 /**
@@ -54,6 +64,9 @@ export async function POST(request: NextRequest) {
     if (!limit.allowed) return jsonError('Slow down a moment.', 429);
 
     const body = bodySchema.parse(await request.json());
+    // Only a template that exists. An unknown id has to fall back to the
+    // ordinary interview rather than describe a site nobody is getting.
+    const blueprint = blueprintById(body.blueprint);
 
     const { apiKey, source } = await resolveApiKey(user.id, 'interview');
     const catalog = await getModelCatalog(apiKey);
@@ -73,6 +86,7 @@ export async function POST(request: NextRequest) {
             prompt: sectionBrief(body.prompt),
             businessType: body.category,
             hasScreenshot: Boolean(body.hasScreenshot),
+            template: blueprint ? blueprintInterview(blueprint) : null,
           }),
         },
       ],

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PromptBar, type PromptAttachment } from '@/components/ui/PromptBar';
+import { PromptBar } from '@/components/ui/PromptBar';
 import { CategoryChip } from '@/components/ui/CategoryChip';
 import { Button } from '@/components/ui/Button';
 import { CATEGORIES, categoryBySlug } from '@/lib/categories';
@@ -12,8 +12,7 @@ import type { ModelOption } from '@/lib/openai/models';
 import { InterviewStep } from '@/components/app/InterviewStep';
 import { MediaDrop } from '@/components/app/MediaDrop';
 import type { Answer, InterviewQuestion } from '@/lib/generation/interview';
-import { createClient } from '@/lib/supabase/client';
-import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
+import { useUploads } from '@/components/app/useUploads';
 
 type Mode = 'describe' | 'screenshot' | 'speak';
 
@@ -78,7 +77,7 @@ export function NewSiteForm({
   const [questions, setQuestions] = useState<InterviewQuestion[] | null>(null);
   const [asking, setAsking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
+  const { attachments, attachFiles, attachReference, remove, assets } = useUploads();
 
   // Seed from the marketing hero / onboarding hand-off.
   useEffect(() => {
@@ -110,70 +109,13 @@ export function NewSiteForm({
     setScreenshot({ dataUrl, name: file.name });
   }
 
-  /**
-   * A logo or a photograph, uploaded before the project exists.
-   *
-   * It has to be this way round: the brief that starts the build has to be able
-   * to name the files, and the brief is fixed the moment the job is queued. The
-   * bytes go straight to storage from here — they are far too big for a
-   * serverless request body — and only the resulting link is sent on.
-   */
-  async function attachFiles(kind: 'logo' | 'image' | 'video', files: File[]) {
-    for (const file of files) {
-      const id = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const reason = rejectReason(file);
-
-      setAttachments((current) => [
-        // Only ever one logo: a second replaces the first.
-        ...(kind === 'logo' ? current.filter((item) => item.kind !== 'logo') : current),
-        { id, kind, label: file.name, url: null, ...(reason ? { error: reason } : {}) },
-      ]);
-      if (reason) continue;
-
-      try {
-        const response = await fetch('/api/uploads/sign', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, contentType: file.type, size: file.size }),
-        });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error ?? 'Upload failed');
-
-        const { error: uploadError } = await createClient()
-          .storage.from(payload.bucket)
-          .uploadToSignedUrl(payload.path, payload.token, file, { contentType: file.type });
-        if (uploadError) throw new Error(uploadError.message);
-
-        setAttachments((current) =>
-          current.map((item) => (item.id === id ? { ...item, url: payload.publicUrl } : item)),
-        );
-      } catch (cause) {
-        const message = cause instanceof Error ? cause.message : 'Upload failed';
-        setAttachments((current) =>
-          current.map((item) => (item.id === id ? { ...item, error: message } : item)),
-        );
-      }
-    }
-  }
-
-  function attachReference(raw: string) {
-    const url = normaliseReference(raw);
-    if (!url) {
+  function onAttachReference(raw: string) {
+    if (!attachReference(raw)) {
       setError('That does not look like a website address.');
       return;
     }
     setError(null);
-    setAttachments((current) => [
-      ...current,
-      { id: `ref-${Date.now()}`, kind: 'reference', label: referenceLabel(url), url },
-    ]);
   }
-
-  const ready = attachments.filter((item) => item.url && !item.error);
-  const logoUrl = ready.find((item) => item.kind === 'logo')?.url ?? null;
-  const imageUrls = ready.filter((item) => item.kind === 'image').map((item) => item.url!);
-  const videoUrls = ready.filter((item) => item.kind === 'video').map((item) => item.url!);
-  const referenceUrls = ready.filter((item) => item.kind === 'reference').map((item) => item.url!);
 
   const brief =
     prompt.trim() ||
@@ -234,7 +176,7 @@ export function NewSiteForm({
           inputMode: mode === 'screenshot' ? 'screenshot' : mode === 'speak' ? 'voice' : 'prompt',
           screenshotDataUrl: mode === 'screenshot' ? screenshot?.dataUrl : null,
           screenshotIsOwn: mode === 'screenshot' ? ownMaterial : undefined,
-          assets: { logoUrl, imageUrls, videoUrls, referenceUrls },
+          assets,
           answers,
         }),
       });
@@ -262,11 +204,7 @@ export function NewSiteForm({
           onDone={(answers) => void create(answers)}
           onSkipAll={() => void create([])}
           media={
-            <MediaDrop
-              attachments={attachments}
-              onAttachFiles={attachFiles}
-              onRemove={(id) => setAttachments((current) => current.filter((item) => item.id !== id))}
-            />
+            <MediaDrop attachments={attachments} onAttachFiles={attachFiles} onRemove={remove} />
           }
         />
         {error ? (
@@ -423,10 +361,8 @@ export function NewSiteForm({
         submitLabel={asking ? 'Thinking…' : 'Continue'}
         attachments={attachments}
         onAttachFiles={attachFiles}
-        onAttachReference={attachReference}
-        onRemoveAttachment={(id) =>
-          setAttachments((current) => current.filter((item) => item.id !== id))
-        }
+        onAttachReference={onAttachReference}
+        onRemoveAttachment={remove}
         menuExtras={[
           {
             id: 'help',

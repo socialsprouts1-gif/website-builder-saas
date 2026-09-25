@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { NewSiteForm } from '@/components/app/NewSiteForm';
-import { TemplateSetupForm } from '@/components/templates/TemplateSetupForm';
+import { TemplateInterview } from '@/components/templates/TemplateInterview';
 import { blueprintById, blueprintCard } from '@/lib/templates';
 import { Badge } from '@/components/ui/Badge';
 import { CreditMeter } from '@/components/app/CreditMeter';
@@ -107,7 +107,8 @@ export default async function NewSitePage({
           <p className="mt-3 max-w-lg text-sm text-ink-secondary">
             {blueprint.name} already decides the pages, the sections and the design —{' '}
             {blueprintCard(blueprint).sections} sections across {blueprintCard(blueprint).pages} pages.
-            Nothing below is a prompt to get right; they are facts only you have.
+            So there is no prompt to get right: say what the business is, and Lumen asks the rest one
+            question at a time.
           </p>
           <p className="mt-2 text-[13px] text-ink-muted">
             <Link href={`/templates/${blueprint.id}`} className="text-accent hover:underline">
@@ -181,11 +182,12 @@ export default async function NewSitePage({
       ) : null}
 
       {blueprint ? (
-        <TemplateSetupForm
+        <TemplateInterview
           template={{
             id: blueprint.id,
             name: blueprint.name,
             industryLabel: blueprintCard(blueprint).industryLabel,
+            businessTypes: blueprint.businessTypes,
             action: blueprint.action,
             sections: blueprintCard(blueprint).sections,
             pages: blueprintCard(blueprint).pages,

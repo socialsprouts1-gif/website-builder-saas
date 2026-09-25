@@ -13,10 +13,9 @@ import { applyAnswers, whatsappFromAnswers } from '@/lib/generation/interview';
 import { normaliseWhatsApp } from '@/lib/whatsapp';
 import { OWN_MATERIAL_MARK } from '@/lib/generation/prompts';
 import { lookupPlace } from '@/lib/google/places';
-import { blueprintById, blueprintSellsThings } from '@/lib/templates';
+import { blueprintById, blueprintCard, blueprintSellsThings } from '@/lib/templates';
 import { matchVertical } from '@/lib/generation/verticals';
 import { missingFeatures } from '@/lib/supabase/features';
-import { detailsBrief } from '@/lib/templates/details';
 import { seedFromPlace } from '@/lib/google/seed';
 
 export const runtime = 'nodejs';
@@ -64,17 +63,10 @@ export async function POST(request: NextRequest) {
     // behaviour rather than to a site with no pages.
     const blueprint = blueprintById(body.blueprint);
 
-    // The business details form, read as facts rather than as a prompt. It goes
-    // in front of whatever was typed, because it is the more reliable half.
-    if (body.details) {
-      const facts = detailsBrief(body.details);
-      brief = brief.trim() ? `${facts}\n\n${brief}` : facts;
-    }
-
-    // Except the WhatsApp number, which is a setting rather than a sentence.
-    // Folding it only into the brief would put it in the page's copy and
-    // nowhere the product could use it, so it is read out here and saved.
-    const whatsapp = body.details?.whatsapp?.trim() || whatsappFromAnswers(body.answers ?? []);
+    // The WhatsApp number is a setting rather than a sentence. Folding it only
+    // into the brief would put it in the page's copy and nowhere the product
+    // could use it, so it is read out here and saved.
+    const whatsapp = whatsappFromAnswers(body.answers ?? []);
 
     // Their own visiting card is the fastest way they will ever give us their
     // phone number; someone else's website is not theirs to copy. Which of the
@@ -123,7 +115,7 @@ export async function POST(request: NextRequest) {
     // been spent yet.
     const willSell = blueprint
       ? blueprintSellsThings(blueprint)
-      : Boolean(matchVertical(`${body.details?.businessType ?? ''} ${brief}`).shop);
+      : Boolean(matchVertical(brief).shop);
 
     const missing = await missingFeatures();
     const blocking = missing.filter(
@@ -153,7 +145,14 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         name: 'Untitled site',
         slug: `site-${Date.now().toString(36)}`,
-        business_type: body.details?.businessType ?? category?.label ?? body.category ?? null,
+        // What the site is for, in words, for the dashboard to group by. A
+        // template says it outright; a prompt build has whatever chip was
+        // picked, and otherwise nothing worth guessing at.
+        business_type:
+          (blueprint ? blueprintCard(blueprint).industryLabel : null) ??
+          category?.label ??
+          body.category ??
+          null,
         status: 'generating',
         model: body.model ?? null,
         ...(blueprint ? { blueprint_id: blueprint.id } : {}),
