@@ -60,6 +60,10 @@ export async function GET(
     .select('id, name, description, business_type, published_at, favicon_url')
     .eq('public_slug', slug)
     .not('published_at', 'is', null)
+    // Trashing a site takes it off the internet. Leaving it served would make
+    // "delete" mean nothing to the only person it matters to — a customer who
+    // can still find it.
+    .is('deleted_at', null)
     .maybeSingle();
 
   if (!project) return new Response('Not found', { status: 404 });

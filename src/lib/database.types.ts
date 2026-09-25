@@ -56,6 +56,8 @@ export type ProjectRow = {
   shop_payment_note: string | null;
   /** The template this site was built from (migration 0017). */
   blueprint_id: string | null;
+  /** In the trash since, or null. Migration 0019. */
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }

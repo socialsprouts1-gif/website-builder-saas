@@ -10,24 +10,35 @@ import { cn } from '@/components/ui/cn';
 /**
  * Flat left nav. Every entry is a full page — no nested settings menus,
  * no accordions (spec Section 17).
+ *
+ * Grouped as workspace and account, because those are two different questions:
+ * one is about the sites, the other is about the person paying for them.
+ *
+ * Every entry here is a page that exists. It is an easy nav to pad out with
+ * things that sound right — a Team tab, an Analytics tab — and every one of
+ * those is a click that ends in a 404 or, worse, an empty screen that looks
+ * broken rather than absent.
  */
 const GROUPS: { title: string; items: { href: string; label: string }[] }[] = [
   {
-    title: 'Build',
+    title: 'Workspace',
     items: [
       { href: '/app', label: 'My sites' },
       { href: '/app/new', label: 'New site' },
       { href: '/app/google', label: 'From Google' },
       { href: '/templates', label: 'Templates' },
+      { href: '/app/deployments', label: 'Deployments' },
+      { href: '/app/history', label: 'Version history' },
+      { href: '/app/settings/connectors', label: 'Connectors' },
     ],
   },
   {
-    title: 'Settings',
+    title: 'Account',
     items: [
-      { href: '/app/settings/account', label: 'Account' },
-      { href: '/app/settings/billing', label: 'Billing' },
+      { href: '/app/settings/billing', label: 'Plans & billing' },
+      { href: '/app/settings/account', label: 'Settings' },
       { href: '/app/settings/api-keys', label: 'API keys' },
-      { href: '/app/settings/connectors', label: 'Connectors' },
+      { href: '/app/trash', label: 'Trash' },
     ],
   },
 ];
@@ -71,7 +82,12 @@ export function AppNav({
       )}
     >
       <div className="flex items-center justify-between lg:block">
-        <Logo href="/app" />
+        <div>
+          <Logo href="/app" />
+          <p className="mt-1.5 hidden px-[38px] text-[9.5px] uppercase tracking-[0.22em] text-ink-muted lg:block">
+            Build · Ship · Iterate
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
@@ -93,7 +109,13 @@ export function AppNav({
           <div key={group.title} className="space-y-1">
             <p className="px-3 pb-1 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">{group.title}</p>
             {group.items.map((item) => {
-              const active = item.href === '/app' ? pathname === '/app' : pathname.startsWith(item.href);
+              // Exact for the section roots, so "My sites" does not stay lit
+              // on every page under /app and Settings does not light up for
+              // its siblings.
+              const active =
+                item.href === '/app' || item.href.startsWith('/app/settings/')
+                  ? pathname === item.href
+                  : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
@@ -117,7 +139,7 @@ export function AppNav({
               href="/admin"
               className="block rounded-[9px] px-3 py-2 text-[13.5px] text-ink-secondary transition hover:bg-white/5 hover:text-ink-primary"
             >
-              Admin
+              Admin panel
             </Link>
           </div>
         ) : null}

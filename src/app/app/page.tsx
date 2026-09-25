@@ -28,6 +28,9 @@ export default async function ProjectsPage() {
     // lock on the same door.
     .eq('user_id', user.id)
     .eq('is_template', false)
+    // A trashed project is still there and still restorable; it just does not
+    // belong in the list any more.
+    .is('deleted_at', null)
     .order('updated_at', { ascending: false });
 
   // Zero projects funnels straight into the generator rather than showing an

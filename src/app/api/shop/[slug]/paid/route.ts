@@ -43,6 +43,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
       .select('id')
       .eq('public_slug', slug)
       .not('published_at', 'is', null)
+      // A trashed shop takes no money.
+      .is('deleted_at', null)
       .maybeSingle();
 
     if (!project) return jsonError('This shop is not taking orders.', 404);

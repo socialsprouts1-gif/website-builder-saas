@@ -1170,3 +1170,25 @@ comment on column public.shop_orders.payment_order_id is
   'The gateway''s own order id. Created server-side from total_paise — never from an amount the browser sent.';
 comment on column public.shop_orders.paid_at is
   'Set only after the gateway signature has been verified with the owner''s key secret.';
+
+-- ---------------------------------------------------------------------------
+-- 0019_project_trash.sql
+-- ---------------------------------------------------------------------------
+
+-- A deleted project, recoverable.
+--
+-- Deleting was permanent and immediate: one click, one confirm, and every
+-- version, every page and every order attached to it was gone. That is a
+-- destructive default for the only copy of somebody's website.
+--
+-- The column is nullable and every existing project has it null, so nothing
+-- changes for anything already there.
+
+alter table public.projects add column if not exists deleted_at timestamptz;
+
+-- The listing and the trash both filter on it, per owner.
+create index if not exists projects_user_deleted_idx
+  on public.projects (user_id, deleted_at);
+
+comment on column public.projects.deleted_at is
+  'In the trash since. A trashed project is hidden from the list and stops serving its published site, but nothing is destroyed until it is emptied.';
