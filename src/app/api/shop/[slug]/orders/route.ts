@@ -4,6 +4,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { handleRouteError, jsonError } from '@/lib/api';
 import { loadShop } from '@/lib/shop/load';
 import { EmptyOrderError, placeOrder } from '@/lib/shop/place';
+import { shopDisplayName, shopPaymentKeys } from '@/lib/shop/gateway';
 import { orderSchema } from '@/lib/shop/validation';
 
 export const runtime = 'nodejs';
@@ -56,9 +57,18 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
     const shop = await loadShop(project.id);
     if (!shop.enabled) return jsonError('This shop is not taking orders.', 409);
 
+    // The owner's own gateway keys, read on the server. A shop with none takes
+    // the order and asks to be paid another way, exactly as it did before.
+    const [paymentKeys, businessName] = await Promise.all([
+      shopPaymentKeys(project.id),
+      shopDisplayName(project.id),
+    ]);
+
     const placed = await placeOrder({
       projectId: project.id,
       shop,
+      paymentKeys,
+      businessName,
       lines: body.lines,
       shippingRateId: body.shippingRateId ?? null,
       customer: {

@@ -348,6 +348,91 @@ export const SHOP_SCRIPT = `(function () {
       });
   });
 
+  /* ---------------------------------------------------------- paying --- */
+
+  /* Razorpay's own window, opened against an order the server created.
+     Everything that decides the amount was settled server-side; this carries
+     only the public key id and the gateway's order id, and hands the result
+     straight back to be checked. A "paid" here means nothing until the server
+     has verified the signature with the owner's key secret. */
+  function openGateway(payment, note, endpoint) {
+    if (!payment || payment.provider !== 'razorpay') return;
+
+    loadCheckout(function (ok) {
+      if (!ok || !window.Razorpay) {
+        if (note) note.textContent = 'We could not open the payment window. Your order is placed — we will send you a payment link.';
+        return;
+      }
+
+      var rzp = new window.Razorpay({
+        key: payment.keyId,
+        order_id: payment.orderId,
+        amount: payment.amountPaise,
+        currency: payment.currency,
+        name: payment.businessName,
+        description: 'Order ' + payment.reference,
+        prefill: {
+          name: payment.prefill.name,
+          contact: payment.prefill.contact,
+          email: payment.prefill.email
+        },
+        handler: function (result) { confirmPayment(result, note, endpoint); },
+        modal: {
+          ondismiss: function () {
+            if (note) note.textContent = 'Your order is placed. You can pay when we call, or ask us for a payment link.';
+          }
+        }
+      });
+
+      rzp.open();
+    });
+  }
+
+  function confirmPayment(result, note, endpoint) {
+    if (note) note.textContent = 'Confirming your payment…';
+
+    /* The verification endpoint sits beside the one the order went to.
+       Built by hand rather than with a regular expression: this string is
+       written into a template literal, and an escaped slash that survives one
+       round of escaping and not the other is a payment that silently never
+       confirms. */
+    var paidUrl = String(endpoint);
+    if (paidUrl.charAt(paidUrl.length - 1) === '/') paidUrl = paidUrl.slice(0, -1);
+    paidUrl = paidUrl.slice(0, paidUrl.lastIndexOf('/') + 1) + 'paid';
+
+    fetch(paidUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        razorpay_order_id: result.razorpay_order_id,
+        razorpay_payment_id: result.razorpay_payment_id,
+        razorpay_signature: result.razorpay_signature
+      })
+    })
+      .then(function (response) { return response.json(); })
+      .then(function (payload) {
+        if (note) {
+          note.textContent = payload && payload.paid
+            ? 'Payment received. Thank you — we are packing your order.'
+            : 'Your payment is being checked. We will confirm shortly.';
+        }
+      })
+      .catch(function () {
+        if (note) note.textContent = 'Your payment is being checked. We will confirm shortly.';
+      });
+  }
+
+  /* Loaded on demand, so a shop that never takes a card payment never
+     downloads a payment library. */
+  function loadCheckout(then) {
+    if (window.Razorpay) { then(true); return; }
+    var tag = document.createElement('script');
+    tag.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    tag.onload = function () { then(true); };
+    tag.onerror = function () { then(false); };
+    document.head.appendChild(tag);
+  }
+
   paint();
 })();
 `;

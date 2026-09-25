@@ -40,6 +40,8 @@ export interface ShopRequest {
   storageKey: string;
   /** The preview cannot load its own files; a published site cannot inline. */
   inline: boolean;
+  /** This shop has a gateway connected, so the checkout can say so. */
+  takesPayments?: boolean;
 }
 
 export function viewOf(request: ShopRequest): ShopView {
@@ -53,6 +55,7 @@ export function viewOf(request: ShopRequest): ShopView {
     links: { base: request.base },
     storageKey: request.storageKey,
     inline: request.inline,
+    takesPayments: Boolean(request.takesPayments),
   };
 }
 

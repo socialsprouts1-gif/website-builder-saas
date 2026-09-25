@@ -330,6 +330,8 @@ export function cartPage(links: ShopLinks): string {
 export function checkoutPage(options: {
   rates: ShippingRate[];
   codEnabled: boolean;
+  /** The owner has connected a gateway, so the card window opens on submit. */
+  takesPayments?: boolean;
   paymentUrl: string | null;
   paymentNote: string | null;
   endpoint: string;
@@ -358,11 +360,16 @@ export function checkoutPage(options: {
 
   // What the customer is told about paying. Never a promise the shop cannot
   // keep: with no payment link configured, this is an order, not a payment.
-  const payment = options.paymentUrl
-    ? `<p class="shop-summary__note">${escapeHtml(options.paymentNote ?? 'You will be taken to a secure payment page after placing the order.')}</p>`
-    : options.codEnabled
-      ? `<p class="shop-summary__note">Pay on delivery. We will call you to confirm before we send it.</p>`
-      : `<p class="shop-summary__note">We will contact you to arrange payment.</p>`;
+  // A gateway beats a pasted link beats cash on delivery, and the order they
+  // are told about is the order that will actually happen. Nothing here ever
+  // promises a card payment a shop cannot take.
+  const payment = options.takesPayments
+    ? `<p class="shop-summary__note">Pay by card, UPI or netbanking — the payment window opens as soon as you place the order. Nothing is charged until you confirm it there.</p>`
+    : options.paymentUrl
+      ? `<p class="shop-summary__note">${escapeHtml(options.paymentNote ?? 'You will be taken to a secure payment page after placing the order.')}</p>`
+      : options.codEnabled
+        ? `<p class="shop-summary__note">Pay on delivery. We will call you to confirm before we send it.</p>`
+        : `<p class="shop-summary__note">We will contact you to arrange payment.</p>`;
 
   return `<div class="shop-checkout" data-shop-checkout data-shop-endpoint="${escapeHtml(options.endpoint)}">
   <div class="shop-cart__empty" data-shop-cart-empty hidden>

@@ -73,7 +73,7 @@ export const TEMPLATE_INDUSTRIES: TemplateIndustry[] = [
     slug: 'retail',
     label: 'Shops & e-commerce',
     examples: ['Online store', 'Boutique', 'Jewellery', 'Grocery', 'Electronics'],
-    match: ['ecommerce', 'e-commerce', 'boutique', 'jewel', 'clothing', 'fashion', 'grocery', 'kirana', 'electronics', 'marketplace'],
+    match: ['ecommerce', 'e-commerce', 'boutique', 'jewel', 'clothing', 'fashion', 'grocery', 'kirana', 'electronics', 'marketplace', 'storefront', 'checkout', 'catalogue', 'catalog'],
     weak: ['shop', 'store', 'retail'],
   },
   {
@@ -120,7 +120,7 @@ export const TEMPLATE_INDUSTRIES: TemplateIndustry[] = [
     slug: 'trades',
     label: 'Local services & trades',
     examples: ['Plumber', 'Electrician', 'Pest control', 'Movers', 'Repairs'],
-    match: ['plumber', 'electrician', 'carpenter', 'pest', 'movers', 'packers', 'ac service', 'handyman', 'logistics'],
+    match: ['plumber', 'electrician', 'carpenter', 'pest', 'movers', 'packers', 'ac service', 'handyman', 'logistics', 'plumbing', 'electrical', 'wiring', 'carpentry', 'moving'],
     weak: ['repair', 'cleaning'],
   },
   {

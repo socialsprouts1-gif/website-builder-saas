@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { handleRouteError, jsonError } from '@/lib/api';
 import { loadShop } from '@/lib/shop/load';
 import { EmptyOrderError, placeOrder } from '@/lib/shop/place';
+import { shopDisplayName, shopPaymentKeys } from '@/lib/shop/gateway';
 import { orderSchema } from '@/lib/shop/validation';
 
 export const runtime = 'nodejs';
@@ -48,9 +49,19 @@ export async function POST(
     const shop = await loadShop(projectId);
     if (!shop.enabled) return jsonError('This shop is not switched on yet.', 409);
 
+    // The owner testing their own checkout. Their real keys, so a test order
+    // goes through the gateway exactly as a customer's would — with a Razorpay
+    // test key that costs nothing, and with a live one that does not.
+    const [paymentKeys, businessName] = await Promise.all([
+      shopPaymentKeys(projectId),
+      shopDisplayName(projectId),
+    ]);
+
     const placed = await placeOrder({
       projectId,
       shop,
+      paymentKeys,
+      businessName,
       lines: body.lines,
       shippingRateId: body.shippingRateId ?? null,
       customer: {

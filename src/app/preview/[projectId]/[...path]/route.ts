@@ -9,6 +9,7 @@ import { selfOrigin } from '@/lib/self-origin';
 import { pendingPage } from '@/lib/generation/kit/placeholder';
 import { decorate, loadSiteExtras } from '@/lib/site-extras';
 import { loadShop } from '@/lib/shop/load';
+import { shopPaymentKeys } from '@/lib/shop/gateway';
 import {
   decorateWithShop,
   improvisedPage,
@@ -53,7 +54,10 @@ function previewCsp(origin: string): string {
   // finished.
   return [
     "default-src 'none'",
-    `script-src 'unsafe-inline' ${origin}`,
+    // The gateway's own hosts, so an owner can test their real checkout before
+    // publishing it. A preview is only ever the owner looking at their own
+    // site, so this is narrower in practice than it looks.
+    `script-src 'unsafe-inline' ${origin} https://checkout.razorpay.com`,
     `style-src 'unsafe-inline' ${origin} https://fonts.googleapis.com`,
     'font-src https://fonts.gstatic.com data:',
     `img-src ${origin} https: data:`,
@@ -62,8 +66,8 @@ function previewCsp(origin: string): string {
     'media-src https: data: blob:',
     // The site assistant talks back to Lumen. Without this the widget appears
     // and then fails silently on the first message.
-    `connect-src ${origin}`,
-    'frame-src https://www.youtube-nocookie.com https://player.vimeo.com',
+    `connect-src ${origin} https://api.razorpay.com https://lumberjack.razorpay.com`,
+    'frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://api.razorpay.com https://checkout.razorpay.com',
     "form-action 'none'",
     "base-uri 'none'",
     "frame-ancestors 'self'",
@@ -105,6 +109,9 @@ export async function GET(
   // own, and everything is inlined instead. Its policy allows that; the
   // published site's policy is the other way round.
   const shop = await loadShop(projectId).catch(() => null);
+  // So the owner testing their own checkout is told the same thing a customer
+  // will be, rather than finding out after publishing.
+  const takesPayments = shop?.enabled ? Boolean(await shopPaymentKeys(projectId)) : false;
   const shopRequest: ShopRequest | null = shop?.enabled
     ? {
         shop,
@@ -112,6 +119,7 @@ export async function GET(
         endpoint: `/api/shop/preview/${projectId}/orders`,
         storageKey: `preview-${projectId}`,
         inline: true,
+        takesPayments,
       }
     : null;
   const category = request.nextUrl.searchParams.get('category');

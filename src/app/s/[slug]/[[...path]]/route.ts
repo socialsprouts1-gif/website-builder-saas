@@ -7,6 +7,7 @@ import { renderRobots, renderSitemap, withSeoHead, type SiteFacts } from '@/lib/
 import { recordVisit } from '@/lib/traffic';
 import { whatsappHref } from '@/lib/whatsapp';
 import { loadShop } from '@/lib/shop/load';
+import { shopPaymentKeys } from '@/lib/shop/gateway';
 import {
   decorateWithShop,
   improvisedPage,
@@ -80,6 +81,13 @@ export async function GET(
   // What the shop needs, and where its links point. Read once for the request,
   // whichever of the several shop-shaped answers below it turns out to be.
   const shop = await loadShop(project.id).catch(() => null);
+
+  // Whether this shop can take a card payment at all. It decides one thing
+  // only: whether the gateway's hosts are named in the policy below. A site
+  // that never takes one keeps `script-src 'self'` and cannot be made to load
+  // a payment library.
+  const takesPayments = shop?.enabled ? Boolean(await shopPaymentKeys(project.id)) : false;
+  const csp = htmlCsp({ payments: takesPayments });
   const shopRequest: ShopRequest | null = shop?.enabled
     ? {
         shop,
@@ -89,6 +97,7 @@ export async function GET(
         // A published page is a top-level document under `script-src 'self'`,
         // so its script and stylesheet are files it loads for itself.
         inline: false,
+        takesPayments,
       }
     : null;
 
@@ -153,7 +162,7 @@ export async function GET(
         'x-content-type-options': 'nosniff',
         'x-frame-options': 'SAMEORIGIN',
         'referrer-policy': 'strict-origin-when-cross-origin',
-        'content-security-policy': HTML_CSP,
+        'content-security-policy': csp,
       },
     });
   };
@@ -234,7 +243,7 @@ export async function GET(
           'content-type': 'text/html; charset=utf-8',
           'cache-control': 'no-store',
           'x-content-type-options': 'nosniff',
-          'content-security-policy': HTML_CSP,
+          'content-security-policy': csp,
         },
       },
     );
@@ -300,7 +309,7 @@ export async function GET(
       'x-content-type-options': 'nosniff',
       'x-frame-options': 'SAMEORIGIN',
       'referrer-policy': 'strict-origin-when-cross-origin',
-      ...(isHtml ? { 'content-security-policy': HTML_CSP } : {}),
+      ...(isHtml ? { 'content-security-policy': csp } : {}),
     },
   });
 }
@@ -317,6 +326,33 @@ function originOf(request: NextRequest): string {
  * sandboxed frame, so 'self' means what it says here and the site's stylesheet
  * and script load under it.
  */
+/**
+ * The gateway's own hosts.
+ *
+ * A payment window is somebody else's code running on the customer's card
+ * details, so it is allowed in by name and only on a shop that has connected
+ * one. A site that never takes a card payment keeps `script-src 'self'` and
+ * cannot be made to load a payment library at all.
+ */
+const RAZORPAY_HOSTS = {
+  script: 'https://checkout.razorpay.com',
+  connect: 'https://api.razorpay.com https://lumberjack.razorpay.com',
+  frame: 'https://api.razorpay.com https://checkout.razorpay.com',
+};
+
+function htmlCsp(options: { payments: boolean }): string {
+  if (!options.payments) return HTML_CSP;
+
+  return HTML_CSP.split('; ')
+    .map((directive) => {
+      if (directive.startsWith('script-src')) return `${directive} ${RAZORPAY_HOSTS.script}`;
+      if (directive.startsWith('connect-src')) return `${directive} ${RAZORPAY_HOSTS.connect}`;
+      if (directive.startsWith('frame-src')) return `${directive} ${RAZORPAY_HOSTS.frame}`;
+      return directive;
+    })
+    .join('; ');
+}
+
 const HTML_CSP = [
   "default-src 'none'",
   "img-src 'self' https: data:",

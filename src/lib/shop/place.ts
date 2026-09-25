@@ -1,5 +1,10 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import {
+  createRazorpayOrder,
+  type PaymentIntent,
+  type RazorpayKeys,
+} from './payments';
 import { logError } from '@/lib/errors';
 import { orderReference, orderTotals, type CartRequest } from './cart';
 import { formatRupees } from './money';
@@ -20,6 +25,15 @@ export interface PlacedOrder {
   reference: string;
   totalPaise: number;
   paymentUrl: string | null;
+  /**
+   * A gateway order, when the owner has connected one.
+   *
+   * Created from the total worked out above and nothing the browser sent, so
+   * the gateway itself refuses a payment for any other amount. The browser is
+   * given the public key id and the gateway's order id; the key secret stays
+   * here.
+   */
+  payment: PaymentIntent | null;
   note: string;
   /**
    * The order, ready to send to the shop on WhatsApp.
@@ -36,6 +50,10 @@ export interface PlacedOrder {
 export interface OrderRequest {
   projectId: string;
   shop: ShopData;
+  /** The shop's own gateway keys, when it has them. Never from the request. */
+  paymentKeys?: RazorpayKeys | null;
+  /** The name the gateway shows the customer while they pay. */
+  businessName?: string;
   lines: CartRequest[];
   shippingRateId: string | null;
   customer: {
@@ -71,7 +89,7 @@ export async function placeOrder(request: OrderRequest): Promise<PlacedOrder> {
   }
 
   const admin = createAdminClient();
-  const method = request.shop.paymentUrl ? 'link' : 'cod';
+  const method = request.paymentKeys ? 'razorpay' : request.shop.paymentUrl ? 'link' : 'cod';
 
   // Six characters from a thirty-character alphabet is about 700 million, and
   // a clash only has to be unique within one shop. Retried rather than trusted.
@@ -153,9 +171,53 @@ export async function placeOrder(request: OrderRequest): Promise<PlacedOrder> {
     await logError({ scope: 'shop.order.stock', error: cause, projectId: request.projectId });
   });
 
+  // The gateway order, created from the total this function worked out.
+  //
+  // After the order row exists, deliberately: if the gateway is unreachable the
+  // order is still placed and the customer is told to pay another way, rather
+  // than losing the sale to somebody else's outage.
+  let payment: PaymentIntent | null = null;
+  if (request.paymentKeys) {
+    const created = await createRazorpayOrder({
+      keys: request.paymentKeys,
+      amountPaise: totals.totalPaise,
+      reference,
+      notes: { reference, project: request.projectId },
+    });
+
+    if (created) {
+      await admin
+        .from('shop_orders')
+        .update({ payment_provider: 'razorpay', payment_order_id: created.id })
+        .eq('id', orderId);
+
+      payment = {
+        provider: 'razorpay',
+        keyId: request.paymentKeys.keyId,
+        orderId: created.id,
+        amountPaise: totals.totalPaise,
+        currency: 'INR',
+        businessName: request.businessName?.trim() || 'Order',
+        reference,
+        prefill: {
+          name: request.customer.name,
+          contact: request.customer.contact,
+          email: request.customer.email,
+        },
+      };
+    } else {
+      await logError({
+        scope: 'shop.order.gateway',
+        error: new Error('Razorpay order could not be created'),
+        projectId: request.projectId,
+      });
+    }
+  }
+
   return {
     reference,
     totalPaise: totals.totalPaise,
+    payment,
     paymentUrl: request.shop.paymentUrl,
     whatsappUrl: request.shop.whatsappNumber
       ? whatsappHref(

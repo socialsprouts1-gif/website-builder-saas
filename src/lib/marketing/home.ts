@@ -133,6 +133,10 @@ export const PUBLISH_FEATURES: PublishFeature[] = [
   { title: 'Built responsive', body: 'Every layout is designed for a phone and holds up on a desktop.' },
   { title: 'SEO on by default', body: 'Canonical addresses, a sitemap, social previews and local-business markup, written as the site is served.' },
   { title: 'Enquiries and orders', body: 'Forms land in your account, and can open in WhatsApp so they reach the phone you carry.' },
+  {
+    title: 'Card and UPI payments',
+    body: 'Connect your own Razorpay account and a shop takes payment at checkout. The money goes to you; Lumen never holds it.',
+  },
   { title: 'Analytics', body: 'Drop in a Google Analytics measurement ID from the connectors panel and it is on every page.' },
   { title: 'Integrations', body: 'GitHub, Vercel, Netlify, Mailchimp, Zapier, HubSpot, Slack, Notion, Airtable, Sheets and Razorpay.' },
   { title: 'Your code, exportable', body: 'Download the whole site as a zip or push it to GitHub. It is yours to take.' },

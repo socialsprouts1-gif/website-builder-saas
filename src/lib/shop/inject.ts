@@ -45,6 +45,8 @@ export interface ShopView {
    * policy is `script-src 'self'`, which forbids inline and allows the file.
    */
   inline: boolean;
+  /** A card payment can be taken here, so the checkout says so. */
+  takesPayments?: boolean;
 }
 
 /**
@@ -124,6 +126,7 @@ function slotHtml(slot: ShopSlot, view: ShopView, category: string | null): stri
     return checkoutPage({
       rates: view.rates,
       codEnabled: view.codEnabled,
+      takesPayments: Boolean(view.takesPayments),
       paymentUrl: view.paymentUrl,
       paymentNote: view.paymentNote,
       endpoint: view.endpoint,

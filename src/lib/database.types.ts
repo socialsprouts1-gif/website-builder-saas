@@ -352,6 +352,11 @@ export type ShopOrderRow = {
   total_paise: number;
   status: string;
   payment_method: string;
+  /** Gateway columns, migration 0018. */
+  payment_provider: string | null;
+  payment_order_id: string | null;
+  payment_id: string | null;
+  paid_at: string | null;
   created_at: string;
   updated_at: string;
 }

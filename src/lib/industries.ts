@@ -200,7 +200,7 @@ export const INDUSTRIES: Industry[] = [
       {
         question: 'Does it take online payments?',
         answer:
-          'Orders are placed and priced on the server, and you collect payment the way you already do — on delivery, by UPI, or on the phone. Card checkout on your own storefront is not wired up yet, so do not promise it to customers.',
+          'Yes — connect your own Razorpay account and the checkout takes card, UPI and netbanking. The payment goes straight to you; Lumen never holds your money. Cash on delivery still works alongside it, and a shop without a gateway takes the order and asks to be paid another way.',
       },
     ],
   },

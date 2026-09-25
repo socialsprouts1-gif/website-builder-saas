@@ -12,6 +12,7 @@ export function HeroPrompt() {
   const [prompt, setPrompt] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   function start() {
     if (!prompt.trim()) return;
@@ -30,8 +31,11 @@ export function HeroPrompt() {
         busy={busy}
         placeholder="A candlelit French bistro with online reservations…"
       />
+      {/* Twelve, then the rest on request. Six was a fraction of what Lumen
+          builds and the six it showed were the only ones most people ever
+          found; all twenty-seven at once is a wall rather than a choice. */}
       <div className="flex flex-wrap items-center justify-center gap-2">
-        {HERO_CATEGORIES.map((item) => (
+        {(showAll ? HERO_CATEGORIES : HERO_CATEGORIES.slice(0, 12)).map((item) => (
           <CategoryChip
             key={item.slug}
             label={item.label}
@@ -43,6 +47,15 @@ export function HeroPrompt() {
             }}
           />
         ))}
+        {HERO_CATEGORIES.length > 12 ? (
+          <button
+            type="button"
+            onClick={() => setShowAll((current) => !current)}
+            className="rounded-pill border border-hairline px-3.5 py-1.5 text-[12.5px] text-ink-muted transition hover:border-white/25 hover:text-ink-primary"
+          >
+            {showAll ? 'Fewer' : `${HERO_CATEGORIES.length - 12} more`}
+          </button>
+        ) : null}
       </div>
     </div>
   );
