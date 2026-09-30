@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { NewSiteForm } from '@/components/app/NewSiteForm';
 import { TemplateInterview } from '@/components/templates/TemplateInterview';
+import { PageThumb } from '@/components/ui/PageThumb';
 import { blueprintById, blueprintCard } from '@/lib/templates';
 import { Badge } from '@/components/ui/Badge';
 import { CreditMeter } from '@/components/app/CreditMeter';
@@ -110,11 +111,24 @@ export default async function NewSitePage({
             So there is no prompt to get right: say what the business is, and Lumen asks the rest one
             question at a time.
           </p>
+          {/* What they chose, shown rather than named. Somebody who arrived
+              from a link has never seen it, and the whole site hangs off it. */}
+          <div className="mt-5 overflow-hidden rounded-card border border-hairline">
+            <PageThumb
+              src={`/api/blueprints/${blueprint.id}/index.html`}
+              title={`${blueprint.name} preview`}
+              className="aspect-[16/9]"
+            />
+          </div>
           <p className="mt-2 text-[13px] text-ink-muted">
             <Link href={`/templates/${blueprint.id}`} className="text-accent hover:underline">
-              Look at it again
+              See it full size
             </Link>{' '}
-            first, if you like.
+            first, if you like — or{' '}
+            <Link href="/templates" className="text-accent hover:underline">
+              pick a different one
+            </Link>
+            .
           </p>
         </div>
       ) : (

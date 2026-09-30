@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -32,9 +32,23 @@ const markup = (path: string) =>
 
 const FRAMES = [
   'src/components/app/SiteCard.tsx',
-  'src/components/templates/TemplateLibrary.tsx',
+  'src/components/ui/PageThumb.tsx',
   'src/components/marketing/MockFrame.tsx',
   'src/components/ideas/IdeaGallery.tsx',
+];
+
+/**
+ * The frames that are meant to be the width of their column rather than a
+ * miniature of a wider page: an editor, a preview pane, a full-bleed embed.
+ * They are exempt from the scaling rule and held to the other one instead —
+ * a width that follows the column — so the exemption cannot quietly become
+ * "this one does not have to work on a phone".
+ */
+const FULL_WIDTH = [
+  'src/components/app/editor/EditorWorkspace.tsx',
+  'src/components/app/Workspace.tsx',
+  'src/components/templates/TemplatePreview.tsx',
+  'src/app/showcase/page.tsx',
 ];
 
 describe('every page miniature', () => {
@@ -49,6 +63,35 @@ describe('every page miniature', () => {
     // width it was written for, cropped or gappy on every other.
     expect(markup(path)).not.toMatch(/scale-\[[\d.]+\]/);
     expect(markup(path)).not.toMatch(/transform:\s*`?scale\(/);
+  });
+});
+
+/**
+ * The list above is the part that rots: a new card draws a miniature, nobody
+ * adds it, and the bug ships again somewhere nobody was looking. This is what
+ * found it the second time — a marketing gallery with a 1000px iframe and a
+ * hard-coded scale on a public page, written months after the fix and never
+ * checked because it was not on the list.
+ */
+describe('anything else that frames a page', () => {
+  const sources = globSync('src/**/*.tsx', { cwd: process.cwd() })
+    .map((path) => path.replace(/\\/g, '/'))
+    .filter((path) => markup(path).includes('<iframe'));
+
+  it('finds the frames it is meant to be checking', () => {
+    expect(sources.length).toBeGreaterThan(4);
+    for (const path of [...FRAMES, ...FULL_WIDTH].filter((path) => path.endsWith('.tsx'))) {
+      if (markup(path).includes('<iframe')) expect(sources).toContain(path);
+    }
+  });
+
+  it.each(sources.map((path) => [path]))('%s either scales or fills its column', (path) => {
+    const source = markup(path);
+    if (FULL_WIDTH.includes(path)) {
+      expect(source, 'an exempt frame follows the column width').toMatch(/w-full|width:\s*'100%'/);
+      return;
+    }
+    expect(source, 'a miniature uses the shared frame').toContain('lumen-scale-frame');
   });
 });
 

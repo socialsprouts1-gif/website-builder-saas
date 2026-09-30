@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CategoryChip } from '@/components/ui/CategoryChip';
+import { PageThumb } from '@/components/ui/PageThumb';
 import { CodeWindow } from '@/components/ui/CodeWindow';
 import { Button } from '@/components/ui/Button';
 import { CATEGORIES } from '@/lib/categories';
@@ -69,14 +70,12 @@ export function TemplateGallery({ templates, signedIn }: { templates: TemplateCa
             <div key={template.slug} className="space-y-3">
               <CodeWindow title={`LUMEN / ${template.name.toUpperCase()}`}>
                 {template.projectId ? (
-                  <iframe
+                  <PageThumb
                     src={`/preview/${template.projectId}/index.html`}
                     title={template.name}
-                    loading="lazy"
-                    sandbox="allow-scripts"
-                    tabIndex={-1}
-                    className="pointer-events-none h-[520px] w-[1000px] origin-top-left scale-[0.36] border-0 bg-white"
-                    style={{ height: 520, marginBottom: -520 * (1 - 0.36) }}
+                    className="aspect-[16/10]"
+                    frameWidth={1000}
+                    frameHeight={625}
                   />
                 ) : (
                   <div className="flex h-[190px] items-center justify-center text-[12px] text-ink-muted">

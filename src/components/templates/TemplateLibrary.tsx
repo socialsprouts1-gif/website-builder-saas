@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { cn } from '@/components/ui/cn';
 import { EmptyState } from '@/components/ui/Card';
+import { PageThumb } from '@/components/ui/PageThumb';
 import type { BlueprintCard, BlueprintFeature, BlueprintStyle } from '@/lib/templates';
 
 export interface LibraryIndustry {
@@ -162,24 +163,11 @@ function TemplateCardView({ card }: { card: BlueprintCard }) {
         className="group block border-b border-hairline"
         aria-label={`Preview the ${card.name} template`}
       >
-        {/* A real render of the template, scaled into the card. It is an iframe
-            rather than a screenshot so it can never be out of date, and it is
-            inert — pointer events go to the link, not the page inside. */}
-        <span
-          className="lumen-scale-frame block aspect-[4/3] bg-[var(--bg-base-deep)]"
-          style={{ ['--frame-width' as string]: '1280px' }}
-        >
-          <iframe
-            src={`/api/blueprints/${card.id}/index.html`}
-            title={`${card.name} preview`}
-            loading="lazy"
-            tabIndex={-1}
-            aria-hidden
-            sandbox="allow-scripts"
-            className="pointer-events-none border-0"
-            style={{ width: 1280, height: 960 }}
-          />
-        </span>
+        <PageThumb
+          src={`/api/blueprints/${card.id}/index.html`}
+          title={`${card.name} preview`}
+          className="aspect-[4/3]"
+        />
       </Link>
 
       <div className="flex flex-1 flex-col gap-3 p-5">

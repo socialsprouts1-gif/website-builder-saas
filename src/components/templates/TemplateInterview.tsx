@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 import { InterviewStep } from '@/components/app/InterviewStep';
+import { StepShell } from '@/components/app/StepShell';
 import { MediaDrop } from '@/components/app/MediaDrop';
 import { useUploads } from '@/components/app/useUploads';
 import { cn } from '@/components/ui/cn';
@@ -137,26 +137,21 @@ export function TemplateInterview({ template }: { template: SetupTemplate }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex gap-1.5" aria-hidden>
-          <span className="h-1 w-6 rounded-pill bg-accent" />
-          <span className="h-1 w-3 rounded-pill bg-white/25" />
-          <span className="h-1 w-3 rounded-pill bg-white/25" />
-        </div>
-        <p className="text-[11.5px] text-ink-muted">First question</p>
-      </div>
-
-      <div>
-        <h2 className="font-display text-[24px] leading-tight text-ink-primary">
-          What is the business, and where is it?
-        </h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
-          A line or two in your own words. Lumen reads it, then asks only what it still needs — a few
-          questions, one at a time, and you can skip any of them.
-        </p>
-      </div>
-
+    <StepShell
+      label="First question"
+      title="What is the business, and where is it?"
+      help="A line or two in your own words. Lumen reads it, then asks only what it still needs — a few questions, one at a time, and you can skip any of them."
+      busy={asking || busy}
+      onNext={() => void askFirst()}
+      nextLabel={asking ? 'Reading it…' : busy ? 'Starting…' : 'Continue'}
+      nextDisabled={!ready}
+      aside={
+        <>
+          {template.sections} sections across {template.pages} pages, built around{' '}
+          {template.action.toLowerCase()}.
+        </>
+      }
+    >
       <textarea
         value={prompt}
         onChange={(event) => setPrompt(event.target.value)}
@@ -179,17 +174,7 @@ export function TemplateInterview({ template }: { template: SetupTemplate }) {
       />
 
       {problem}
-
-      <div className="flex flex-wrap items-center gap-4 border-t border-hairline pt-5">
-        <Button size="lg" onClick={() => void askFirst()} disabled={!ready || asking || busy}>
-          {asking ? 'Reading it…' : busy ? 'Starting…' : 'Continue'}
-        </Button>
-        <p className="text-[12.5px] text-ink-muted">
-          {template.sections} sections across {template.pages} pages, built around{' '}
-          {template.action.toLowerCase()}.
-        </p>
-      </div>
-    </div>
+    </StepShell>
   );
 }
 

@@ -1,18 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
+import { StepShell } from '@/components/app/StepShell';
 import { cn } from '@/components/ui/cn';
 import type { Answer, InterviewQuestion } from '@/lib/generation/interview';
 
 /**
  * One question per screen, in the order Lumen wants to ask them.
  *
- * Everything here is skippable, at any point. A person who already knows what
- * they want should not be made to click through nine screens to get it, and an
- * unanswered question is better than a guessed one — a skipped question simply
- * never reaches the brief.
+ * Everything here is skippable, at any point, and it says so on a button
+ * rather than in a sentence. A person who already knows what they want should
+ * not be made to click through nine screens to get it, and an unanswered
+ * question is better than a guessed one — a skipped question simply never
+ * reaches the brief.
  */
 export function InterviewStep({
   questions,
@@ -52,7 +53,6 @@ export function InterviewStep({
   const last = index === steps - 1;
   const chosen = picked[question.id] ?? [];
   const typed = other[question.id] ?? '';
-  const answered = onMedia || chosen.length > 0 || typed.trim().length > 0;
 
   function toggle(label: string) {
     setPicked((current) => {
@@ -85,43 +85,37 @@ export function InterviewStep({
     else setIndex((current) => current + 1);
   }
 
-  const dots = Array.from({ length: steps }, (_, position) => position);
+  /** Leave this one out entirely, rather than carrying a half-answer forward. */
+  function skip() {
+    if (!onMedia) {
+      setPicked((current) => ({ ...current, [question.id]: [] }));
+      setOther((current) => ({ ...current, [question.id]: '' }));
+    }
+    advance();
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex gap-1.5" aria-hidden>
-          {dots.map((position) => (
-            <span
-              key={position}
-              className={cn(
-                'h-1 rounded-pill transition-all',
-                position === index ? 'w-6 bg-accent' : position < index ? 'w-3 bg-accent/45' : 'w-3 bg-white/25',
-              )}
-            />
-          ))}
-        </div>
-        <p className="text-[11.5px] text-ink-muted">
-          {index + 1} of {steps}
-        </p>
-      </div>
-
-      <div>
-        <h2 className="font-display text-[24px] leading-tight text-ink-primary">
-          {onMedia ? 'Do you have a logo or photos?' : question.question}
-        </h2>
-        {onMedia ? (
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
-            Optional, and you can add them later. If you put them in now, Lumen builds the site around
-            your own pictures instead of stand-ins.
-          </p>
-        ) : question.help ? (
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">{question.help}</p>
-        ) : null}
-        {!onMedia && question.kind === 'multi' ? (
-          <p className="mt-1.5 text-[11.5px] text-ink-muted">Pick as many as apply.</p>
-        ) : null}
-      </div>
+    <StepShell
+      index={index}
+      total={steps}
+      title={onMedia ? 'Do you have a logo or photos?' : question.question}
+      help={
+        onMedia
+          ? 'Optional, and you can add them later. If you put them in now, Lumen builds the site around your own pictures instead of stand-ins.'
+          : question.help
+      }
+      busy={busy}
+      onBack={index > 0 ? () => setIndex((current) => current - 1) : undefined}
+      onNext={advance}
+      nextLabel={busy ? 'Starting…' : last ? 'Build it' : 'Continue'}
+      onSkip={skip}
+      skipLabel={last ? 'Skip this' : 'Skip this question'}
+      onSkipAll={onSkipAll}
+      skipAllLabel="Skip the questions and build"
+    >
+      {!onMedia && question.kind === 'multi' ? (
+        <p className="-mt-3 text-[11.5px] text-ink-muted">Pick as many as apply.</p>
+      ) : null}
 
       {onMedia ? <div>{media}</div> : null}
 
@@ -170,31 +164,12 @@ export function InterviewStep({
           value={typed}
           onChange={(event) => setOther((current) => ({ ...current, [question.id]: event.target.value }))}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && answered) advance();
+            if (event.key === 'Enter') advance();
           }}
           placeholder={question.kind === 'text' ? 'Type your answer' : 'Something else…'}
           aria-label={question.question}
         />
       ) : null}
-
-      <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-4">
-        {index > 0 ? (
-          <Button variant="ghost" onClick={() => setIndex((current) => current - 1)} disabled={busy}>
-            Back
-          </Button>
-        ) : null}
-        <Button onClick={advance} disabled={busy}>
-          {busy ? 'Starting…' : last ? 'Build it' : answered ? 'Next' : 'Skip this'}
-        </Button>
-        <button
-          type="button"
-          onClick={onSkipAll}
-          disabled={busy}
-          className="ml-auto text-[12.5px] text-ink-muted transition hover:text-ink-primary disabled:opacity-40"
-        >
-          Skip the questions, just build it
-        </button>
-      </div>
-    </div>
+    </StepShell>
   );
 }

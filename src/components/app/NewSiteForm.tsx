@@ -6,12 +6,14 @@ import { PromptBar } from '@/components/ui/PromptBar';
 import { CategoryChip } from '@/components/ui/CategoryChip';
 import { Button } from '@/components/ui/Button';
 import { CATEGORIES, categoryBySlug } from '@/lib/categories';
-import { RecommendedTemplates } from '@/components/templates/RecommendedTemplates';
+import { TemplateChoice } from '@/components/templates/TemplateChoice';
+import { StepShell } from '@/components/app/StepShell';
 import { cn } from '@/components/ui/cn';
 import type { ModelOption } from '@/lib/openai/models';
 import { InterviewStep } from '@/components/app/InterviewStep';
 import { MediaDrop } from '@/components/app/MediaDrop';
 import type { Answer, InterviewQuestion } from '@/lib/generation/interview';
+import type { BlueprintCard } from '@/lib/templates';
 import { useUploads } from '@/components/app/useUploads';
 
 type Mode = 'describe' | 'screenshot' | 'speak';
@@ -76,6 +78,12 @@ export function NewSiteForm({
   const [dragging, setDragging] = useState(false);
   const [questions, setQuestions] = useState<InterviewQuestion[] | null>(null);
   const [asking, setAsking] = useState(false);
+  // The look, asked before anything else — it decides the pages, the sections
+  // and the design, so every question after it is a question about filling one
+  // in. Null means "let Lumen decide", which is an answer rather than a gap.
+  const [looks, setLooks] = useState<BlueprintCard[] | null>(null);
+  const [pick, setPick] = useState<string | null>(null);
+  const [blueprint, setBlueprint] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachments, attachFiles, attachReference, remove, assets } = useUploads();
 
@@ -126,9 +134,12 @@ export function NewSiteForm({
       : 'Build a site based on this screenshot.');
 
   /**
-   * Step one: ask Lumen what it needs to know. If the questions cannot be
-   * written — no key, a bad reply, the network — building goes ahead anyway
-   * rather than blocking on a step that is only meant to help.
+   * Step one: show what it could look like.
+   *
+   * Three real templates for what was typed, rendered rather than described.
+   * It costs no credits — the industry is read off the words, not a model — and
+   * it is the choice that decides the structure, so it is asked first and asked
+   * with pictures.
    */
   async function askFirst() {
     if (mode === 'screenshot' && !screenshot) {
@@ -140,6 +151,37 @@ export function NewSiteForm({
     setAsking(true);
     setError(null);
     try {
+      const response = await fetch('/api/templates/recommend', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ prompt: brief }),
+      });
+      const payload = await response.json();
+      if (response.ok && Array.isArray(payload.templates) && payload.templates.length > 0) {
+        setLooks(payload.templates);
+        setPick(payload.templates[0].id ?? null);
+        setAsking(false);
+        return;
+      }
+    } catch {
+      // Nothing to choose between is not a reason to stop. The questions still
+      // get asked, and the structure is worked out the way it always was.
+    }
+    await askQuestions(null);
+  }
+
+  /**
+   * Step two: ask Lumen what it needs to know about the business.
+   *
+   * If the questions cannot be written — no key, a bad reply, the network —
+   * building goes ahead anyway rather than blocking on a step that is only
+   * meant to help.
+   */
+  async function askQuestions(chosen: string | null) {
+    setBlueprint(chosen);
+    setAsking(true);
+    setError(null);
+    try {
       const response = await fetch('/api/interview', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -147,6 +189,7 @@ export function NewSiteForm({
           prompt: brief,
           category,
           hasScreenshot: mode === 'screenshot' && Boolean(screenshot),
+          blueprint: chosen,
         }),
       });
       const payload = await response.json();
@@ -154,15 +197,15 @@ export function NewSiteForm({
         setQuestions(payload.questions);
         return;
       }
-      await create([]);
+      await create([], chosen);
     } catch {
-      await create([]);
+      await create([], chosen);
     } finally {
       setAsking(false);
     }
   }
 
-  async function create(answers: Answer[]) {
+  async function create(answers: Answer[], chosen: string | null = blueprint) {
     setBusy(true);
     setError(null);
     try {
@@ -178,6 +221,7 @@ export function NewSiteForm({
           screenshotIsOwn: mode === 'screenshot' ? ownMaterial : undefined,
           assets,
           answers,
+          blueprint: chosen,
         }),
       });
       const payload = await response.json();
@@ -187,17 +231,55 @@ export function NewSiteForm({
       setError(cause instanceof Error ? cause.message : 'Could not start generation');
       setBusy(false);
       setQuestions(null);
+      setLooks(null);
     }
   }
 
   const activeMode = MODES.find((item) => item.id === mode)!;
 
+  const asked = (
+    <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
+      <span className="text-ink-secondary">You asked for:</span> {brief}
+    </p>
+  );
+
+  const problem = error ? (
+    <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+      {error}
+    </p>
+  ) : null;
+
+  // The look, before the questions about filling it in. Rendered here rather
+  // than beside the prompt box, because it is a question and belongs with the
+  // rest of them — with the same skip, and an answer for "you decide".
+  if (looks && !questions) {
+    return (
+      <div className="space-y-5">
+        {asked}
+        <StepShell
+          label="First question"
+          title="Which of these should it look like?"
+          help="Each one is a whole website — the pages, the sections and the design, decided before a word is written. Pick the closest; anything can be changed afterwards by saying so."
+          busy={busy || asking}
+          onBack={() => setLooks(null)}
+          onNext={() => void askQuestions(pick)}
+          nextLabel={asking ? 'Writing your questions…' : busy ? 'Starting…' : 'Continue'}
+          onSkip={() => void askQuestions(null)}
+          skipLabel="Skip — let Lumen decide"
+          onSkipAll={() => void create([], null)}
+          skipAllLabel="Skip everything and build"
+        >
+          <TemplateChoice templates={looks} chosen={pick} onChoose={setPick} />
+        </StepShell>
+        {problem}
+      </div>
+    );
+  }
+
   if (questions) {
     return (
       <div className="space-y-5">
-        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
-          <span className="text-ink-secondary">You asked for:</span> {brief}
-        </p>
+        {asked}
         <InterviewStep
           questions={questions}
           busy={busy}
@@ -207,11 +289,7 @@ export function NewSiteForm({
             <MediaDrop attachments={attachments} onAttachFiles={attachFiles} onRemove={remove} />
           }
         />
-        {error ? (
-          <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
-            {error}
-          </p>
-        ) : null}
+        {problem}
       </div>
     );
   }
@@ -337,12 +415,6 @@ export function NewSiteForm({
         </div>
       ) : null}
 
-      {/* Three templates for what has been typed so far. A structure somebody
-          chose and looked at beats one a model invented and they discovered
-          afterwards — and this costs no credits, because the industry is
-          detected from words rather than asked for. */}
-      {mode === 'describe' ? <RecommendedTemplates prompt={prompt} /> : null}
-
       <PromptBar
         value={prompt}
         onChange={setPrompt}
@@ -375,9 +447,9 @@ export function NewSiteForm({
       />
 
       <p className="text-center text-[12px] leading-relaxed text-ink-muted">
-        Lumen asks a few questions before it builds — you can skip them. Use{' '}
-        <strong className="text-ink-secondary">Attach</strong> to hand over your logo and your own
-        photographs now, and they go into the site as it is written.
+        Next you pick the look, from three real templates, then answer a few questions — all of it
+        skippable. Use <strong className="text-ink-secondary">Attach</strong> to hand over your logo
+        and your own photographs now, and they go into the site as it is written.
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
