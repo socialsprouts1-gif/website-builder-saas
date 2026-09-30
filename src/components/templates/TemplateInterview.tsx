@@ -6,6 +6,7 @@ import { InterviewStep } from '@/components/app/InterviewStep';
 import { StepShell } from '@/components/app/StepShell';
 import { MediaDrop } from '@/components/app/MediaDrop';
 import { useUploads } from '@/components/app/useUploads';
+import { postJson } from '@/components/app/UpgradeDialog';
 import { cn } from '@/components/ui/cn';
 import type { Answer, InterviewQuestion } from '@/lib/generation/interview';
 
@@ -83,19 +84,17 @@ export function TemplateInterview({ template }: { template: SetupTemplate }) {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
+      const { ok, payload } = await postJson<{ projectId?: string; jobId?: string; error?: string }>(
+        '/api/projects',
+        {
           prompt: prompt.trim(),
           blueprint: template.id,
           inputMode: 'template',
           answers,
           assets: uploads.assets,
-        }),
-      });
-      const payload = (await response.json()) as { projectId?: string; jobId?: string; error?: string };
-      if (!response.ok || !payload.projectId) {
+        },
+      );
+      if (!ok || !payload.projectId) {
         throw new Error(payload.error ?? 'Could not start the build. Try again.');
       }
       router.push(`/app/project/${payload.projectId}?job=${payload.jobId ?? ''}`);

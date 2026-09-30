@@ -5,22 +5,25 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { Badge } from '@/components/ui/Badge';
+import { CREDIT_COST } from '@/lib/env';
+import { meterReading, refills, type CreditBalance } from '@/lib/credits';
 
 export function ApiKeyManager({
   hasOwnKey,
   last4,
-  creditsUsed,
-  creditsLimit,
+  balance,
   resetsAt,
   platformConfigured,
 }: {
   hasOwnKey: boolean;
   last4: string | null;
-  creditsUsed: number;
-  creditsLimit: number;
+  balance: CreditBalance;
   resetsAt: string;
   platformConfigured: boolean;
 }) {
+  const reading = meterReading(balance);
+  const left = reading.left;
+
   const router = useRouter();
   const [key, setKey] = useState('');
   const [busy, setBusy] = useState(false);
@@ -80,13 +83,17 @@ export function ApiKeyManager({
         <div className="rounded-[10px] border border-hairline bg-raised px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[13px] text-ink-primary">Using Lumen&apos;s shared key</p>
-            <Badge tone={creditsUsed >= creditsLimit ? 'warning' : 'accent'}>
-              {Math.max(0, creditsLimit - creditsUsed)} / {creditsLimit} credits today
+            <Badge tone={left === 0 ? 'warning' : 'accent'}>
+              {left} / {reading.outOf} {reading.label.toLowerCase()}
             </Badge>
           </div>
           <p className="mt-1 text-[12px] text-ink-muted">
             {platformConfigured
-              ? `A new site costs 3 credits, each edit 1. Resets ${new Date(resetsAt).toUTCString().slice(17, 22)} UTC. Add your own key below for no limit.`
+              ? `A new site costs ${CREDIT_COST.generation} credits, each edit 1. ${
+                  refills(balance)
+                    ? `Resets ${new Date(resetsAt).toUTCString().slice(17, 22)} UTC.`
+                    : 'They do not reset.'
+                } Add your own key below for no limit.`
               : 'No platform key is configured, so you need your own key to generate.'}
           </p>
         </div>

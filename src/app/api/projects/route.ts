@@ -2,12 +2,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createProjectSchema } from '@/lib/validation';
-import { handleRouteError, jsonError } from '@/lib/api';
+import { creditsExhausted, handleRouteError, jsonError } from '@/lib/api';
 import { RATE_LIMITS, rateLimitUser } from '@/lib/rate-limit';
 import { uploadAsset } from '@/lib/generation/storage';
 import { categoryBySlug } from '@/lib/categories';
 import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/errors';
 import { getAllowance } from '@/lib/allowance';
+import { creditBalance } from '@/lib/openai/client';
+import { canAfford, exhaustedMessage } from '@/lib/credits';
+import { CREDIT_COST } from '@/lib/env';
 import { ensureUserProfile } from '@/lib/profile';
 import { applyAnswers, whatsappFromAnswers } from '@/lib/generation/interview';
 import { normaliseWhatsApp } from '@/lib/whatsapp';
@@ -40,6 +43,15 @@ export async function POST(request: NextRequest) {
       return jsonError('Confirm your email address before generating your first site.', 403);
     }
 
+
+    // Checked before anything is created, so somebody out of credits is offered
+    // the plan instead of finding a half-built project that failed on the third
+    // step. The pipeline checks again when it actually spends — this is the
+    // one that decides what the person sees.
+    const balance = await creditBalance(user.id);
+    if (!canAfford(balance, CREDIT_COST.generation)) {
+      return creditsExhausted(exhaustedMessage(balance));
+    }
 
     const limit = await rateLimitUser(
       user.id,

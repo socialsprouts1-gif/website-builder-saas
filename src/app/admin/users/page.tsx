@@ -2,7 +2,7 @@ import { SectionHeader } from '@/components/ui/Card';
 import { UserTable } from '@/components/admin/UserTable';
 import { requireAdmin } from '@/lib/auth';
 import { adminStats, listUsers } from '@/lib/admin';
-import { TRIAL_DAYS } from '@/lib/razorpay';
+import { FREE_CREDITS } from '@/lib/env';
 
 export const metadata = { title: 'Users' };
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export default async function AdminUsersPage() {
         title="Users"
         description={`${stats.users} account${stats.users === 1 ? '' : 's'}, ${stats.projects} site${
           stats.projects === 1 ? '' : 's'
-        }. New signups get ${TRIAL_DAYS} day free.`}
+        }. New signups get ${FREE_CREDITS} free credits, once.`}
       />
 
       <UserTable users={users} currentUserId={admin.id} />

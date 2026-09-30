@@ -1,7 +1,7 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/auth';
-import { CREDIT_COST, DAILY_PLATFORM_CREDITS, type CreditedEvent } from '@/lib/env';
+import { CREDIT_COST, FREE_CREDITS, type CreditedEvent } from '@/lib/env';
 
 /**
  * The users panel reads through the service role, which bypasses row-level
@@ -100,7 +100,7 @@ export async function listUsers(search?: string): Promise<AdminUserRow[]> {
       projectCount: projectCounts.get(user.id) ?? 0,
       hasOwnKey: keyOwners.has(user.id),
       creditsUsedToday: credits.get(user.id) ?? 0,
-      creditsLimit: DAILY_PLATFORM_CREDITS,
+      creditsLimit: FREE_CREDITS,
       plan: plan
         ? {
             status: plan.status,

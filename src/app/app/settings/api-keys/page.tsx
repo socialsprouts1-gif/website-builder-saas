@@ -31,8 +31,7 @@ export default async function ApiKeysPage() {
         <ApiKeyManager
           hasOwnKey={status.hasOwnKey}
           last4={status.last4}
-          creditsUsed={status.creditsUsed}
-          creditsLimit={status.creditsLimit}
+          balance={status.balance}
           resetsAt={status.resetsAt}
           platformConfigured={status.platformConfigured}
         />

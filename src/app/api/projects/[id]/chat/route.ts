@@ -3,8 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { runChatEdit } from '@/lib/generation/pipeline';
 import { chatEditSchema } from '@/lib/validation';
-import { jsonError, sseEncode, sseHeaders } from '@/lib/api';
+import { creditsExhausted, jsonError, sseEncode, sseHeaders } from '@/lib/api';
 import { RATE_LIMITS, rateLimitUser } from '@/lib/rate-limit';
+import { creditBalance } from '@/lib/openai/client';
+import { canAfford, exhaustedMessage } from '@/lib/credits';
+import { CREDIT_COST } from '@/lib/env';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -35,6 +38,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     RATE_LIMITS.chatEdit.windowSeconds,
   );
   if (!limit.allowed) return jsonError('Too many edits in a row. Give it a minute.', 429);
+
+  // Checked here rather than inside the stream: a refusal that arrives as an
+  // SSE event is a red line in a chat log, and this one has an answer — the
+  // upgrade dialog — which the client can only open from a real status code.
+  const balance = await creditBalance(user.id);
+  if (!canAfford(balance, CREDIT_COST.chat_edit)) {
+    return creditsExhausted(exhaustedMessage(balance));
+  }
 
   let body: { message: string; label?: string; model?: string | null; source: 'chat' | 'voice' };
   try {

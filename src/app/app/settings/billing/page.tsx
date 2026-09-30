@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/auth';
 import { getBillingState } from '@/lib/billing';
 import { createClient } from '@/lib/supabase/server';
 import { formatInr, PLAN_LABEL } from '@/lib/razorpay';
-import { DAILY_PLATFORM_CREDITS, PRO_DAILY_PLATFORM_CREDITS } from '@/lib/env';
+import { FREE_CREDITS, PRO_DAILY_PLATFORM_CREDITS } from '@/lib/env';
 
 export const metadata = { title: 'Billing' };
 export const dynamic = 'force-dynamic';
@@ -46,7 +46,7 @@ export default async function BillingPage() {
               )}, then your account returns to the free tier — you keep every site.`
             : state.entitled
               ? `Next charge on ${formatDate(state.subscription?.current_period_end)}.`
-              : `You are on the free tier: ${DAILY_PLATFORM_CREDITS} credits a day, forever. Upgrade for ${PRO_DAILY_PLATFORM_CREDITS} a day.`}
+              : `You are on the free tier: ${FREE_CREDITS} credits in total, once. Upgrade for ${PRO_DAILY_PLATFORM_CREDITS} every day.`}
         </p>
 
         <BillingActions

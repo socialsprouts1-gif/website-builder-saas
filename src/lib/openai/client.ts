@@ -1,7 +1,13 @@
 import 'server-only';
 import OpenAI from 'openai';
-import { env, CREDIT_COST, WELCOME_CREDITS, type CreditedEvent } from '@/lib/env';
+import { env, CREDIT_COST, FREE_CREDITS, type CreditedEvent } from '@/lib/env';
 import { getAllowance } from '@/lib/allowance';
+import {
+  NoKeyAvailableError,
+  canAfford,
+  totalCredits,
+  type CreditBalance,
+} from '@/lib/credits';
 import { decryptSecret } from '@/lib/crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -14,16 +20,7 @@ export interface ResolvedKey {
   creditsRemaining: number;
 }
 
-export class NoKeyAvailableError extends Error {
-  constructor(public readonly reason: 'not_configured' | 'quota_exhausted') {
-    super(
-      reason === 'quota_exhausted'
-        ? "You have used your welcome credits and today's allowance. More free credits arrive at midnight UTC — or add your own OpenAI key and there is no limit at all."
-        : 'No OpenAI key is configured. Add your own key in Settings → API keys to start generating.',
-    );
-    this.name = 'NoKeyAvailableError';
-  }
-}
+export { NoKeyAvailableError } from '@/lib/credits';
 
 /** Midnight UTC tonight — when the allowance resets. */
 export function creditsResetAt(): Date {
@@ -84,16 +81,37 @@ async function platformCreditsUsedEver(userId: string): Promise<number> {
   );
 }
 
-/** Welcome grant left, and today's allowance left, as two separate pots. */
-async function pots(userId: string, dailyCredits: number) {
+/**
+ * What this account has left, as the shape every screen and every refusal
+ * reads. The two pots stay separate because only one of them comes back.
+ */
+export async function creditBalance(userId: string): Promise<CreditBalance> {
+  const allowance = await getAllowance(userId);
+
+  if (allowance.unlimited) {
+    return {
+      tier: allowance.tier,
+      unlimited: true,
+      freeRemaining: FREE_CREDITS,
+      freeTotal: FREE_CREDITS,
+      dailyRemaining: 0,
+      dailyLimit: 0,
+    };
+  }
+
   const [usedToday, usedEver] = await Promise.all([
     platformCreditsUsedToday(userId),
     platformCreditsUsedEver(userId),
   ]);
 
-  const welcome = Math.max(0, WELCOME_CREDITS - usedEver);
-  const today = Math.max(0, dailyCredits - usedToday);
-  return { usedToday, usedEver, welcome, today, total: welcome + today };
+  return {
+    tier: allowance.tier,
+    unlimited: false,
+    freeRemaining: Math.max(0, FREE_CREDITS - usedEver),
+    freeTotal: FREE_CREDITS,
+    dailyRemaining: Math.max(0, allowance.dailyCredits - usedToday),
+    dailyLimit: allowance.dailyCredits,
+  };
 }
 
 /**
@@ -128,22 +146,25 @@ export async function resolveApiKey(
 
   if (!env.openai.platformKey) throw new NoKeyAvailableError('not_configured');
 
-  const allowance = await getAllowance(userId);
+  const balance = await creditBalance(userId);
 
   // Admins are never metered.
-  if (allowance.unlimited) {
+  if (balance.unlimited) {
     return { apiKey: env.openai.platformKey, source: 'platform', creditsRemaining: Infinity };
   }
 
-  // The welcome grant is spent first and never refills; the daily allowance is
-  // what is left after it. A new account therefore has enough to finish a site
-  // rather than enough to start one.
-  const { total } = await pots(userId, allowance.dailyCredits);
+  // The free grant is spent first and never refills; a paid plan's daily
+  // allowance is what follows it. Refuse when the call would overdraw, not
+  // merely when the balance has already reached zero.
+  if (!canAfford(balance, CREDIT_COST[intent])) {
+    throw new NoKeyAvailableError('quota_exhausted', balance);
+  }
 
-  // Refuse when the call would overdraw, not merely when the balance is zero.
-  if (total < CREDIT_COST[intent]) throw new NoKeyAvailableError('quota_exhausted');
-
-  return { apiKey: env.openai.platformKey, source: 'platform', creditsRemaining: total };
+  return {
+    apiKey: env.openai.platformKey,
+    source: 'platform',
+    creditsRemaining: totalCredits(balance),
+  };
 }
 
 /**
@@ -169,24 +190,17 @@ export async function getKeyStatus(userId: string) {
     .eq('is_active', true)
     .maybeSingle();
 
-  const allowance = await getAllowance(userId);
-  const balance = allowance.unlimited
-    ? { usedToday: 0, welcome: 0, today: allowance.dailyCredits, total: allowance.dailyCredits }
-    : await pots(userId, allowance.dailyCredits);
+  const balance = await creditBalance(userId);
 
   return {
     hasOwnKey: Boolean(keyRow),
     last4: keyRow?.last4 ?? null,
     validatedAt: keyRow?.validated_at ?? null,
     platformConfigured: Boolean(env.openai.platformKey),
-    tier: allowance.tier,
-    unlimited: allowance.unlimited,
-    creditsUsed: balance.usedToday,
-    creditsLimit: allowance.dailyCredits,
-    /** Grant left. Shown separately because it does not come back tomorrow. */
-    welcomeRemaining: balance.welcome,
-    welcomeTotal: WELCOME_CREDITS,
-    creditsRemaining: balance.total,
+    balance,
+    tier: balance.tier,
+    unlimited: balance.unlimited,
+    creditsRemaining: totalCredits(balance),
     resetsAt: creditsResetAt().toISOString(),
   };
 }

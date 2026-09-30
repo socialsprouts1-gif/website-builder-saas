@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { CreditMeter } from '@/components/app/CreditMeter';
+import type { CreditBalance } from '@/lib/credits';
 import { cn } from '@/components/ui/cn';
 
 /**
@@ -44,13 +45,10 @@ const GROUPS: { title: string; items: { href: string; label: string }[] }[] = [
 ];
 
 export interface CreditSummary {
-  used: number;
-  limit: number;
+  balance: CreditBalance;
   resetsAt: string;
   hasOwnKey: boolean;
   platformConfigured: boolean;
-  tier: 'admin' | 'pro' | 'free';
-  unlimited: boolean;
 }
 
 export function AppNav({

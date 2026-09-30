@@ -22,6 +22,7 @@ import { openingView, type JobStatus } from '@/lib/generation/opening-view';
 import { createClient } from '@/lib/supabase/client';
 import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
 import type { ModelOption } from '@/lib/openai/models';
+import { signalCreditsExhausted } from '@/components/app/UpgradeDialog';
 
 export interface WorkspaceMessage {
   id: string;
@@ -683,6 +684,9 @@ export function Workspace({
 
       if (!response.ok || !response.body) {
         const payload = await response.json().catch(() => ({ error: 'That edit failed' }));
+        // Out of credits has an answer, so it opens the plan rather than
+        // landing in the chat log as one more red line.
+        if (response.status === 402) signalCreditsExhausted(payload.error);
         throw new Error(payload.error ?? 'That edit failed');
       }
 

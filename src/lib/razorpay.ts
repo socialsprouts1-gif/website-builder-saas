@@ -12,10 +12,10 @@ import { env, PLAN_PRICE_PAISE } from '@/lib/env';
  */
 
 /**
- * One day free, which pairs with the daily credit allowance: a new account gets
- * a full day and 10 credits — enough to build a site and decide.
+ * No time-limited trial any more. The free tier is a credit grant rather than a
+ * countdown, so nothing expires on a clock — see FREE_CREDITS.
  */
-export const TRIAL_DAYS = 1;
+export const TRIAL_DAYS = 0;
 
 export class BillingNotConfiguredError extends Error {
   constructor() {
@@ -46,7 +46,11 @@ export async function createSubscription(params: {
   gstin?: string | null;
 }): Promise<CreatedSubscription> {
   if (!env.razorpay.planId) {
-    throw new Error('RAZORPAY_PLAN_ID is not set. Create a ₹500/month plan in the Razorpay dashboard first.');
+    // Said to the person, not to the deployment. The missing variable is named
+    // in the server log, where somebody can act on it; a customer reading an
+    // environment variable's name on a payment dialog learns nothing.
+    console.error('[lumen:billing] RAZORPAY_PLAN_ID is not set — create the monthly plan in Razorpay.');
+    throw new BillingNotConfiguredError();
   }
 
   const client = razorpayClient();

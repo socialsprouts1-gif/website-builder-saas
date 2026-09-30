@@ -159,21 +159,20 @@ export const isBillingConfigured = Boolean(env.razorpay.keyId && env.razorpay.ke
 export const isPlatformKeyConfigured = Boolean(env.openai.platformKey);
 
 /**
- * Free credits per day on Lumen's pooled platform key. Ten is enough to build
- * one site and iterate on it: a generation costs 3, each edit costs 1.
- * Bring-your-own-key has no ceiling — it bills to the user's own account.
- */
-export const DAILY_PLATFORM_CREDITS = 10;
-
-/**
- * Credits a new account gets once, on top of the daily allowance.
+ * The free tier, in full: ten credits, once, for the life of the account.
  *
- * A daily bucket that resets is the wrong shape for someone who has just signed
- * up: they want to build one site now, look at it, change their mind twice, and
- * publish it. This is enough for roughly ten sites and the edits around them,
- * it never refills, and it is spent before the daily allowance is touched.
+ * It used to be a bucket that refilled every midnight, which made the paid plan
+ * a convenience rather than a decision — nobody pays to stop waiting until
+ * tomorrow. A grant that runs out is a question somebody has to answer, and the
+ * answer is either "this was worth ₹500" or "it was not". Both are useful; an
+ * endless free tier tells you neither.
+ *
+ * A whole website costs CREDIT_COST.generation, so this is two sites and the
+ * changes around them. Everything a site can do — the shop, the chatbot, the
+ * connectors, publishing, export — is in the free tier. What runs out is model
+ * time, because model time is the part that costs real money.
  */
-export const WELCOME_CREDITS = 50;
+export const FREE_CREDITS = 10;
 
 /**
  * The paid tier's daily ceiling. High enough that a small business never feels

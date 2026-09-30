@@ -1,9 +1,9 @@
 import {
   CREDIT_COST,
-  DAILY_PLATFORM_CREDITS,
+
   PLAN_PRICE_LABEL,
   PRO_DAILY_PLATFORM_CREDITS,
-  WELCOME_CREDITS,
+  FREE_CREDITS,
 } from '@/lib/env';
 
 /**
@@ -157,9 +157,9 @@ export const PLANS: Plan[] = [
   {
     name: 'Free',
     price: '₹0',
-    note: 'No card. Enough to build a site, look at it, and change your mind twice.',
+    note: 'No card. Enough to build a site, publish it, and see whether this is for you.',
     features: [
-      `${WELCOME_CREDITS} credits when you sign up, ${DAILY_PLATFORM_CREDITS} more every day`,
+      `${FREE_CREDITS} credits when you sign up — no card, and nothing expires`,
       `A site costs ${CREDIT_COST.generation} credits to build and ${CREDIT_COST.chat_edit} per change`,
       'Every feature — shop, chatbot, voice, visual editor, export',
       'Publish to a lumensite.in address',
@@ -173,7 +173,7 @@ export const PLANS: Plan[] = [
     price: `${PLAN_PRICE_LABEL}/month`,
     note: 'The same product, with room to work in. Paying buys throughput, not features — there are no feature gates on this product.',
     features: [
-      `${PRO_DAILY_PLATFORM_CREDITS} credits a day instead of ${DAILY_PLATFORM_CREDITS}`,
+      `${PRO_DAILY_PLATFORM_CREDITS} credits every day, not ${FREE_CREDITS} in total`,
       'Your own domain, with HTTPS',
       'GST-compliant invoices',
       'Or bring your own OpenAI key and have no ceiling at all',

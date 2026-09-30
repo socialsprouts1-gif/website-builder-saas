@@ -1,99 +1,70 @@
 import Link from 'next/link';
 import { cn } from '@/components/ui/cn';
 import { CREDIT_COST } from '@/lib/env';
+import { meterReading, refills, totalCredits, type CreditBalance } from '@/lib/credits';
 
 /** Quoted in one place so the meter can never advertise the wrong price. */
 const SITE_COST = CREDIT_COST.generation;
 
 /**
- * The daily allowance, always visible (spec Section 17: never make the user
- * guess what a long-running or metered action will cost them).
+ * What is left, always visible (spec Section 17: never make the user guess
+ * what a long-running or metered action will cost them).
+ *
+ * The free tier is a grant rather than a daily bucket, so this must never say
+ * "resets in 4h" over a number that is not coming back. Which of the two it is
+ * comes from the balance itself.
  */
 export function CreditMeter({
-  used,
-  limit,
+  balance,
   resetsAt,
   hasOwnKey,
   platformConfigured,
-  welcomeRemaining = 0,
-  welcomeTotal = 0,
-  tier = 'free',
-  unlimited = false,
   variant = 'nav',
 }: {
-  used: number;
-  limit: number;
+  balance: CreditBalance;
   resetsAt: string;
   hasOwnKey: boolean;
   platformConfigured: boolean;
-  /** One-time signup credits left. They never come back, so they are shown apart. */
-  welcomeRemaining?: number;
-  welcomeTotal?: number;
-  tier?: 'admin' | 'pro' | 'free';
-  unlimited?: boolean;
   variant?: 'nav' | 'panel';
 }) {
-  if (unlimited) {
+  if (balance.unlimited) {
     return (
-      <div className={wrapper(variant)}>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Credits</span>
-          <span className="text-[12px] text-accent">Unlimited</span>
-        </div>
-        <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-muted">
-          Admin account — nothing is metered.
-        </p>
-      </div>
+      <Shell variant={variant} label="Credits" value={<span className="text-accent">Unlimited</span>}>
+        Admin account — nothing is metered.
+      </Shell>
     );
   }
 
   if (hasOwnKey) {
     return (
-      <div className={wrapper(variant)}>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Credits</span>
-          <span className="text-[12px] text-accent">Unlimited</span>
-        </div>
-        <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-muted">
-          Running on your own OpenAI key.
-        </p>
-      </div>
+      <Shell variant={variant} label="Credits" value={<span className="text-accent">Unlimited</span>}>
+        Running on your own OpenAI key.
+      </Shell>
     );
   }
 
   if (!platformConfigured) {
     return (
-      <div className={wrapper(variant)}>
-        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Credits</span>
-        <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-muted">
-          No shared key on this deployment —{' '}
-          <Link href="/app/settings/api-keys" className="text-accent hover:underline">
-            add your own
-          </Link>
-          .
-        </p>
-      </div>
+      <Shell variant={variant} label="Credits">
+        No shared key on this deployment —{' '}
+        <Link href="/app/settings/api-keys" className="text-accent hover:underline">
+          add your own
+        </Link>
+        .
+      </Shell>
     );
   }
 
-  const today = Math.max(0, limit - used);
-  // The grant is spent first, so while any of it is left it is the number that
-  // matters — and it is not a daily figure, so "resets in 4h" over it would be
-  // a lie.
-  const onGrant = welcomeRemaining > 0;
-  const shown = onGrant ? welcomeRemaining : today;
-  const outOf = onGrant ? welcomeTotal : limit;
-  const pct = outOf > 0 ? Math.min(100, (shown / outOf) * 100) : 0;
-  const empty = welcomeRemaining + today === 0;
+  const reading = meterReading(balance);
+  const empty = totalCredits(balance) === 0;
+  const pct = reading.outOf > 0 ? Math.min(100, (reading.left / reading.outOf) * 100) : 0;
 
   return (
     <div className={wrapper(variant)}>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-          {onGrant ? 'Welcome credits' : tier === 'pro' ? 'Pro credits' : 'Free credits'}
-        </span>
+        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{reading.label}</span>
         <span className={cn('text-[12.5px]', empty ? 'text-[#e5735a]' : 'text-ink-primary')}>
-          {shown} / {outOf}
+          {reading.left} / {reading.outOf}
         </span>
       </div>
 
@@ -105,20 +76,19 @@ export function CreditMeter({
       </div>
 
       <p className="mt-2 text-[11.5px] leading-relaxed text-ink-muted">
-        {onGrant ? (
+        {empty ? (
           <>
-            Yours to keep — these do not reset. A site costs {SITE_COST}, each change costs 1. Then{' '}
-            {limit} more a day, every day.
-          </>
-        ) : empty ? (
-          <>
-            Used up — resets {formatReset(resetsAt)}. Your sites stay live.{' '}
-            {tier === 'free' ? (
+            {refills(balance) ? (
+              <>Used up — more {formatReset(resetsAt)}. </>
+            ) : (
+              <>All used. Your sites stay live and exportable. </>
+            )}
+            {balance.tier === 'free' ? (
               <>
                 <Link href="/app/settings/billing" className="text-accent hover:underline">
                   Upgrade
                 </Link>{' '}
-                for more, or{' '}
+                to keep building, or{' '}
               </>
             ) : null}
             <Link href="/app/settings/api-keys" className="text-accent hover:underline">
@@ -128,10 +98,33 @@ export function CreditMeter({
           </>
         ) : (
           <>
-            A new site costs {SITE_COST}, each change costs 1. Resets {formatReset(resetsAt)}.
+            A new site costs {SITE_COST}, each change costs 1.{' '}
+            {refills(balance) ? <>Resets {formatReset(resetsAt)}.</> : <>These do not reset.</>}
           </>
         )}
       </p>
+    </div>
+  );
+}
+
+function Shell({
+  variant,
+  label,
+  value,
+  children,
+}: {
+  variant: 'nav' | 'panel';
+  label: string;
+  value?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={wrapper(variant)}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{label}</span>
+        {value ? <span className="text-[12px]">{value}</span> : null}
+      </div>
+      <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-muted">{children}</p>
     </div>
   );
 }

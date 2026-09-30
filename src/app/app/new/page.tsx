@@ -7,7 +7,9 @@ import { blueprintById, blueprintCard } from '@/lib/templates';
 import { Badge } from '@/components/ui/Badge';
 import { CreditMeter } from '@/components/app/CreditMeter';
 import { requireUser } from '@/lib/auth';
-import { CREDIT_COST, DAILY_PLATFORM_CREDITS, WELCOME_CREDITS } from '@/lib/env';
+import { CREDIT_COST, FREE_CREDITS } from '@/lib/env';
+import { canAfford, exhaustedMessage } from '@/lib/credits';
+import { OpenUpgradeWhenBlocked } from '@/components/app/UpgradeDialog';
 import { createClient } from '@/lib/supabase/server';
 import { getKeyStatus, resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
@@ -47,9 +49,7 @@ export default async function NewSitePage({
 
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
   const outOfQuota = keyStatus
-    ? !keyStatus.hasOwnKey &&
-      !keyStatus.unlimited &&
-      keyStatus.creditsRemaining < CREDIT_COST.generation
+    ? !keyStatus.hasOwnKey && !canAfford(keyStatus.balance, CREDIT_COST.generation)
     : false;
   const noKeyAtAll = keyStatus ? !keyStatus.hasOwnKey && !keyStatus.platformConfigured : false;
 
@@ -64,6 +64,11 @@ export default async function NewSitePage({
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-9 sm:px-6 sm:py-14">
+      {/* Said on arrival rather than after a prompt and four questions. */}
+      <OpenUpgradeWhenBlocked
+        blocked={outOfQuota && keyStatus?.tier === 'free'}
+        message={keyStatus ? exhaustedMessage(keyStatus.balance) : undefined}
+      />
       {firstTime ? (
         // Said once, on the only visit where it is news. Everything a new
         // account needs to know before it spends anything: what it has, what a
@@ -71,22 +76,27 @@ export default async function NewSitePage({
         <div className="mb-8 rounded-card border border-accent/25 bg-accent-soft/30 p-5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Welcome</p>
           <p className="mt-1.5 font-display text-[19px] leading-tight text-ink-primary">
-            You have enough to build {Math.floor(WELCOME_CREDITS / CREDIT_COST.generation)} sites right now
+            You have enough to build {Math.floor(FREE_CREDITS / CREDIT_COST.generation)} whole sites, free
           </p>
           <ul className="mt-3 space-y-1.5 text-[13px] leading-relaxed text-ink-secondary">
             <li>
-              <span className="text-ink-primary">{WELCOME_CREDITS} credits to start</span>, plus{' '}
-              {DAILY_PLATFORM_CREDITS} more every day. A whole site costs {CREDIT_COST.generation} — the pages
-              and sections after that are free.
+              <span className="text-ink-primary">{FREE_CREDITS} credits, once</span>, with no card and no
+              expiry. A whole site costs {CREDIT_COST.generation} — every page and section inside it is
+              free.
             </li>
             <li>
               Changing something afterwards costs {CREDIT_COST.chat_edit}. Publishing, editing by hand and
               your own photos cost nothing.
             </li>
             <li>
-              Run out and your sites stay live.{' '}
+              When they run out your sites stay live, stay published and stay exportable — only new
+              generating stops.{' '}
+              <Link href="/app/settings/billing" className="text-accent hover:underline">
+                Upgrade
+              </Link>{' '}
+              to carry on, or{' '}
               <Link href="/app/settings/api-keys" className="text-accent hover:underline">
-                Add your own OpenAI key
+                add your own OpenAI key
               </Link>{' '}
               and nothing is metered at all.
             </li>
@@ -169,27 +179,21 @@ export default async function NewSitePage({
             </>
           ) : (
             <>
-              You do not have enough credits left for a new site (a build costs{' '}
-              {CREDIT_COST.generation}).{' '}
-              <Link href="/app/settings/api-keys" className="text-accent hover:underline">
-                Add your own OpenAI key
-              </Link>{' '}
-              for unlimited generations.
+              {keyStatus ? exhaustedMessage(keyStatus.balance) : null}{' '}
+              <Link href="/app/settings/billing" className="text-accent hover:underline">
+                See the plan
+              </Link>
+              .
             </>
           )}
         </div>
       ) : keyStatus ? (
         <div className="mb-6">
           <CreditMeter
-            used={keyStatus.creditsUsed}
-            limit={keyStatus.creditsLimit}
+            balance={keyStatus.balance}
             resetsAt={keyStatus.resetsAt}
             hasOwnKey={keyStatus.hasOwnKey}
             platformConfigured={keyStatus.platformConfigured}
-            welcomeRemaining={keyStatus.welcomeRemaining}
-            welcomeTotal={keyStatus.welcomeTotal}
-            tier={keyStatus.tier}
-            unlimited={keyStatus.unlimited}
             variant="panel"
           />
         </div>

@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CONNECTORS } from '@/lib/connectors/providers';
 import {
   CREDIT_COST,
-  DAILY_PLATFORM_CREDITS,
+  FREE_CREDITS,
   PLAN_PRICE_LABEL,
   PRO_DAILY_PLATFORM_CREDITS,
-  WELCOME_CREDITS,
 } from '@/lib/env';
 import { INDUSTRIES } from '@/lib/industries';
 import { BUILDS, CAPABILITIES, COMPARISON, PLANS, PUBLISH_FEATURES, STEPS } from './home';
@@ -20,8 +19,7 @@ describe('the plans', () => {
   it('quote the real prices and allowances, not numbers typed once', () => {
     const free = PLANS.find((plan) => plan.name === 'Free')!;
     const pro = PLANS.find((plan) => plan.name === 'Pro')!;
-    expect(free.features.join(' ')).toContain(String(WELCOME_CREDITS));
-    expect(free.features.join(' ')).toContain(String(DAILY_PLATFORM_CREDITS));
+    expect(free.features.join(' ')).toContain(String(FREE_CREDITS));
     expect(free.features.join(' ')).toContain(String(CREDIT_COST.generation));
     expect(pro.price).toContain(PLAN_PRICE_LABEL);
     expect(pro.features.join(' ')).toContain(String(PRO_DAILY_PLATFORM_CREDITS));

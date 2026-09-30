@@ -4,7 +4,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import {
   CREDIT_COST,
-  DAILY_PLATFORM_CREDITS,
+  FREE_CREDITS,
   PRO_DAILY_PLATFORM_CREDITS,
   PLAN_PRICE_LABEL,
 } from '@/lib/env';
@@ -33,11 +33,11 @@ const INCLUDED = [
 const FAQ = [
   {
     q: 'What do I actually get for ₹500?',
-    a: `A bigger daily allowance — ${PRO_DAILY_PLATFORM_CREDITS} credits a day instead of ${DAILY_PLATFORM_CREDITS}. Every feature is in the free tier already: voice, screenshot import, the chatbot builder, every connector, and full export. Paying buys throughput, not features.`,
+    a: `Credits that keep coming — ${PRO_DAILY_PLATFORM_CREDITS} a day, every day, instead of the ${FREE_CREDITS} a free account gets in total. Every feature is in the free tier already: voice, screenshot import, the chatbot builder, every connector, and full export. Paying buys model time, not features.`,
   },
   {
-    q: 'What happens when I run out of credits for the day?',
-    a: `Generation pauses until midnight UTC, when the balance resets. Your sites stay live and exportable — nothing is taken away. Upgrade for ${PRO_DAILY_PLATFORM_CREDITS} credits a day, or add your own OpenAI API key in Settings for no limit at all, billed to your OpenAI account at their rates.`,
+    q: 'What happens when my free credits run out?',
+    a: `Generating new sites pauses. Nothing is taken away: every site you have built stays live, stays published, and can still be edited by hand and exported. To carry on generating, subscribe for ${PRO_DAILY_PLATFORM_CREDITS} credits a day, or add your own OpenAI API key in Settings for no limit at all, billed to your OpenAI account at their rates.`,
   },
   {
     q: 'How do I cancel?',
@@ -92,7 +92,7 @@ export default function PricingPage() {
             <span className="text-sm text-ink-muted">forever, no card</span>
           </div>
           <p className="mt-3 text-sm text-ink-secondary">
-            {DAILY_PLATFORM_CREDITS} credits every day — enough to build a site and refine it. Every
+            {FREE_CREDITS} credits to start — enough to build {2} whole sites. Every
             feature is included; the only difference is how much you can generate in a day.
           </p>
           <ul className="mt-6 space-y-2.5">

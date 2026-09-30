@@ -15,6 +15,7 @@ import { MediaDrop } from '@/components/app/MediaDrop';
 import type { Answer, InterviewQuestion } from '@/lib/generation/interview';
 import type { BlueprintCard } from '@/lib/templates';
 import { useUploads } from '@/components/app/useUploads';
+import { postJson } from '@/components/app/UpgradeDialog';
 
 type Mode = 'describe' | 'screenshot' | 'speak';
 
@@ -209,10 +210,9 @@ export function NewSiteForm({
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
+      const { ok, payload } = await postJson<{ projectId?: string; jobId?: string; error?: string }>(
+        '/api/projects',
+        {
           prompt: brief,
           category,
           model: model || null,
@@ -222,10 +222,9 @@ export function NewSiteForm({
           assets,
           answers,
           blueprint: chosen,
-        }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? 'Could not start generation');
+        },
+      );
+      if (!ok) throw new Error(payload.error ?? 'Could not start generation');
       router.push(`/app/project/${payload.projectId}?job=${payload.jobId}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not start generation');

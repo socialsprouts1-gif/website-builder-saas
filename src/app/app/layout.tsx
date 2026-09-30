@@ -1,6 +1,7 @@
 import { AppNav } from '@/components/app/AppNav';
 import { ConfirmBanner } from '@/components/app/ConfirmBanner';
 import { MigrationBanner } from '@/components/app/MigrationBanner';
+import { UpgradeDialog } from '@/components/app/UpgradeDialog';
 import { isBootstrapAdmin, requireUser } from '@/lib/auth';
 import { getKeyStatus } from '@/lib/openai/client';
 import { isSchemaInstalled } from '@/lib/supabase/errors';
@@ -39,13 +40,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         credits={
           keyStatus
             ? {
-                used: keyStatus.creditsUsed,
-                limit: keyStatus.creditsLimit,
+                balance: keyStatus.balance,
                 resetsAt: keyStatus.resetsAt,
                 hasOwnKey: keyStatus.hasOwnKey,
                 platformConfigured: keyStatus.platformConfigured,
-                tier: keyStatus.tier,
-                unlimited: keyStatus.unlimited,
               }
             : null
         }
@@ -63,6 +61,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <MigrationBanner missing={missing} />
         <div className="min-h-0 flex-1">{children}</div>
       </main>
+      {/* Mounted once, for the whole app. Any request that comes back 402
+          raises the event this listens for, so running out of credits opens
+          the plan wherever it happens — a build, an edit, a redraw. */}
+      <UpgradeDialog />
     </div>
   );
 }
