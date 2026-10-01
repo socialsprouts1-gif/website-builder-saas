@@ -1,11 +1,12 @@
 import { Card, SectionHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { BillingActions } from '@/components/app/BillingActions';
+import { PlanPicker } from '@/components/app/PlanPicker';
 import { requireUser } from '@/lib/auth';
 import { getBillingState } from '@/lib/billing';
 import { createClient } from '@/lib/supabase/server';
-import { formatInr, PLAN_LABEL } from '@/lib/razorpay';
-import { FREE_CREDITS, PRO_DAILY_PLATFORM_CREDITS } from '@/lib/env';
+import { purchasablePlans } from '@/lib/razorpay';
+import { formatInr, priceLabel, type PlanKey } from '@/lib/plans';
+import { FREE_CREDITS } from '@/lib/env';
 
 export const metadata = { title: 'Billing' };
 export const dynamic = 'force-dynamic';
@@ -25,35 +26,46 @@ export default async function BillingPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-10">
-      <SectionHeader title="Billing" description="One plan, ₹500 a month, everything included." />
+      <SectionHeader
+        title="Plans & billing"
+        description="Free to start. Pay when you need more than ten credits — monthly or yearly, cancel in one click."
+      />
 
       <Card className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="font-display text-2xl text-ink-primary">{PLAN_LABEL}</p>
-            <p className="mt-1 text-[13px] text-ink-secondary">Lumen · billed monthly in INR</p>
+            <p className="font-display text-2xl text-ink-primary">
+              {state.entitled ? priceLabel(state.plan) : 'Free'}
+            </p>
+            <p className="mt-1 text-[13px] text-ink-secondary">
+              {state.entitled
+                ? `Lumen ${state.plan.name} · billed ${state.plan.period === 'yearly' ? 'yearly' : 'monthly'} in INR`
+                : 'Lumen · no card on file'}
+            </p>
           </div>
           <Badge tone={state.entitled ? 'accent' : 'neutral'}>
-            {state.subscription?.cancelled_at ? 'Cancelling' : state.entitled ? 'Pro' : 'Free'}
+            {state.subscription?.cancelled_at ? 'Cancelling' : state.entitled ? state.plan.name : 'Free'}
           </Badge>
         </div>
 
         {/* Honest, always-visible renewal state — no hidden charge dates. */}
         <p className="text-[13px] text-ink-secondary">
           {state.subscription?.cancelled_at
-            ? `Cancelled. Pro runs until ${formatDate(
+            ? `Cancelled. ${state.plan.name} runs until ${formatDate(
                 state.subscription.current_period_end,
               )}, then your account returns to the free tier — you keep every site.`
             : state.entitled
               ? `Next charge on ${formatDate(state.subscription?.current_period_end)}.`
-              : `You are on the free tier: ${FREE_CREDITS} credits in total, once. Upgrade for ${PRO_DAILY_PLATFORM_CREDITS} every day.`}
+              : `You are on the free tier: ${FREE_CREDITS} credits in total, once. A plan is credits every day, and the features below.`}
         </p>
 
-        <BillingActions
+        <PlanPicker
+          currentPlan={state.plan.key}
           entitled={state.entitled}
           hasSubscription={Boolean(state.subscription?.razorpay_subscription_id)}
           email={user.email}
           existingGstin={state.subscription?.gstin ?? null}
+          purchasable={purchasablePlans().map((plan) => plan.key as PlanKey)}
           billingConfigured={state.billingConfigured}
         />
       </Card>

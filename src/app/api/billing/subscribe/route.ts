@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     const subscription = await createSubscription({
       userId: user.id,
       email: user.email ?? '',
+      planKey: body.plan,
       gstin,
     });
 
@@ -34,6 +35,10 @@ export async function POST(request: NextRequest) {
       .update({
         razorpay_subscription_id: subscription.id,
         status: subscription.status,
+        // Written now so the row knows which tier is being paid for even before
+        // the webhook confirms it — and rewritten from the plan id on the
+        // webhook, which is the version that cost money.
+        plan: body.plan,
         gstin,
         updated_at: new Date().toISOString(),
       })
@@ -43,6 +48,7 @@ export async function POST(request: NextRequest) {
       subscriptionId: subscription.id,
       shortUrl: subscription.shortUrl,
       keyId: env.razorpay.keyId,
+      plan: body.plan,
     });
   } catch (cause) {
     return handleRouteError(cause);

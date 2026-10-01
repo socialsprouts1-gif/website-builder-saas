@@ -78,7 +78,7 @@ export function Footer() {
       </div>
       <div className="border-t border-hairline">
         <div className="mx-auto flex max-w-shell flex-col gap-2 px-6 py-5 text-[12px] text-ink-muted sm:flex-row sm:justify-between">
-          <span>© {new Date().getFullYear()} Lumen. Pricing in INR, billed monthly.</span>
+          <span>© {new Date().getFullYear()} Lumen. Pricing in INR, billed monthly or yearly.</span>
           <span className="flex flex-wrap gap-x-4 gap-y-1">
             <Link href="/legal/cookie-preferences" className="transition hover:text-ink-primary">
               Cookie preferences

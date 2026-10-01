@@ -1,7 +1,7 @@
 import { Card, SectionHeader } from '@/components/ui/Card';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { formatInr } from '@/lib/razorpay';
-import { PLAN_PRICE_PAISE } from '@/lib/env';
+import { planByKey } from '@/lib/plans';
 
 export const metadata = { title: 'Admin' };
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export default async function AdminPage() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const [subscriptions, usage, projects, flagged] = await Promise.all([
-    supabase.from('subscriptions').select('status, cancelled_at, created_at'),
+    supabase.from('subscriptions').select('status, cancelled_at, created_at, plan'),
     supabase
       .from('usage_events')
       .select('model, key_source, cost_usd, event_type, created_at')
@@ -30,7 +30,12 @@ export default async function AdminPage() {
   const active = rows.filter((row) => row.status === 'active').length;
   const trialing = rows.filter((row) => row.status === 'trialing').length;
   const cancelled = rows.filter((row) => Boolean(row.cancelled_at)).length;
-  const mrrPaise = active * PLAN_PRICE_PAISE;
+  // Summed from what each subscriber is actually on. Multiplying a count by
+  // one price was right when there was one price; with two tiers and two
+  // billing periods it would quietly overstate or understate every month.
+  const mrrPaise = rows
+    .filter((row) => row.status === 'active')
+    .reduce((total, row) => total + (planByKey(row.plan)?.perMonthPaise ?? 0), 0);
   const churnRate = rows.length > 0 ? (cancelled / rows.length) * 100 : 0;
 
   const events = usage.data ?? [];

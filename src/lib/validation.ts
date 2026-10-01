@@ -184,6 +184,8 @@ export const chatbotAskSchema = z.object({
 });
 
 export const subscribeSchema = z.object({
+  /** Which plan is being bought. Checked against the catalogue server-side. */
+  plan: z.enum(['pro_monthly', 'pro_yearly', 'premium_monthly', 'premium_yearly']),
   gstin: z
     .string()
     .trim()

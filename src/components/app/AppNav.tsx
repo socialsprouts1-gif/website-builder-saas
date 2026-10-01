@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { CreditMeter } from '@/components/app/CreditMeter';
 import type { CreditBalance } from '@/lib/credits';
+import { planAllows, tierFor, type Feature } from '@/lib/plans';
 import { cn } from '@/components/ui/cn';
 
 /**
@@ -20,13 +21,18 @@ import { cn } from '@/components/ui/cn';
  * those is a click that ends in a 404 or, worse, an empty screen that looks
  * broken rather than absent.
  */
-const GROUPS: { title: string; items: { href: string; label: string }[] }[] = [
+const GROUPS: {
+  title: string;
+  items: { href: string; label: string; needs?: Feature }[];
+}[] = [
   {
     title: 'Workspace',
     items: [
       { href: '/app', label: 'My sites' },
       { href: '/app/new', label: 'New site' },
-      { href: '/app/google', label: 'From Google' },
+      // Shown to everybody, badged for whoever cannot use it yet. Hiding it
+      // would hide the reason to upgrade along with the feature.
+      { href: '/app/google', label: 'From Google', needs: 'google_import' },
       { href: '/templates', label: 'Templates' },
       { href: '/app/deployments', label: 'Deployments' },
       { href: '/app/history', label: 'Version history' },
@@ -62,6 +68,10 @@ export function AppNav({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // What this account may use. An unmetered admin is not on a plan, and is not
+  // kept out of anything.
+  const tier = credits?.balance.unlimited ? 'admin' : (credits?.balance.tier ?? 'free');
 
   // Following a link is a navigation, not a reason to leave the menu covering
   // the page you just asked for.
@@ -119,11 +129,16 @@ export function AppNav({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'block rounded-[9px] px-3 py-2 text-[13.5px] transition',
+                    'flex items-center justify-between gap-2 rounded-[9px] px-3 py-2 text-[13.5px] transition',
                     active ? 'bg-accent-soft text-accent' : 'text-ink-secondary hover:bg-white/5 hover:text-ink-primary',
                   )}
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  {item.needs && !planAllows(tier, item.needs) ? (
+                    <span className="rounded-pill border border-accent/35 px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.1em] text-accent">
+                      {tierFor(item.needs) === 'premium' ? 'Premium' : 'Pro'}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}

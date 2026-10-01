@@ -1,4 +1,6 @@
-import { FREE_CREDITS, PLAN_PRICE_LABEL } from '@/lib/env';
+import { FREE_CREDITS } from '@/lib/env';
+import { PLAN_PRICE_LABEL } from '@/lib/env';
+import type { PlanTier } from '@/lib/plans';
 
 /**
  * What an account has left, and what that means.
@@ -16,7 +18,8 @@ import { FREE_CREDITS, PLAN_PRICE_LABEL } from '@/lib/env';
  * the wall the build hits.
  */
 
-export type Tier = 'admin' | 'pro' | 'free';
+/** A plan tier, plus the founder's own account, which is not a plan. */
+export type Tier = 'admin' | PlanTier;
 
 export interface CreditBalance {
   tier: Tier;
@@ -92,6 +95,12 @@ export function meterReading(balance: CreditBalance): {
 
 /** The code a refused call carries, so the client knows to offer the plan. */
 export const CREDITS_EXHAUSTED = 'credits_exhausted';
+
+/**
+ * The other reason to show the plan: not out of credits, but on a tier that
+ * does not include what was asked for. Same dialog, different sentence.
+ */
+export const PLAN_REQUIRED = 'plan_required';
 
 export class NoKeyAvailableError extends Error {
   readonly code: string | null;

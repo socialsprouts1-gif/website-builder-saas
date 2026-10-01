@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createProjectSchema } from '@/lib/validation';
-import { creditsExhausted, handleRouteError, jsonError } from '@/lib/api';
+import { creditsExhausted, handleRouteError, jsonError, planRequired } from '@/lib/api';
 import { RATE_LIMITS, rateLimitUser } from '@/lib/rate-limit';
 import { uploadAsset } from '@/lib/generation/storage';
 import { categoryBySlug } from '@/lib/categories';
@@ -10,6 +10,7 @@ import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/err
 import { getAllowance } from '@/lib/allowance';
 import { creditBalance } from '@/lib/openai/client';
 import { canAfford, exhaustedMessage } from '@/lib/credits';
+import { planAllows } from '@/lib/plans';
 import { CREDIT_COST } from '@/lib/env';
 import { ensureUserProfile } from '@/lib/profile';
 import { applyAnswers, whatsappFromAnswers } from '@/lib/generation/interview';
@@ -65,6 +66,15 @@ export async function POST(request: NextRequest) {
 
     const body = createProjectSchema.parse(await request.json());
     const category = categoryBySlug(body.category);
+
+    // The screen already offers the plan instead of the importer, so this is
+    // the request that did not come from the screen. Refused with a code the
+    // browser can act on rather than a sentence it has to parse.
+    if (body.inputMode === 'google' && !planAllows(allowance.tier, 'google_import')) {
+      return planRequired(
+        'Building from a Google listing is on the Premium plan. Everything you have already built is unaffected.',
+      );
+    }
 
     // The interview answers become part of the brief rather than a separate
     // input, so every downstream stage sees them without changing shape.

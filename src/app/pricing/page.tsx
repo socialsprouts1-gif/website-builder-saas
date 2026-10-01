@@ -2,42 +2,31 @@ import { TopNav } from '@/components/marketing/TopNav';
 import { Footer } from '@/components/marketing/Footer';
 import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import {
-  CREDIT_COST,
-  FREE_CREDITS,
-  PRO_DAILY_PLATFORM_CREDITS,
-  PLAN_PRICE_LABEL,
-} from '@/lib/env';
+import { FREE_CREDITS } from '@/lib/env';
+import { PricingTable } from '@/components/marketing/PricingTable';
+import { planFor, priceLabel } from '@/lib/plans';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { pageMetadata } from '@/lib/metadata';
 import { breadcrumbJsonLd, softwareApplicationJsonLd } from '@/lib/structured-data';
 
+const PRO = planFor('pro', 'monthly')!;
+const PREMIUM = planFor('premium', 'monthly')!;
+
 export const metadata = pageMetadata({
   title: 'Pricing',
-  description: 'One plan. ₹500 a month. Everything included.',
+  description:
+    'Ten credits free. Pro from ₹500 a month, Premium ₹2,000. Monthly or yearly, cancel any time.',
   path: '/pricing',
 });
 
-const INCLUDED = [
-  `${PRO_DAILY_PLATFORM_CREDITS} credits a day — around twenty sites, or one site and a long afternoon of changes`,
-  'Unlimited generations when you bring your own OpenAI key',
-  'Unlimited projects, pages and chat iterations',
-  'Screenshot-to-site and voice input',
-  'Visual editor with version history',
-  'The embeddable AI chatbot for every site you build',
-  'Every connector — GitHub, Vercel, Netlify, Analytics, Slack, Sheets and more',
-  'One-click deploy, GitHub push, or zip export',
-  'GST-compliant invoices',
-];
-
 const FAQ = [
   {
-    q: 'What do I actually get for ₹500?',
-    a: `Credits that keep coming — ${PRO_DAILY_PLATFORM_CREDITS} a day, every day, instead of the ${FREE_CREDITS} a free account gets in total. Every feature is in the free tier already: voice, screenshot import, the chatbot builder, every connector, and full export. Paying buys model time, not features.`,
+    q: 'What is the difference between Pro and Premium?',
+    a: `Credits, and two features. Pro is ${PRO.dailyCredits} credits a day with your own domain and GST invoices; Premium is ${PREMIUM.dailyCredits} a day, plus building from your Google Business listing, plus the 3D website builder when it lands. Everything else — voice, screenshot import, the shop, the chatbot, every connector, full export — is in the free tier already.`,
   },
   {
     q: 'What happens when my free credits run out?',
-    a: `Generating new sites pauses. Nothing is taken away: every site you have built stays live, stays published, and can still be edited by hand and exported. To carry on generating, subscribe for ${PRO_DAILY_PLATFORM_CREDITS} credits a day, or add your own OpenAI API key in Settings for no limit at all, billed to your OpenAI account at their rates.`,
+    a: `Generating new sites pauses. Nothing is taken away: every site you have built stays live, stays published, and can still be edited by hand and exported. To carry on generating, pick a plan — from ${priceLabel(PRO)} — or add your own OpenAI API key in Settings for no limit at all, billed to your OpenAI account at their rates.`,
   },
   {
     q: 'How do I cancel?',
@@ -75,75 +64,19 @@ export default function PricingPage() {
         <TopNav />
 
         <section className="relative mx-auto max-w-shell px-6 pb-16 pt-16 text-center">
-          <Badge tone="accent" className="mb-6">One plan · INR</Badge>
+          <Badge tone="accent" className="mb-6">Three plans · INR</Badge>
           <h1 className="font-display text-[42px] leading-tight text-ink-primary sm:text-[58px]">
-            One price. <em className="italic text-accent">Everything included.</em>
+            Start free. <em className="italic text-accent">Pay when it earns it.</em>
           </h1>
           <p className="mx-auto mt-4 max-w-lg text-[15px] text-ink-secondary">
-            We kept the pricing as simple as the product. No seats, no credits to decode, no feature gates.
+            {FREE_CREDITS} credits to begin with, and no card. After that a plan buys model time — never
+            access to the sites you have already built.
           </p>
         </section>
       </div>
 
-      <section className="mx-auto max-w-2xl px-6 pb-6">
-        <div className="rounded-card border border-hairline bg-raised p-8">
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-[44px] leading-none text-ink-primary">Free</span>
-            <span className="text-sm text-ink-muted">forever, no card</span>
-          </div>
-          <p className="mt-3 text-sm text-ink-secondary">
-            {FREE_CREDITS} credits to start — enough to build {2} whole sites. Every
-            feature is included; the only difference is how much you can generate in a day.
-          </p>
-          <ul className="mt-6 space-y-2.5">
-            {[
-              `Building a site costs ${CREDIT_COST.generation} credits, each change costs ${CREDIT_COST.chat_edit}`,
-              'Your allowance resets every day at midnight UTC',
-              'Unlimited when you bring your own OpenAI key',
-              'Export or deploy anything you build — the code is yours',
-            ].map((item) => (
-              <li key={item} className="flex gap-3 text-sm text-ink-secondary">
-                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-pill bg-ink-muted" aria-hidden />
-                {item}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-7">
-            <ButtonLink href="/signup" variant="secondary" size="lg" className="w-full">
-              Start free →
-            </ButtonLink>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-2xl px-6 pb-20">
-        <div className="rounded-card border border-accent/25 bg-raised p-8">
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-[52px] leading-none text-ink-primary">{PLAN_PRICE_LABEL}</span>
-            <span className="text-sm text-ink-muted">/ month, billed monthly in INR</span>
-          </div>
-          <p className="mt-3 text-sm text-ink-secondary">
-            Cards and UPI via Razorpay. Cancel any time, in one click.
-          </p>
-
-          <ul className="mt-8 space-y-3">
-            {INCLUDED.map((item) => (
-              <li key={item} className="flex gap-3 text-sm text-ink-secondary">
-                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-pill bg-accent" aria-hidden />
-                {item}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-9">
-            <ButtonLink href="/signup" size="lg" className="w-full">
-              Start building →
-            </ButtonLink>
-            <p className="mt-3 text-center text-[12px] text-ink-muted">
-              Upgrade when a day&apos;s free credits stop being enough.
-            </p>
-          </div>
-        </div>
+      <section className="mx-auto max-w-shell px-6 pb-20">
+        <PricingTable />
       </section>
 
       <section className="mx-auto max-w-2xl px-6 pb-24">

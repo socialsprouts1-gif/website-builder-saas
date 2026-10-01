@@ -1,7 +1,8 @@
 import 'server-only';
 import Razorpay from 'razorpay';
 import { validateWebhookSignature } from 'razorpay/dist/utils/razorpay-utils';
-import { env, PLAN_PRICE_PAISE } from '@/lib/env';
+import { env } from '@/lib/env';
+import { PLANS, formatInr, planByKey, priceLabel, type Plan, type PlanKey } from '@/lib/plans';
 
 /**
  * Razorpay Subscriptions, INR only (spec Section 12).
@@ -35,32 +36,59 @@ export interface CreatedSubscription {
   status: string;
 }
 
+/** The Razorpay plan id behind one of Lumen's plans, if it is configured. */
+export function razorpayPlanId(plan: Plan): string | undefined {
+  return plan.envVar ? env.razorpay.planIds[plan.envVar] : undefined;
+}
+
+/** Which plans can actually be bought on this deployment. */
+export const purchasablePlans = (): Plan[] =>
+  PLANS.filter((plan) => plan.envVar !== null && Boolean(razorpayPlanId(plan)));
+
 /**
- * Creates the recurring ₹500/month subscription. `total_count` is Razorpay's
- * required cycle cap; 120 months keeps it effectively open-ended while still
- * satisfying the API.
+ * A Razorpay plan id, back to the plan it belongs to.
+ *
+ * The webhook needs this: an upgrade bought on Razorpay's hosted page comes
+ * back as a plan id and nothing else, and the tier it grants must come from
+ * what was actually paid for rather than from what we last wrote down.
+ */
+export function planForRazorpayId(planId: string | null | undefined): Plan | undefined {
+  if (!planId) return undefined;
+  return PLANS.find((plan) => razorpayPlanId(plan) === planId);
+}
+
+/**
+ * Creates the recurring subscription for one of Lumen's plans. `total_count` is
+ * Razorpay's required cycle cap — 120 months, or 10 years of annual billing —
+ * which keeps it effectively open-ended while still satisfying the API.
  */
 export async function createSubscription(params: {
   userId: string;
   email: string;
+  planKey: PlanKey;
   gstin?: string | null;
 }): Promise<CreatedSubscription> {
-  if (!env.razorpay.planId) {
+  const plan = planByKey(params.planKey);
+  if (!plan || !plan.envVar) throw new Error('That plan cannot be bought.');
+
+  const planId = razorpayPlanId(plan);
+  if (!planId) {
     // Said to the person, not to the deployment. The missing variable is named
     // in the server log, where somebody can act on it; a customer reading an
     // environment variable's name on a payment dialog learns nothing.
-    console.error('[lumen:billing] RAZORPAY_PLAN_ID is not set — create the monthly plan in Razorpay.');
+    console.error(`[lumen:billing] ${plan.envVar} is not set — create the plan in Razorpay.`);
     throw new BillingNotConfiguredError();
   }
 
   const client = razorpayClient();
   const subscription = await client.subscriptions.create({
-    plan_id: env.razorpay.planId,
-    total_count: 120,
+    plan_id: planId,
+    total_count: plan.period === 'yearly' ? 10 : 120,
     customer_notify: 1,
     quantity: 1,
     notes: {
       lumen_user_id: params.userId,
+      lumen_plan: plan.key,
       email: params.email,
       ...(params.gstin ? { gstin: params.gstin } : {}),
     },
@@ -99,15 +127,10 @@ export function verifyWebhookSignature(rawBody: string, signature: string | null
   }
 }
 
-export function formatInr(paise: number): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(paise / 100);
-}
+export { formatInr };
 
-export const PLAN_LABEL = `${formatInr(PLAN_PRICE_PAISE)} / month`;
+/** The label on the cheapest paid plan, for a sentence that needs one price. */
+export const PLAN_LABEL = priceLabel(PLANS[1]);
 
 /** Statuses Razorpay reports that should keep the app unlocked. */
 const ACTIVE_STATUSES = new Set(['active', 'authenticated', 'trialing', 'pending']);

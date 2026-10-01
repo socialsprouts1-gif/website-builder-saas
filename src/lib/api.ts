@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { SchemaNotInstalledError, SupabaseNotConfiguredError } from '@/lib/supabase/errors';
-import { CREDITS_EXHAUSTED, NoKeyAvailableError } from '@/lib/credits';
+import { CREDITS_EXHAUSTED, PLAN_REQUIRED, NoKeyAvailableError } from '@/lib/credits';
 
 export function jsonError(message: string, status = 400, code?: string) {
   return NextResponse.json({ error: message, ...(code ? { code } : {}) }, { status });
@@ -16,6 +16,15 @@ export function jsonError(message: string, status = 400, code?: string) {
  */
 export function creditsExhausted(message: string) {
   return jsonError(message, 402, CREDITS_EXHAUSTED);
+}
+
+/**
+ * On the wrong plan for what was asked, rather than out of credits. 403 because
+ * the account is known and the answer is still no; the code opens the same
+ * dialog, which reads the sentence rather than assuming why it was refused.
+ */
+export function planRequired(message: string) {
+  return jsonError(message, 403, PLAN_REQUIRED);
 }
 
 export function fromZodError(error: ZodError) {

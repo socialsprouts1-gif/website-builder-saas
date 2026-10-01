@@ -1,12 +1,17 @@
 import { Badge } from '@/components/ui/Badge';
 import { GoogleImport } from '@/components/app/GoogleImport';
 import { requireUser } from '@/lib/auth';
+import { getAllowance } from '@/lib/allowance';
+import { planAllows } from '@/lib/plans';
+import { PlanGate } from '@/components/app/PlanGate';
 
 export const metadata = { title: 'From Google' };
 export const dynamic = 'force-dynamic';
 
 export default async function GoogleImportPage() {
-  await requireUser();
+  const user = await requireUser();
+  const allowance = await getAllowance(user.id);
+  const allowed = planAllows(allowance.tier, 'google_import');
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-9 sm:px-6 sm:py-14">
@@ -23,7 +28,15 @@ export default async function GoogleImportPage() {
         </p>
       </div>
 
-      <GoogleImport />
+      {allowed ? (
+        <GoogleImport />
+      ) : (
+        <PlanGate feature="google_import">
+          Your listing already holds the name, the address, the opening hours, the photographs and the
+          reviews. Lumen reads all of it and writes the site around it, so there is nothing to type and
+          nothing to get wrong.
+        </PlanGate>
+      )}
     </div>
   );
 }

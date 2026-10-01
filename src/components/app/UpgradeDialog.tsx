@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { CREDIT_COST, FREE_CREDITS, PLAN_PRICE_LABEL, PRO_DAILY_PLATFORM_CREDITS } from '@/lib/env';
+import { CREDIT_COST, FREE_CREDITS } from '@/lib/env';
+import { FEATURES, FREE_CREDITS_NOTE, paidPlans, priceLabel } from '@/lib/plans';
 
 /**
  * The moment the free credits run out.
@@ -41,8 +42,12 @@ export async function postJson<T = Record<string, unknown>>(
     body: JSON.stringify(body),
   });
   const payload = (await response.json().catch(() => ({}))) as T & { error?: string; code?: string };
-  if (response.status === 402 || payload.code === 'credits_exhausted') {
-    signalCreditsExhausted(payload.error);
+  // Out of credits, or on a plan that does not include what was asked for.
+  // Both have the same answer, so both open the same dialog.
+  if (response.status === 402 || response.status === 403) {
+    if (payload.code === 'credits_exhausted' || payload.code === 'plan_required') {
+      signalCreditsExhausted(payload.error);
+    }
   }
   return { ok: response.ok, status: response.status, payload };
 }
@@ -65,8 +70,6 @@ export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }
   const router = useRouter();
   const [open, setOpen] = useState(openOnMount);
   const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     function onExhausted(event: Event) {
@@ -91,34 +94,6 @@ export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }
 
   if (!open) return null;
 
-  /**
-   * Straight to Razorpay. A dialog whose main button opens another page about
-   * the thing it is already explaining is a dialog nobody finishes.
-   */
-  async function subscribe() {
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/billing/subscribe', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      const payload = (await response.json()) as { shortUrl?: string; error?: string };
-      if (!response.ok) throw new Error(payload.error ?? 'Could not start the subscription.');
-      if (payload.shortUrl) {
-        window.location.href = payload.shortUrl;
-        return;
-      }
-      // Configured, created, but no hosted page came back — the billing screen
-      // can always finish it.
-      router.push('/app/settings/billing');
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not start the subscription.');
-      setBusy(false);
-    }
-  }
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
@@ -129,48 +104,50 @@ export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }
         if (event.target === event.currentTarget) close();
       }}
     >
-      <div className="w-full max-w-md overflow-hidden rounded-card border border-hairline bg-[var(--surface-raised)] shadow-2xl">
+      <div className="w-full max-w-lg overflow-hidden rounded-card border border-hairline bg-[var(--surface-raised)] shadow-2xl">
         <div className="border-b border-hairline px-6 py-5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Out of credits</p>
           <h2 id="upgrade-title" className="mt-1.5 font-display text-[22px] leading-tight text-ink-primary">
-            Keep building for {PLAN_PRICE_LABEL} a month
+            Pick a plan and carry on
           </h2>
           <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
             {message ??
-              `Your ${FREE_CREDITS} free credits are used up. Everything you have built stays live, published and exportable — only new generating stops.`}
+              `Your ${FREE_CREDITS} free credits are used up. ${FREE_CREDITS_NOTE}`}
           </p>
         </div>
 
-        <ul className="space-y-2.5 px-6 py-5 text-[13px] leading-relaxed text-ink-secondary">
-          <li className="flex gap-2.5">
-            <span className="text-accent">✓</span>
-            <span>
-              <span className="text-ink-primary">{PRO_DAILY_PLATFORM_CREDITS} credits every day</span> — about{' '}
-              {Math.floor(PRO_DAILY_PLATFORM_CREDITS / CREDIT_COST.generation)} new sites a day, or one site
-              and an afternoon of changes.
-            </span>
-          </li>
-          <li className="flex gap-2.5">
-            <span className="text-accent">✓</span>
-            <span>Your own domain with HTTPS, and GST invoices.</span>
-          </li>
-          <li className="flex gap-2.5">
-            <span className="text-accent">✓</span>
-            <span>Cancel in one click. It runs to the end of the month you paid for.</span>
-          </li>
-        </ul>
-
-        {error ? (
-          <p className="mx-6 mb-4 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[12.5px] text-[#e5735a]">
-            {error}
-          </p>
-        ) : null}
+        {/* The same two cards as the billing screen, read from the same
+            catalogue, so the dialog can never offer a price the checkout does
+            not charge. Monthly here: choosing a year is a decision for a page
+            with room to explain it. */}
+        <div className="grid gap-3 px-6 py-5 sm:grid-cols-2">
+          {paidPlans('monthly').map((plan) => (
+            <div key={plan.key} className="rounded-card border border-hairline p-4">
+              <p className="font-display text-[17px] text-ink-primary">{plan.name}</p>
+              <p className="mt-0.5 font-display text-[21px] leading-none text-ink-primary">
+                {priceLabel(plan)}
+              </p>
+              <ul className="mt-3 space-y-1.5 text-[12px] leading-relaxed text-ink-secondary">
+                <li>
+                  <span className="text-ink-primary">{plan.dailyCredits} credits a day</span> — about{' '}
+                  {Math.floor(plan.dailyCredits / CREDIT_COST.generation)} sites
+                </li>
+                {plan.features.map((feature) => (
+                  <li key={feature} className={FEATURES[feature].soon ? 'text-ink-muted' : undefined}>
+                    {FEATURES[feature].label}
+                    {FEATURES[feature].soon ? ' (coming)' : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-hairline px-6 py-4">
-          <Button onClick={() => void subscribe()} disabled={busy}>
-            {busy ? 'Opening Razorpay…' : `Upgrade — ${PLAN_PRICE_LABEL}/month`}
+          <Button onClick={() => { close(); router.push('/app/settings/billing'); }}>
+            See the plans
           </Button>
-          <Button variant="secondary" onClick={close} disabled={busy}>
+          <Button variant="secondary" onClick={close}>
             Not now
           </Button>
           <Link

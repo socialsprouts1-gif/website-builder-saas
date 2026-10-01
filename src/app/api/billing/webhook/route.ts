@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { verifyWebhookSignature } from '@/lib/razorpay';
+import { planForRazorpayId, verifyWebhookSignature } from '@/lib/razorpay';
 import { statusForEvent } from '@/lib/billing-events';
 
 export const runtime = 'nodejs';
@@ -44,17 +44,23 @@ export async function POST(request: NextRequest) {
   if (!row) return NextResponse.json({ ignored: true });
 
   const nextStatus = statusForEvent(event.event, subscriptionEntity?.status);
+
+  // The tier comes from the plan that was actually charged for, not from what
+  // the subscribe route wrote down before the money moved. Somebody who upgrades
+  // on Razorpay's own page never touches our route at all.
+  const paidPlan = planForRazorpayId(subscriptionEntity?.plan_id);
   const periodEnd = subscriptionEntity?.current_end
     ? new Date(subscriptionEntity.current_end * 1000).toISOString()
     : null;
 
   // An event that says nothing about the subscription's status leaves it alone.
   // Only the invoice below is written for those.
-  if (nextStatus || periodEnd || event.event === 'subscription.cancelled') {
+  if (nextStatus || periodEnd || paidPlan || event.event === 'subscription.cancelled') {
     await admin
       .from('subscriptions')
       .update({
         ...(nextStatus ? { status: nextStatus } : {}),
+        ...(paidPlan ? { plan: paidPlan.key } : {}),
         ...(periodEnd ? { current_period_end: periodEnd } : {}),
         ...(event.event === 'subscription.cancelled'
           ? { cancelled_at: new Date().toISOString() }
@@ -94,7 +100,9 @@ export async function POST(request: NextRequest) {
 interface RazorpayEvent {
   event: string;
   payload?: {
-    subscription?: { entity?: { id: string; status?: string; current_end?: number } };
+    subscription?: {
+      entity?: { id: string; status?: string; current_end?: number; plan_id?: string };
+    };
     payment?: { entity?: { id: string; amount?: number; currency?: string } };
     invoice?: {
       entity?: {

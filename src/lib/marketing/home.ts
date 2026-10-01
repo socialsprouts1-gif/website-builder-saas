@@ -1,10 +1,14 @@
-import {
-  CREDIT_COST,
+import { CREDIT_COST, FREE_CREDITS } from '@/lib/env';
+import { FEATURES, planFor, priceLabel } from '@/lib/plans';
 
-  PLAN_PRICE_LABEL,
-  PRO_DAILY_PLATFORM_CREDITS,
-  FREE_CREDITS,
-} from '@/lib/env';
+const PRO = planFor('pro', 'monthly')!;
+const PREMIUM = planFor('premium', 'monthly')!;
+
+/** A plan's gated features, as sentences, with the unbuilt ones marked. */
+const featureLines = (plan: typeof PRO) =>
+  plan.features.map((feature) =>
+    FEATURES[feature].soon ? `${FEATURES[feature].label} — coming soon` : FEATURES[feature].label,
+  );
 
 /**
  * What the home page says, as data.
@@ -170,13 +174,24 @@ export const PLANS: Plan[] = [
   },
   {
     name: 'Pro',
-    price: `${PLAN_PRICE_LABEL}/month`,
-    note: 'The same product, with room to work in. Paying buys throughput, not features — there are no feature gates on this product.',
+    price: `${priceLabel(PRO)}`,
+    note: 'The same product, with room to work in. Yearly is two months free.',
     features: [
-      `${PRO_DAILY_PLATFORM_CREDITS} credits every day, not ${FREE_CREDITS} in total`,
-      'Your own domain, with HTTPS',
-      'GST-compliant invoices',
+      `${PRO.dailyCredits} credits every day, not ${FREE_CREDITS} in total`,
+      ...featureLines(PRO),
       'Or bring your own OpenAI key and have no ceiling at all',
+    ],
+    available: true,
+    cta: 'See pricing',
+    href: '/pricing',
+  },
+  {
+    name: 'Premium',
+    price: `${priceLabel(PREMIUM)}`,
+    note: 'Everything Pro has, four times the credits, and the things built next land here first.',
+    features: [
+      `${PREMIUM.dailyCredits} credits every day`,
+      ...featureLines(PREMIUM),
     ],
     available: true,
     cta: 'See pricing',

@@ -3,9 +3,8 @@ import { CONNECTORS } from '@/lib/connectors/providers';
 import {
   CREDIT_COST,
   FREE_CREDITS,
-  PLAN_PRICE_LABEL,
-  PRO_DAILY_PLATFORM_CREDITS,
 } from '@/lib/env';
+import { FEATURES, planFor } from '@/lib/plans';
 import { INDUSTRIES } from '@/lib/industries';
 import { BUILDS, CAPABILITIES, COMPARISON, PLANS, PUBLISH_FEATURES, STEPS } from './home';
 
@@ -19,10 +18,27 @@ describe('the plans', () => {
   it('quote the real prices and allowances, not numbers typed once', () => {
     const free = PLANS.find((plan) => plan.name === 'Free')!;
     const pro = PLANS.find((plan) => plan.name === 'Pro')!;
+    const premium = PLANS.find((plan) => plan.name === 'Premium')!;
     expect(free.features.join(' ')).toContain(String(FREE_CREDITS));
     expect(free.features.join(' ')).toContain(String(CREDIT_COST.generation));
-    expect(pro.price).toContain(PLAN_PRICE_LABEL);
-    expect(pro.features.join(' ')).toContain(String(PRO_DAILY_PLATFORM_CREDITS));
+    expect(pro.features.join(' ')).toContain(String(planFor('pro', 'monthly')!.dailyCredits));
+    expect(premium.features.join(' ')).toContain(String(planFor('premium', 'monthly')!.dailyCredits));
+  });
+
+  /**
+   * 3D sites do not exist yet. Listing them on the premium card is a promise
+   * about the roadmap, and somebody paying ₹2,000 this month must not believe
+   * they are paying for something that is there today.
+   */
+  it('mark what is not built yet as not built yet', () => {
+    const unbuilt = Object.values(FEATURES).filter((feature) => feature.soon);
+    expect(unbuilt.length).toBeGreaterThan(0);
+    for (const feature of unbuilt) {
+      for (const plan of PLANS) {
+        const line = plan.features.find((entry) => entry.includes(feature.label));
+        if (line) expect(line.toLowerCase()).toContain('coming');
+      }
+    }
   });
 
   /**
@@ -39,9 +55,20 @@ describe('the plans', () => {
     }
   });
 
-  it('agree with the pricing page that paying buys throughput, not features', () => {
-    const pro = PLANS.find((plan) => plan.name === 'Pro')!;
-    expect(pro.note.toLowerCase()).toContain('throughput');
+  /**
+   * This used to assert the opposite — that paying bought throughput and never
+   * features — and it was true until the Google listing importer moved behind
+   * Premium. A claim that outlives the product it described is worse than no
+   * claim, so the rule is now: there are feature gates, so nothing may say
+   * there are not.
+   */
+  it('do not claim there are no feature gates, now that there are', () => {
+    const gated = Object.keys(FEATURES).length;
+    expect(gated).toBeGreaterThan(0);
+    for (const plan of PLANS) {
+      expect(plan.note.toLowerCase()).not.toContain('not features');
+      expect(plan.note.toLowerCase()).not.toContain('no feature gates');
+    }
   });
 });
 

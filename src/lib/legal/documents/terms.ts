@@ -60,7 +60,7 @@ export const TERMS: LegalDocument = {
         {
           ul: [
             'Free accounts get a daily allowance of credits, which resets each day.',
-            'A paid plan is billed monthly in advance, in Indian rupees, through our payment provider.',
+            'A paid plan is billed in advance, in Indian rupees, through our payment provider — monthly or yearly, whichever you chose at checkout.',
             'Prices are as shown on the pricing page at the time you subscribe. If we change them, existing subscribers are told before the change applies to them.',
             'Taxes are added where they apply.',
             'A failed payment suspends the paid features, not your data. Your sites stay where they are.',

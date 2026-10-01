@@ -1,4 +1,5 @@
-import { PLAN_PRICE_LABEL, PLAN_PRICE_PAISE } from './env';
+import { PLAN_PRICE_LABEL } from './env';
+import { planFor } from './plans';
 import { canonicalUrl } from './metadata';
 
 /**
@@ -67,7 +68,7 @@ export function softwareApplicationJsonLd(): Record<string, unknown> {
     publisher: { '@id': canonicalUrl(`/${ORGANIZATION_ID}`) },
     offers: {
       '@type': 'Offer',
-      price: String(PLAN_PRICE_PAISE / 100),
+      price: String(planFor('pro', 'monthly')!.pricePaise / 100),
       priceCurrency: 'INR',
       description: `${PLAN_PRICE_LABEL} a month, with a free tier that builds a site without a card.`,
       url: canonicalUrl('/pricing'),

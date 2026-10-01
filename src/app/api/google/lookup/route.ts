@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { lookupPlace } from '@/lib/google/places';
 import { RATE_LIMITS, rateLimitUser } from '@/lib/rate-limit';
-import { handleRouteError, jsonError } from '@/lib/api';
+import { handleRouteError, jsonError, planRequired } from '@/lib/api';
+import { getAllowance } from '@/lib/allowance';
+import { planAllows } from '@/lib/plans';
 
 export const runtime = 'nodejs';
 
@@ -17,6 +19,13 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return jsonError('Sign in first', 401);
+
+    // Reading somebody's listing costs a Places call, so the gate is here and
+    // not only on the screen that usually asks for it.
+    const allowance = await getAllowance(user.id);
+    if (!planAllows(allowance.tier, 'google_import')) {
+      return planRequired('Building from a Google listing is on the Premium plan.');
+    }
 
     const limit = await rateLimitUser(
       user.id,

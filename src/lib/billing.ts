@@ -3,9 +3,12 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isEntitled } from '@/lib/razorpay';
 import { isBillingConfigured } from '@/lib/env';
 import type { SubscriptionRow } from '@/lib/database.types';
+import { FREE_PLAN, planByKey, type Plan } from '@/lib/plans';
 
 export interface BillingState {
   subscription: SubscriptionRow | null;
+  /** The plan being paid for, or the free one. Never null. */
+  plan: Plan;
   /** On a paid plan. Raises the daily ceiling — it never gates access. */
   entitled: boolean;
   daysLeft: number | null;
@@ -33,7 +36,7 @@ export async function ensureSubscriptionRow(userId: string): Promise<Subscriptio
 
   const { data: created, error } = await supabase
     .from('subscriptions')
-    .insert({ user_id: userId, status: 'free', current_period_end: null })
+    .insert({ user_id: userId, plan: 'free', status: 'free', current_period_end: null })
     .select('*')
     .single();
 
@@ -50,8 +53,11 @@ export async function getBillingState(userId: string): Promise<BillingState> {
   const daysLeft = msLeft === null ? null : Math.ceil(msLeft / (24 * 60 * 60 * 1000));
   const hoursLeft = msLeft === null ? null : Math.ceil(msLeft / (60 * 60 * 1000));
 
+  const plan = (entitled ? planByKey(subscription?.plan) : null) ?? FREE_PLAN;
+
   return {
     subscription,
+    plan,
     entitled,
     daysLeft,
     hoursLeft,

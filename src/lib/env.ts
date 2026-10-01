@@ -123,8 +123,19 @@ export const env = {
   razorpay: {
     keyId: read('RAZORPAY_KEY_ID'),
     keySecret: read('RAZORPAY_KEY_SECRET'),
-    planId: read('RAZORPAY_PLAN_ID'),
     webhookSecret: read('RAZORPAY_WEBHOOK_SECRET'),
+    /**
+     * One Razorpay plan id per plan Lumen sells, keyed by the variable named in
+     * the plan catalogue. RAZORPAY_PLAN_ID is the name the single-plan version
+     * used, still read as Pro monthly so an existing deployment keeps working
+     * through the change rather than losing checkout the moment it ships.
+     */
+    planIds: {
+      RAZORPAY_PLAN_PRO_MONTHLY: read('RAZORPAY_PLAN_PRO_MONTHLY') ?? read('RAZORPAY_PLAN_ID'),
+      RAZORPAY_PLAN_PRO_YEARLY: read('RAZORPAY_PLAN_PRO_YEARLY'),
+      RAZORPAY_PLAN_PREMIUM_MONTHLY: read('RAZORPAY_PLAN_PREMIUM_MONTHLY'),
+      RAZORPAY_PLAN_PREMIUM_YEARLY: read('RAZORPAY_PLAN_PREMIUM_YEARLY'),
+    } as Record<string, string | undefined>,
   },
 
   encryptionKey: read('LUMEN_ENCRYPTION_KEY'),
@@ -175,13 +186,6 @@ export const isPlatformKeyConfigured = Boolean(env.openai.platformKey);
 export const FREE_CREDITS = 10;
 
 /**
- * The paid tier's daily ceiling. High enough that a small business never feels
- * it, finite so one runaway account cannot outspend a ₹500 subscription on the
- * shared key. Users who genuinely want no ceiling add their own OpenAI key.
- */
-export const PRO_DAILY_PLATFORM_CREDITS = 200;
-
-/**
  * What each kind of model call costs against the daily allowance.
  *
  * Every entry that spends real money is priced. Previously only the initial
@@ -216,6 +220,11 @@ export const CREDIT_COST = {
 
 export type CreditedEvent = keyof typeof CREDIT_COST;
 
-/** ₹500/month, expressed in paise the way Razorpay wants it. */
-export const PLAN_PRICE_PAISE = 50_000;
+/**
+ * The cheapest paid plan, for the sentences that say "from".
+ *
+ * Prices themselves live in the plan catalogue — src/lib/plans.ts — because
+ * there are five of them now and a constant per price is how a pricing page
+ * starts disagreeing with a checkout.
+ */
 export const PLAN_PRICE_LABEL = '₹500';

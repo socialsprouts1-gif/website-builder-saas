@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { FREE_CREDITS, CREDIT_COST, PRO_DAILY_PLATFORM_CREDITS } from '@/lib/env';
+import { FREE_CREDITS, CREDIT_COST } from '@/lib/env';
+import { planFor } from '@/lib/plans';
+
+const PRO_DAILY_PLATFORM_CREDITS = planFor('pro', 'monthly')!.dailyCredits;
 import {
   NoKeyAvailableError,
   canAfford,

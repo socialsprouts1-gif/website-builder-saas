@@ -4,6 +4,7 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { ButtonLink } from '@/components/ui/Button';
 import { isSupabaseConfigured } from '@/lib/env';
 import { pageMetadata } from '@/lib/metadata';
+import { CREDIT_COST, FREE_CREDITS } from '@/lib/env';
 
 export const metadata = pageMetadata({
   title: 'Create your account',
@@ -16,7 +17,7 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Ship your first site today"
-      subtitle="One day free, 10 credits a day. ₹500/month when you want to keep going."
+      subtitle={`${FREE_CREDITS} free credits — ${Math.floor(FREE_CREDITS / CREDIT_COST.generation)} whole websites, no card. Plans from ₹500 a month after that.`}
     >
       {isSupabaseConfigured ? (
         <Suspense fallback={<div className="h-72" />}>
