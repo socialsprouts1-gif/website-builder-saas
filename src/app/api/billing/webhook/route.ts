@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyWebhookSignature } from '@/lib/razorpay';
+import { statusForEvent } from '@/lib/billing-events';
 
 export const runtime = 'nodejs';
 
@@ -42,20 +43,26 @@ export async function POST(request: NextRequest) {
   // a retry that arrived before our own create call committed.
   if (!row) return NextResponse.json({ ignored: true });
 
-  const nextStatus = mapStatus(event.event, subscriptionEntity?.status);
+  const nextStatus = statusForEvent(event.event, subscriptionEntity?.status);
   const periodEnd = subscriptionEntity?.current_end
     ? new Date(subscriptionEntity.current_end * 1000).toISOString()
     : null;
 
-  await admin
-    .from('subscriptions')
-    .update({
-      status: nextStatus,
-      ...(periodEnd ? { current_period_end: periodEnd } : {}),
-      ...(event.event === 'subscription.cancelled' ? { cancelled_at: new Date().toISOString() } : {}),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', row.id);
+  // An event that says nothing about the subscription's status leaves it alone.
+  // Only the invoice below is written for those.
+  if (nextStatus || periodEnd || event.event === 'subscription.cancelled') {
+    await admin
+      .from('subscriptions')
+      .update({
+        ...(nextStatus ? { status: nextStatus } : {}),
+        ...(periodEnd ? { current_period_end: periodEnd } : {}),
+        ...(event.event === 'subscription.cancelled'
+          ? { cancelled_at: new Date().toISOString() }
+          : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', row.id);
+  }
 
   if (event.event === 'subscription.charged' && (invoiceEntity || paymentEntity)) {
     const invoiceId = invoiceEntity?.id ?? null;
@@ -82,25 +89,6 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
-}
-
-function mapStatus(eventName: string, entityStatus?: string): string {
-  switch (eventName) {
-    case 'subscription.activated':
-    case 'subscription.charged':
-      return 'active';
-    case 'subscription.halted':
-      return 'halted';
-    case 'subscription.cancelled':
-      return 'cancelled';
-    case 'subscription.completed':
-      return 'completed';
-    case 'subscription.pending':
-    case 'payment.failed':
-      return 'pending';
-    default:
-      return entityStatus ?? 'active';
-  }
 }
 
 interface RazorpayEvent {

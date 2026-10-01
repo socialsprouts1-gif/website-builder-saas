@@ -27,7 +27,16 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Everything except static assets, and except the public embed/preview
-    // surfaces that must stay reachable without a Lumen session. Published
+    // surfaces that must stay reachable without a Lumen session.
+    //
+    // The billing webhook is out for a different reason: Razorpay posts to
+    // whatever URL was typed into its dashboard, and a webhook sender is not a
+    // browser — a 308 to the canonical host is recorded as a failed delivery
+    // rather than followed, which would mean a paid subscription never
+    // activating. Out of the matcher, it is served on either host, and it has
+    // its own authentication in the signature it verifies.
+    //
+    // Published
     // sites under /s/ are read by strangers, so they skip the session refresh
     // entirely rather than paying for an auth round-trip per request.
     //
@@ -35,6 +44,6 @@ export const config = {
     // a published site on a customer's own domain must never be moved, and
     // canonicalRedirect already refuses to move one. Keeping the exclusion
     // means those requests cost nothing at all.
-    '/((?!_next/static|_next/image|favicon.ico|api/chatbot|api/embed|preview|s/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/chatbot|api/embed|api/billing/webhook|preview|s/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };
