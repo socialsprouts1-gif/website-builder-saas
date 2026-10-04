@@ -107,7 +107,7 @@ const SECTIONS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: 'What do credits do?',
-        a: 'Building a site costs several credits and each change costs one. A free account gets a fresh allowance every day; a paid plan gets a much larger one.',
+        a: 'Building a site costs several credits and each change costs one. A free account gets ten credits once — enough for two whole websites — and they never expire. A paid plan lifts the ceiling to somewhere you are not expected to think about it.',
       },
       {
         q: 'Can I use my own OpenAI key?',

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { CreditMeter } from '@/components/app/CreditMeter';
 import type { CreditBalance } from '@/lib/credits';
-import { planAllows, tierFor, type Feature } from '@/lib/plans';
+import { planAllows, tierFor, tierName, type Feature } from '@/lib/plans';
 import { cn } from '@/components/ui/cn';
 
 /**
@@ -136,7 +136,7 @@ export function AppNav({
                   <span>{item.label}</span>
                   {item.needs && !planAllows(tier, item.needs) ? (
                     <span className="rounded-pill border border-accent/35 px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.1em] text-accent">
-                      {tierFor(item.needs) === 'premium' ? 'Premium' : 'Pro'}
+                      {tierName(tierFor(item.needs))}
                     </span>
                   ) : null}
                 </Link>

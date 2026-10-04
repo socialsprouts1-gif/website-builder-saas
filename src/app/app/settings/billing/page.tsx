@@ -56,7 +56,7 @@ export default async function BillingPage() {
               )}, then your account returns to the free tier — you keep every site.`
             : state.entitled
               ? `Next charge on ${formatDate(state.subscription?.current_period_end)}.`
-              : `You are on the free tier: ${FREE_CREDITS} credits in total, once. A plan is credits every day, and the features below.`}
+              : `You are on the free tier: ${FREE_CREDITS} credits in total, once. A plan lifts that, and adds the features below.`}
         </p>
 
         <PlanPicker

@@ -180,13 +180,12 @@ export function PlanPicker({
                 <p className="mt-2 text-[12.5px] leading-relaxed text-ink-secondary">{plan.note}</p>
 
                 <ul className="mt-4 flex-1 space-y-2 text-[12.5px] leading-relaxed text-ink-secondary">
-                  <li className="flex gap-2">
-                    <span className="text-accent">✓</span>
-                    <span>
-                      <span className="text-ink-primary">{plan.dailyCredits} credits every day</span> — about{' '}
-                      {Math.floor(plan.dailyCredits / CREDIT_COST.generation)} new sites a day
-                    </span>
-                  </li>
+                  {plan.highlights.map((line) => (
+                    <li key={line} className="flex gap-2">
+                      <span className="text-accent">✓</span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex gap-2">
                       <span className={FEATURES[feature].soon ? 'text-ink-muted' : 'text-accent'}>

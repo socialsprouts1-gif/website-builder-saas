@@ -306,7 +306,7 @@ export default async function HomePage() {
             eyebrow="Pricing"
             title="Free to build."
             accent="₹500 when you need room."
-            body="There are no feature gates. The paid plan buys a bigger daily allowance, not a longer list."
+            body="Start free and build two whole websites. A plan is for when the websites are the business — no daily cap, no meter to watch."
           />
         </Reveal>
         <div className="mt-12 grid gap-4 lg:grid-cols-3">

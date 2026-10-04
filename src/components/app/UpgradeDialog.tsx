@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { CREDIT_COST, FREE_CREDITS } from '@/lib/env';
@@ -35,7 +35,7 @@ export function signalCreditsExhausted(message?: string) {
 export async function postJson<T = Record<string, unknown>>(
   url: string,
   body: unknown,
-): Promise<{ ok: boolean; status: number; payload: T }> {
+): Promise<{ ok: boolean; status: number; blocked: boolean; payload: T }> {
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -44,31 +44,34 @@ export async function postJson<T = Record<string, unknown>>(
   const payload = (await response.json().catch(() => ({}))) as T & { error?: string; code?: string };
   // Out of credits, or on a plan that does not include what was asked for.
   // Both have the same answer, so both open the same dialog.
-  if (response.status === 402 || response.status === 403) {
-    if (payload.code === 'credits_exhausted' || payload.code === 'plan_required') {
-      signalCreditsExhausted(payload.error);
-    }
-  }
-  return { ok: response.ok, status: response.status, payload };
+  const blocked =
+    (response.status === 402 || response.status === 403) &&
+    (payload.code === 'credits_exhausted' || payload.code === 'plan_required');
+  if (blocked) signalCreditsExhausted(payload.error);
+
+  return { ok: response.ok, status: response.status, blocked, payload };
 }
 
 /**
- * Opens the dialog on arrival, for a screen somebody cannot use yet.
+ * Where the dialog stays out of the way.
  *
- * Rendered by the new-site page when the balance will not cover a build: being
- * told after writing a prompt and answering four questions is the version of
- * this that wastes somebody's afternoon.
+ * Everywhere else in the app it opens on arrival, because somebody whose free
+ * credits are gone needs to be told rather than left to discover it. These two
+ * are the exception: the new-site screen is where somebody writes their brief
+ * and answers the questions, and they are allowed to do all of that. The wall
+ * comes at the end, when they press Build — which is the moment the work is
+ * real to them and the plan is worth something.
+ *
+ * The project screen is the other: an account out of credits can still read,
+ * publish and hand-edit everything it has already built, and a dialog over the
+ * top of that would be taking away what it promised to leave alone.
  */
-export function OpenUpgradeWhenBlocked({ blocked, message }: { blocked: boolean; message?: string }) {
-  useEffect(() => {
-    if (blocked) signalCreditsExhausted(message);
-  }, [blocked, message]);
-  return null;
-}
+const QUIET = ['/app/new', '/app/project'];
 
-export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }) {
+export function UpgradeDialog({ blocked = false }: { blocked?: boolean }) {
   const router = useRouter();
-  const [open, setOpen] = useState(openOnMount);
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,6 +83,21 @@ export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }
     window.addEventListener(CREDITS_EXHAUSTED_EVENT, onExhausted);
     return () => window.removeEventListener(CREDITS_EXHAUSTED_EVENT, onExhausted);
   }, []);
+
+  /**
+   * On every page, every time, while the account has nothing left.
+   *
+   * Deliberately not remembered across navigations: closing it means "not on
+   * this screen", not "never ask me again". An account that cannot build
+   * anything is an account with nothing to do in here, and the one thing it can
+   * do should be in front of it.
+   */
+  useEffect(() => {
+    if (!blocked) return;
+    if (QUIET.some((prefix) => pathname.startsWith(prefix))) return;
+    setMessage(null);
+    setOpen(true);
+  }, [blocked, pathname]);
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -104,15 +122,18 @@ export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }
         if (event.target === event.currentTarget) close();
       }}
     >
-      <div className="w-full max-w-lg overflow-hidden rounded-card border border-hairline bg-[var(--surface-raised)] shadow-2xl">
-        <div className="border-b border-hairline px-6 py-5">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Out of credits</p>
+      {/* Capped and scrollable, because on a phone the two plan cards are
+          taller than the screen and a dialog whose heading and buttons are
+          both off the edge is a trap rather than an offer. */}
+      <div className="flex max-h-[88dvh] w-full max-w-lg flex-col overflow-hidden rounded-card border border-hairline bg-[var(--surface-raised)] shadow-2xl">
+        <div className="shrink-0 border-b border-hairline px-6 py-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Free credits used</p>
           <h2 id="upgrade-title" className="mt-1.5 font-display text-[22px] leading-tight text-ink-primary">
-            Pick a plan and carry on
+            Choose a plan to keep building
           </h2>
           <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
             {message ??
-              `Your ${FREE_CREDITS} free credits are used up. ${FREE_CREDITS_NOTE}`}
+              `You have used all ${FREE_CREDITS} free credits, so Lumen cannot build anything new yet. ${FREE_CREDITS_NOTE}`}
           </p>
         </div>
 
@@ -120,7 +141,7 @@ export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }
             catalogue, so the dialog can never offer a price the checkout does
             not charge. Monthly here: choosing a year is a decision for a page
             with room to explain it. */}
-        <div className="grid gap-3 px-6 py-5 sm:grid-cols-2">
+        <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto px-6 py-5 sm:grid-cols-2">
           {paidPlans('monthly').map((plan) => (
             <div key={plan.key} className="rounded-card border border-hairline p-4">
               <p className="font-display text-[17px] text-ink-primary">{plan.name}</p>
@@ -128,10 +149,9 @@ export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }
                 {priceLabel(plan)}
               </p>
               <ul className="mt-3 space-y-1.5 text-[12px] leading-relaxed text-ink-secondary">
-                <li>
-                  <span className="text-ink-primary">{plan.dailyCredits} credits a day</span> — about{' '}
-                  {Math.floor(plan.dailyCredits / CREDIT_COST.generation)} sites
-                </li>
+                {plan.highlights.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
                 {plan.features.map((feature) => (
                   <li key={feature} className={FEATURES[feature].soon ? 'text-ink-muted' : undefined}>
                     {FEATURES[feature].label}
@@ -143,7 +163,7 @@ export function UpgradeDialog({ openOnMount = false }: { openOnMount?: boolean }
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-hairline px-6 py-4">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-hairline px-6 py-4">
           <Button onClick={() => { close(); router.push('/app/settings/billing'); }}>
             See the plans
           </Button>

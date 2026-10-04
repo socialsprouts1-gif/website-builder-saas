@@ -50,7 +50,7 @@ describe('the catalogue', () => {
   it('gives a dearer plan more, never less', () => {
     const pro = planFor('pro', 'monthly')!;
     const premium = planFor('premium', 'monthly')!;
-    expect(premium.dailyCredits).toBeGreaterThan(pro.dailyCredits);
+    expect(premium.monthlyCredits).toBeGreaterThan(pro.monthlyCredits);
     for (const feature of pro.features) expect(premium.features).toContain(feature);
   });
 
@@ -58,16 +58,37 @@ describe('the catalogue', () => {
     for (const tier of ['pro', 'premium'] as const) {
       const monthly = planFor(tier, 'monthly')!;
       const yearly = planFor(tier, 'yearly')!;
-      expect(yearly.dailyCredits).toBe(monthly.dailyCredits);
+      expect(yearly.monthlyCredits).toBe(monthly.monthlyCredits);
       expect(yearly.features).toEqual(monthly.features);
     }
   });
 
-  it('buys whole websites with a day of credits', () => {
+  it('buys whole websites with a month of credits', () => {
     for (const plan of paidPlans('monthly')) {
-      expect(plan.dailyCredits % CREDIT_COST.generation).toBe(0);
+      expect(plan.monthlyCredits % CREDIT_COST.generation).toBe(0);
     }
     expect(FREE_CREDITS % CREDIT_COST.generation).toBe(0);
+  });
+
+  /**
+   * The ceiling is a safety rail, not a product. It has to sit far enough above
+   * what anybody will actually do that nobody meets it by working normally —
+   * otherwise it is a meter, which is the thing the cards stopped advertising.
+   */
+  it('sets a ceiling nobody will meet by working', () => {
+    for (const plan of paidPlans('monthly')) {
+      const sites = plan.monthlyCredits / CREDIT_COST.generation;
+      expect(sites, `${plan.name} sites a month`).toBeGreaterThanOrEqual(100);
+    }
+  });
+
+  it('never advertises a quantity on a paid plan', () => {
+    for (const plan of paidPlans('monthly').concat(paidPlans('yearly'))) {
+      for (const line of [...plan.highlights, plan.note]) {
+        expect(line, line).not.toMatch(/\d/);
+        expect(line.toLowerCase(), line).not.toContain('credit');
+      }
+    }
   });
 });
 
@@ -114,7 +135,7 @@ describe('what a plan unlocks', () => {
 
 describe('the free plan', () => {
   it('has no daily credits and no gated features', () => {
-    expect(FREE_PLAN.dailyCredits).toBe(0);
+    expect(FREE_PLAN.monthlyCredits).toBe(0);
     expect(FREE_PLAN.features).toEqual([]);
     expect(FREE_PLAN.pricePaise).toBe(0);
     expect(FREE_PLAN.envVar).toBeNull();

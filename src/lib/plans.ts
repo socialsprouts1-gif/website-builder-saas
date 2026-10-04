@@ -43,13 +43,23 @@ export interface Plan {
   pricePaise: number;
   /** The same money as a per-month figure, for comparing a year against a month. */
   perMonthPaise: number;
-  /** Credits every day. Free has none — it has FREE_CREDITS, once, instead. */
-  dailyCredits: number;
+  /**
+   * The ceiling for a month, not a day.
+   *
+   * Never shown. It exists so one runaway account cannot outspend its own
+   * subscription on the shared key, and it is set high enough that a small
+   * business will not meet it — which is why printing it on a card was the
+   * wrong idea: a number nobody will reach reads as a limit rather than as the
+   * absence of one.
+   */
+  monthlyCredits: number;
   /** The environment variable holding this plan's Razorpay plan id. */
   envVar: string | null;
   features: Feature[];
   /** One line on the card. */
   note: string;
+  /** What the card says this plan is, in the owner's terms rather than ours. */
+  highlights: string[];
 }
 
 /**
@@ -65,6 +75,37 @@ const PREMIUM_MONTHLY_PAISE = 200_000;
 const PRO_FEATURES: Feature[] = ['custom_domain', 'gst_invoices'];
 const PREMIUM_FEATURES: Feature[] = [...PRO_FEATURES, 'google_import', 'three_d'];
 
+/**
+ * A month's ceiling, not a day's, and not something anybody is shown.
+ *
+ * It was a daily number printed on the card — "200 credits every day" — which
+ * made the plan sound like a meter running rather than a subscription. These
+ * are set where a small business will never meet them: roughly two hundred
+ * whole websites a month on Professional, four times that on Premium. They
+ * exist so one account cannot outspend its own subscription on the shared key,
+ * and for no other reason.
+ */
+const PRO_MONTHLY_CREDITS = 1_000;
+const PREMIUM_MONTHLY_CREDITS = 4_000;
+
+/**
+ * What the cards say instead of a number.
+ *
+ * Written as what the owner gets, not as what we meter. Nothing here is a
+ * quantity, because the honest answer to "how many websites" is "more than you
+ * are going to build".
+ */
+const PRO_HIGHLIGHTS = [
+  'Build and rebuild as much as the business needs',
+  'Every feature in Free, with no ceiling on projects or pages',
+  'Change anything, any time, by saying what you want',
+];
+
+const PREMIUM_HIGHLIGHTS = [
+  'Everything in Professional',
+  'Whatever is built next lands here first',
+];
+
 export const PLANS: Plan[] = [
   {
     key: 'free',
@@ -73,34 +114,37 @@ export const PLANS: Plan[] = [
     period: null,
     pricePaise: 0,
     perMonthPaise: 0,
-    dailyCredits: 0,
+    monthlyCredits: 0,
     envVar: null,
     features: [],
     note: 'Ten credits, once. No card, nothing expires.',
+    highlights: [],
   },
   {
     key: 'pro_monthly',
     tier: 'pro',
-    name: 'Pro',
+    name: 'Professional',
     period: 'monthly',
     pricePaise: PRO_MONTHLY_PAISE,
     perMonthPaise: PRO_MONTHLY_PAISE,
-    dailyCredits: 200,
+    monthlyCredits: PRO_MONTHLY_CREDITS,
     envVar: 'RAZORPAY_PLAN_PRO_MONTHLY',
     features: PRO_FEATURES,
-    note: 'Enough to build for a living.',
+    note: 'For somebody whose websites are the business.',
+    highlights: PRO_HIGHLIGHTS,
   },
   {
     key: 'pro_yearly',
     tier: 'pro',
-    name: 'Pro',
+    name: 'Professional',
     period: 'yearly',
     pricePaise: PRO_MONTHLY_PAISE * YEAR_IN_MONTHS,
     perMonthPaise: Math.round((PRO_MONTHLY_PAISE * YEAR_IN_MONTHS) / 12),
-    dailyCredits: 200,
+    monthlyCredits: PRO_MONTHLY_CREDITS,
     envVar: 'RAZORPAY_PLAN_PRO_YEARLY',
     features: PRO_FEATURES,
-    note: 'Enough to build for a living. Two months free.',
+    note: 'For somebody whose websites are the business. Two months free.',
+    highlights: PRO_HIGHLIGHTS,
   },
   {
     key: 'premium_monthly',
@@ -109,10 +153,11 @@ export const PLANS: Plan[] = [
     period: 'monthly',
     pricePaise: PREMIUM_MONTHLY_PAISE,
     perMonthPaise: PREMIUM_MONTHLY_PAISE,
-    dailyCredits: 800,
+    monthlyCredits: PREMIUM_MONTHLY_CREDITS,
     envVar: 'RAZORPAY_PLAN_PREMIUM_MONTHLY',
     features: PREMIUM_FEATURES,
-    note: 'Everything, including what is coming next.',
+    note: 'Everything, including what is built next.',
+    highlights: PREMIUM_HIGHLIGHTS,
   },
   {
     key: 'premium_yearly',
@@ -121,10 +166,11 @@ export const PLANS: Plan[] = [
     period: 'yearly',
     pricePaise: PREMIUM_MONTHLY_PAISE * YEAR_IN_MONTHS,
     perMonthPaise: Math.round((PREMIUM_MONTHLY_PAISE * YEAR_IN_MONTHS) / 12),
-    dailyCredits: 800,
+    monthlyCredits: PREMIUM_MONTHLY_CREDITS,
     envVar: 'RAZORPAY_PLAN_PREMIUM_YEARLY',
     features: PREMIUM_FEATURES,
-    note: 'Everything, including what is coming next. Two months free.',
+    note: 'Everything, including what is built next. Two months free.',
+    highlights: PREMIUM_HIGHLIGHTS,
   },
 ];
 
@@ -179,6 +225,11 @@ export function planAllows(tier: PlanTier | 'admin', feature: Feature): boolean 
 }
 
 /** The cheapest tier that includes a feature, for "upgrade to get this". */
+/** What a tier is called, wherever a sentence needs to name one. */
+export function tierName(tier: PlanTier): string {
+  return PLANS.find((plan) => plan.tier === tier)?.name ?? 'Free';
+}
+
 export function tierFor(feature: Feature): PlanTier {
   for (const tier of ['pro', 'premium'] as PlanTier[]) {
     const plan = PLANS.find((entry) => entry.tier === tier && entry.period === 'monthly');

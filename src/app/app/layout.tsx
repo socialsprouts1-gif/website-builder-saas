@@ -2,6 +2,8 @@ import { AppNav } from '@/components/app/AppNav';
 import { ConfirmBanner } from '@/components/app/ConfirmBanner';
 import { MigrationBanner } from '@/components/app/MigrationBanner';
 import { UpgradeDialog } from '@/components/app/UpgradeDialog';
+import { canAfford, needsUpgrade } from '@/lib/credits';
+import { CREDIT_COST } from '@/lib/env';
 import { isBootstrapAdmin, requireUser } from '@/lib/auth';
 import { getKeyStatus } from '@/lib/openai/client';
 import { isSchemaInstalled } from '@/lib/supabase/errors';
@@ -24,6 +26,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Admins are exempt from the gate, so telling them about it would be a
   // warning about something that is not going to happen.
   const isAdmin = Boolean(user.profile?.is_admin) || isBootstrapAdmin(user.email);
+
+  // Nothing left to build with, and a plan is the way out of that. Admins and
+  // anyone on their own OpenAI key are never in this state; neither is a paid
+  // account that has merely reached this month's ceiling, because theirs comes
+  // back and there is nothing to sell them.
+  const outOfCredits = Boolean(
+    keyStatus &&
+      !keyStatus.hasOwnKey &&
+      !canAfford(keyStatus.balance, CREDIT_COST.generation) &&
+      needsUpgrade(keyStatus.balance, CREDIT_COST.generation),
+  );
   const needsConfirming = !user.emailConfirmedAt && !isAdmin;
 
   // A fixed-height app frame rather than a document that grows.
@@ -61,10 +74,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <MigrationBanner missing={missing} />
         <div className="min-h-0 flex-1">{children}</div>
       </main>
-      {/* Mounted once, for the whole app. Any request that comes back 402
-          raises the event this listens for, so running out of credits opens
-          the plan wherever it happens — a build, an edit, a redraw. */}
-      <UpgradeDialog />
+      {/* Mounted once, for the whole app. It opens on every screen while the
+          free credits are gone, and on any request that comes back 402 or 403
+          — a build, an edit, a feature that needs a different plan. */}
+      <UpgradeDialog blocked={outOfCredits} />
     </div>
   );
 }

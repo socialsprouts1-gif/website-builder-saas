@@ -10,7 +10,6 @@ import { pageMetadata } from '@/lib/metadata';
 import { breadcrumbJsonLd, softwareApplicationJsonLd } from '@/lib/structured-data';
 
 const PRO = planFor('pro', 'monthly')!;
-const PREMIUM = planFor('premium', 'monthly')!;
 
 export const metadata = pageMetadata({
   title: 'Pricing',
@@ -21,8 +20,8 @@ export const metadata = pageMetadata({
 
 const FAQ = [
   {
-    q: 'What is the difference between Pro and Premium?',
-    a: `Credits, and two features. Pro is ${PRO.dailyCredits} credits a day with your own domain and GST invoices; Premium is ${PREMIUM.dailyCredits} a day, plus building from your Google Business listing, plus the 3D website builder when it lands. Everything else — voice, screenshot import, the shop, the chatbot, every connector, full export — is in the free tier already.`,
+    q: 'What is the difference between Professional and Premium?',
+    a: 'Two features. Professional gives you your own domain with HTTPS and GST-compliant invoices. Premium adds building straight from your Google Business listing, and the 3D website builder when it lands. Neither has a daily cap — both are a monthly plan you are not expected to think about. Everything else — voice, screenshot import, the shop, the chatbot, every connector, full export — is in the free tier already.',
   },
   {
     q: 'What happens when my free credits run out?',

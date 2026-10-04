@@ -84,7 +84,11 @@ export function TemplateInterview({ template }: { template: SetupTemplate }) {
     setBusy(true);
     setError(null);
     try {
-      const { ok, payload } = await postJson<{ projectId?: string; jobId?: string; error?: string }>(
+      const { ok, blocked, payload } = await postJson<{
+        projectId?: string;
+        jobId?: string;
+        error?: string;
+      }>(
         '/api/projects',
         {
           prompt: prompt.trim(),
@@ -95,6 +99,12 @@ export function TemplateInterview({ template }: { template: SetupTemplate }) {
         },
       );
       if (!ok || !payload.projectId) {
+        // The dialog is already open. Keep the answers so Build works as soon
+        // as they have a plan, rather than making them do it all again.
+        if (blocked) {
+          setBusy(false);
+          return;
+        }
         throw new Error(payload.error ?? 'Could not start the build. Try again.');
       }
       router.push(`/app/project/${payload.projectId}?job=${payload.jobId ?? ''}`);

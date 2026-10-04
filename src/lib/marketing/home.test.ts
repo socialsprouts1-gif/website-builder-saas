@@ -17,12 +17,22 @@ import { BUILDS, CAPABILITIES, COMPARISON, PLANS, PUBLISH_FEATURES, STEPS } from
 describe('the plans', () => {
   it('quote the real prices and allowances, not numbers typed once', () => {
     const free = PLANS.find((plan) => plan.name === 'Free')!;
-    const pro = PLANS.find((plan) => plan.name === 'Pro')!;
+    const pro = PLANS.find((plan) => plan.name === 'Professional')!;
     const premium = PLANS.find((plan) => plan.name === 'Premium')!;
     expect(free.features.join(' ')).toContain(String(FREE_CREDITS));
     expect(free.features.join(' ')).toContain(String(CREDIT_COST.generation));
-    expect(pro.features.join(' ')).toContain(String(planFor('pro', 'monthly')!.dailyCredits));
-    expect(premium.features.join(' ')).toContain(String(planFor('premium', 'monthly')!.dailyCredits));
+
+    /**
+     * A paid plan quotes no quantity at all. Its ceiling is set where nobody
+     * meets it, so printing one turns a subscription into a meter running down
+     * — and the number on the card was a daily figure, which made it worse.
+     */
+    for (const plan of [pro, premium]) {
+      const said = plan.features.join(' ');
+      expect(said).not.toMatch(/\d+\s*credits/i);
+      expect(said.toLowerCase()).not.toContain('a day');
+      expect(said.toLowerCase()).not.toContain('every day');
+    }
   });
 
   /**

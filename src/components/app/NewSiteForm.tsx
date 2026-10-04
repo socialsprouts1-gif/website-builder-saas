@@ -210,7 +210,11 @@ export function NewSiteForm({
     setBusy(true);
     setError(null);
     try {
-      const { ok, payload } = await postJson<{ projectId?: string; jobId?: string; error?: string }>(
+      const { ok, blocked, payload } = await postJson<{
+        projectId?: string;
+        jobId?: string;
+        error?: string;
+      }>(
         '/api/projects',
         {
           prompt: brief,
@@ -224,7 +228,16 @@ export function NewSiteForm({
           blueprint: chosen,
         },
       );
-      if (!ok) throw new Error(payload.error ?? 'Could not start generation');
+      if (!ok) {
+        // Out of credits is not a reason to throw away the brief and the nine
+        // answers behind it. The dialog is already open over the top; leaving
+        // the flow exactly where it was means Build works the moment they pay.
+        if (blocked) {
+          setBusy(false);
+          return;
+        }
+        throw new Error(payload.error ?? 'Could not start generation');
+      }
       router.push(`/app/project/${payload.projectId}?job=${payload.jobId}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not start generation');

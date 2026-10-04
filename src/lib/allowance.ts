@@ -9,8 +9,8 @@ export type { Tier };
 
 export interface Allowance {
   tier: Tier;
-  /** Daily credits on the shared key: none on free, Infinity for admins. */
-  dailyCredits: number;
+  /** Credits a month on the shared key: none on free, Infinity for admins. */
+  monthlyCredits: number;
   /** True when nothing here should be metered or rate limited. */
   unlimited: boolean;
 }
@@ -20,7 +20,7 @@ export interface Allowance {
  *
  * The free tier is a one-time grant rather than a daily allowance, so a free
  * account has no daily credits at all — see FREE_CREDITS. Subscribing is what
- * turns the tap on: a paid account gets its plan's daily credits, every day.
+ * turns the tap on: a paid account gets its plan's allowance, every month.
  *
  * Nothing here takes anything away. A free account whose grant is spent keeps
  * its sites, keeps them published, and can still export them; what stops is
@@ -42,7 +42,7 @@ export async function getAllowance(userId: string): Promise<Allowance> {
     : false;
 
   if (user?.is_admin || bootstrapAdmin) {
-    return { tier: 'admin', dailyCredits: Infinity, unlimited: true };
+    return { tier: 'admin', monthlyCredits: Infinity, unlimited: true };
   }
 
   const { data: subscription } = await supabase
@@ -57,11 +57,11 @@ export async function getAllowance(userId: string): Promise<Allowance> {
     // paid plan rather than as premium: the mistake that costs Lumen money is
     // better than the one that gives somebody a tier they did not buy.
     const plan = planByKey(subscription?.plan) ?? planFallback();
-    return { tier: plan.tier, dailyCredits: plan.dailyCredits, unlimited: false };
+    return { tier: plan.tier, monthlyCredits: plan.monthlyCredits, unlimited: false };
   }
 
   // No daily bucket on free. The grant is the whole of it.
-  return { tier: 'free', dailyCredits: FREE_PLAN.dailyCredits, unlimited: false };
+  return { tier: 'free', monthlyCredits: FREE_PLAN.monthlyCredits, unlimited: false };
 }
 
 /** A paid row whose plan we cannot read is still a paying customer. */

@@ -176,7 +176,7 @@ export function ChatbotSetup({
                 Use my Lumen credits
               </span>
               <span className="mt-1 block text-[11.5px] leading-relaxed text-ink-muted">
-                Nothing to set up. Comes out of your daily allowance.
+                Nothing to set up. Replies come out of your credits.
               </span>
             </button>
 

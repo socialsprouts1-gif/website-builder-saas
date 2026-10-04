@@ -1,10 +1,6 @@
 import Link from 'next/link';
 import { cn } from '@/components/ui/cn';
-import { CREDIT_COST } from '@/lib/env';
 import { meterReading, refills, totalCredits, type CreditBalance } from '@/lib/credits';
-
-/** Quoted in one place so the meter can never advertise the wrong price. */
-const SITE_COST = CREDIT_COST.generation;
 
 /**
  * What is left, always visible (spec Section 17: never make the user guess
@@ -57,29 +53,36 @@ export function CreditMeter({
 
   const reading = meterReading(balance);
   const empty = totalCredits(balance) === 0;
-  const pct = reading.outOf > 0 ? Math.min(100, (reading.left / reading.outOf) * 100) : 0;
+  const counted = reading.left !== null && reading.outOf !== null;
+  const pct = counted && reading.outOf! > 0 ? Math.min(100, (reading.left! / reading.outOf!) * 100) : 100;
 
   return (
     <div className={wrapper(variant)}>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{reading.label}</span>
-        <span className={cn('text-[12.5px]', empty ? 'text-[#e5735a]' : 'text-ink-primary')}>
-          {reading.left} / {reading.outOf}
-        </span>
+        {counted ? (
+          <span className={cn('text-[12.5px]', empty ? 'text-[#e5735a]' : 'text-ink-primary')}>
+            {reading.left} / {reading.outOf}
+          </span>
+        ) : (
+          <span className="text-[12px] text-accent">Included</span>
+        )}
       </div>
 
-      <div className="mt-2 h-1 overflow-hidden rounded-pill bg-white/10" role="presentation">
-        <div
-          className={cn('h-full rounded-pill transition-all', empty ? 'bg-[#e5735a]' : 'bg-accent')}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      {counted ? (
+        <div className="mt-2 h-1 overflow-hidden rounded-pill bg-white/10" role="presentation">
+          <div
+            className={cn('h-full rounded-pill transition-all', empty ? 'bg-[#e5735a]' : 'bg-accent')}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      ) : null}
 
       <p className="mt-2 text-[11.5px] leading-relaxed text-ink-muted">
         {empty ? (
           <>
             {refills(balance) ? (
-              <>Used up — more {formatReset(resetsAt)}. </>
+              <>Back {formatReset(resetsAt)}. </>
             ) : (
               <>All used. Your sites stay live and exportable. </>
             )}
@@ -97,10 +100,7 @@ export function CreditMeter({
             for no limit.
           </>
         ) : (
-          <>
-            A new site costs {SITE_COST}, each change costs 1.{' '}
-            {refills(balance) ? <>Resets {formatReset(resetsAt)}.</> : <>These do not reset.</>}
-          </>
+          reading.detail
         )}
       </p>
     </div>
@@ -135,9 +135,9 @@ function wrapper(variant: 'nav' | 'panel') {
     : 'rounded-card border border-hairline bg-raised px-4 py-3.5';
 }
 
+/** "in 9 days", for a monthly reset. Hours would be false for most of a month. */
 function formatReset(resetsAt: string): string {
-  const reset = new Date(resetsAt);
-  const hoursAway = Math.max(0, Math.round((reset.getTime() - Date.now()) / 3_600_000));
-  if (hoursAway <= 1) return 'within the hour';
-  return `in ${hoursAway}h`;
+  const days = Math.max(0, Math.ceil((new Date(resetsAt).getTime() - Date.now()) / 86_400_000));
+  if (days <= 1) return 'tomorrow';
+  return `in ${days} days`;
 }

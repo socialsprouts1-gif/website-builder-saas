@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/Badge';
 import { CreditMeter } from '@/components/app/CreditMeter';
 import { requireUser } from '@/lib/auth';
 import { CREDIT_COST, FREE_CREDITS } from '@/lib/env';
-import { canAfford, exhaustedMessage } from '@/lib/credits';
-import { OpenUpgradeWhenBlocked } from '@/components/app/UpgradeDialog';
 import { createClient } from '@/lib/supabase/server';
 import { getKeyStatus, resolveApiKeyForMetadata } from '@/lib/openai/client';
 import { fallbackCatalog, getModelCatalog } from '@/lib/openai/models';
@@ -48,9 +46,6 @@ export default async function NewSitePage({
   }
 
   const keyStatus = await getKeyStatus(user.id).catch(() => null);
-  const outOfQuota = keyStatus
-    ? !keyStatus.hasOwnKey && !canAfford(keyStatus.balance, CREDIT_COST.generation)
-    : false;
   const noKeyAtAll = keyStatus ? !keyStatus.hasOwnKey && !keyStatus.platformConfigured : false;
 
   // A first-time visit, which is the only time any of this needs explaining.
@@ -64,11 +59,6 @@ export default async function NewSitePage({
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-9 sm:px-6 sm:py-14">
-      {/* Said on arrival rather than after a prompt and four questions. */}
-      <OpenUpgradeWhenBlocked
-        blocked={outOfQuota && keyStatus?.tier === 'free'}
-        message={keyStatus ? exhaustedMessage(keyStatus.balance) : undefined}
-      />
       {firstTime ? (
         // Said once, on the only visit where it is news. Everything a new
         // account needs to know before it spends anything: what it has, what a
@@ -167,25 +157,17 @@ export default async function NewSitePage({
       </div>
       )}
 
-      {noKeyAtAll || outOfQuota ? (
+      {/* Only the case somebody can act on from here. Being told the credits
+          are gone before writing a word is what the upgrade dialog is for, and
+          it waits until the brief and the questions are answered — the plan is
+          worth more to somebody who can see the site they are about to get. */}
+      {noKeyAtAll ? (
         <div className="mb-6 rounded-card border border-accent/30 bg-accent-soft px-5 py-4 text-[13px] text-ink-secondary">
-          {noKeyAtAll ? (
-            <>
-              No OpenAI key is configured yet.{' '}
-              <Link href="/app/settings/api-keys" className="text-accent hover:underline">
-                Add your key
-              </Link>{' '}
-              to start generating.
-            </>
-          ) : (
-            <>
-              {keyStatus ? exhaustedMessage(keyStatus.balance) : null}{' '}
-              <Link href="/app/settings/billing" className="text-accent hover:underline">
-                See the plan
-              </Link>
-              .
-            </>
-          )}
+          No OpenAI key is configured yet.{' '}
+          <Link href="/app/settings/api-keys" className="text-accent hover:underline">
+            Add your key
+          </Link>{' '}
+          to start generating.
         </div>
       ) : keyStatus ? (
         <div className="mb-6">

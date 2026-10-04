@@ -22,26 +22,31 @@ export interface ResolvedKey {
 
 export { NoKeyAvailableError } from '@/lib/credits';
 
-/** Midnight UTC tonight — when the allowance resets. */
+/**
+ * When a paid plan's allowance comes back: the start of next month, UTC.
+ *
+ * A calendar month rather than the subscription's own anniversary. It is one
+ * day's difference to anybody's advantage or disadvantage, and it is the
+ * version a person can state without looking anything up — "it refreshes when
+ * the month turns over" — which matters more than the arithmetic.
+ */
 export function creditsResetAt(): Date {
-  const reset = new Date();
-  reset.setUTCHours(24, 0, 0, 0);
-  return reset;
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 }
 
-function startOfUtcDay(): string {
-  const start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
-  return start.toISOString();
+function startOfUtcMonth(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
 /**
- * Credits drawn on the platform key so far today.
+ * Credits drawn on the platform key so far this month.
  *
  * Weights are applied at read time from CREDIT_COST rather than stored, so
  * there is no extra column to migrate and existing rows are priced correctly.
  */
-async function platformCreditsUsedToday(userId: string): Promise<number> {
+async function platformCreditsUsedThisMonth(userId: string): Promise<number> {
   const supabase = createAdminClient();
 
   const { data } = await supabase
@@ -49,7 +54,7 @@ async function platformCreditsUsedToday(userId: string): Promise<number> {
     .select('event_type')
     .eq('user_id', userId)
     .eq('key_source', 'platform')
-    .gte('created_at', startOfUtcDay())
+    .gte('created_at', startOfUtcMonth())
     .limit(2000);
 
   return (data ?? []).reduce(
@@ -94,13 +99,13 @@ export async function creditBalance(userId: string): Promise<CreditBalance> {
       unlimited: true,
       freeRemaining: FREE_CREDITS,
       freeTotal: FREE_CREDITS,
-      dailyRemaining: 0,
-      dailyLimit: 0,
+      periodRemaining: 0,
+      periodLimit: 0,
     };
   }
 
-  const [usedToday, usedEver] = await Promise.all([
-    platformCreditsUsedToday(userId),
+  const [usedThisMonth, usedEver] = await Promise.all([
+    platformCreditsUsedThisMonth(userId),
     platformCreditsUsedEver(userId),
   ]);
 
@@ -109,8 +114,8 @@ export async function creditBalance(userId: string): Promise<CreditBalance> {
     unlimited: false,
     freeRemaining: Math.max(0, FREE_CREDITS - usedEver),
     freeTotal: FREE_CREDITS,
-    dailyRemaining: Math.max(0, allowance.dailyCredits - usedToday),
-    dailyLimit: allowance.dailyCredits,
+    periodRemaining: Math.max(0, allowance.monthlyCredits - usedThisMonth),
+    periodLimit: allowance.monthlyCredits,
   };
 }
 
@@ -153,7 +158,7 @@ export async function resolveApiKey(
     return { apiKey: env.openai.platformKey, source: 'platform', creditsRemaining: Infinity };
   }
 
-  // The free grant is spent first and never refills; a paid plan's daily
+  // The free grant is spent first and never refills; a paid plan's monthly
   // allowance is what follows it. Refuse when the call would overdraw, not
   // merely when the balance has already reached zero.
   if (!canAfford(balance, CREDIT_COST[intent])) {
@@ -169,7 +174,7 @@ export async function resolveApiKey(
 
 /**
  * A key for metadata only — listing models costs nothing, so it must not be
- * blocked by, or counted against, the daily allowance.
+ * blocked by, or counted against, the allowance.
  */
 export async function resolveApiKeyForMetadata(userId: string): Promise<ResolvedKey | null> {
   try {

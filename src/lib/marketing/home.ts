@@ -173,11 +173,11 @@ export const PLANS: Plan[] = [
     href: '/signup',
   },
   {
-    name: 'Pro',
+    name: 'Professional',
     price: `${priceLabel(PRO)}`,
     note: 'The same product, with room to work in. Yearly is two months free.',
     features: [
-      `${PRO.dailyCredits} credits every day, not ${FREE_CREDITS} in total`,
+      'Build and rebuild as much as the business needs',
       ...featureLines(PRO),
       'Or bring your own OpenAI key and have no ceiling at all',
     ],
@@ -188,11 +188,8 @@ export const PLANS: Plan[] = [
   {
     name: 'Premium',
     price: `${priceLabel(PREMIUM)}`,
-    note: 'Everything Pro has, four times the credits, and the things built next land here first.',
-    features: [
-      `${PREMIUM.dailyCredits} credits every day`,
-      ...featureLines(PREMIUM),
-    ],
+    note: 'Everything Professional has, and whatever is built next lands here first.',
+    features: ['Everything in Professional', ...featureLines(PREMIUM)],
     available: true,
     cta: 'See pricing',
     href: '/pricing',

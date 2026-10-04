@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FREE_CREDITS, CREDIT_COST } from '@/lib/env';
 import { planFor } from '@/lib/plans';
 
-const PRO_DAILY_PLATFORM_CREDITS = planFor('pro', 'monthly')!.dailyCredits;
+const PRO_MONTHLY = planFor('pro', 'monthly')!.monthlyCredits;
 import {
   NoKeyAvailableError,
   canAfford,
@@ -19,17 +19,17 @@ const free = (freeRemaining: number): CreditBalance => ({
   unlimited: false,
   freeRemaining,
   freeTotal: FREE_CREDITS,
-  dailyRemaining: 0,
-  dailyLimit: 0,
+  periodRemaining: 0,
+  periodLimit: 0,
 });
 
-const pro = (dailyRemaining: number): CreditBalance => ({
+const pro = (periodRemaining: number): CreditBalance => ({
   tier: 'pro',
   unlimited: false,
   freeRemaining: 0,
   freeTotal: FREE_CREDITS,
-  dailyRemaining,
-  dailyLimit: PRO_DAILY_PLATFORM_CREDITS,
+  periodRemaining,
+  periodLimit: PRO_MONTHLY,
 });
 
 const admin: CreditBalance = {
@@ -37,8 +37,8 @@ const admin: CreditBalance = {
   unlimited: true,
   freeRemaining: FREE_CREDITS,
   freeTotal: FREE_CREDITS,
-  dailyRemaining: 0,
-  dailyLimit: 0,
+  periodRemaining: 0,
+  periodLimit: 0,
 };
 
 describe('the free tier', () => {
@@ -73,13 +73,13 @@ describe('the free tier', () => {
    */
   it('never sells the plan to somebody already on it', () => {
     expect(needsUpgrade(pro(0), CREDIT_COST.generation)).toBe(false);
-    expect(exhaustedMessage(pro(0))).toMatch(/midnight/i);
+    expect(exhaustedMessage(pro(0))).toMatch(/month/i);
     expect(exhaustedMessage(pro(0))).not.toMatch(/upgrade/i);
   });
 
   it('never tells a free account its credits come back', () => {
     const message = exhaustedMessage(free(0));
-    expect(message).not.toMatch(/midnight|reset|tomorrow|every day/i);
+    expect(message).not.toMatch(/midnight|reset|tomorrow|every day|this month/i);
     expect(message).toMatch(/upgrade/i);
     // What it must promise, because it is what stops the wall being a threat.
     expect(message).toMatch(/stay live/i);
@@ -88,15 +88,30 @@ describe('the free tier', () => {
 
 describe('the meter', () => {
   it('counts the grant while any of it is left', () => {
-    expect(meterReading(free(4))).toEqual({ label: 'Free credits', left: 4, outOf: FREE_CREDITS });
-    expect(meterReading(free(0)).outOf).toBe(FREE_CREDITS);
+    const reading = meterReading(free(4));
+    expect(reading.label).toBe('Free credits');
+    expect(reading.left).toBe(4);
+    expect(reading.outOf).toBe(FREE_CREDITS);
   });
 
-  it('switches to the daily pot once a plan is paying for it', () => {
-    const reading = meterReading(pro(120));
-    expect(reading.label).toBe('Pro credits');
-    expect(reading.left).toBe(120);
-    expect(reading.outOf).toBe(PRO_DAILY_PLATFORM_CREDITS);
+  /**
+   * The point of the change. A paid ceiling is set where nobody meets it, so
+   * printing "3,940 remaining" every time somebody opens the app turns a
+   * subscription into a meter running down.
+   */
+  it('shows a paid plan no number at all', () => {
+    const reading = meterReading(pro(PRO_MONTHLY));
+    expect(reading.label).toBe('Professional');
+    expect(reading.left).toBeNull();
+    expect(reading.outOf).toBeNull();
+    expect(reading.detail).toMatch(/no daily cap/i);
+  });
+
+  it('shows the number only when somebody is genuinely close to it', () => {
+    const nearly = meterReading(pro(Math.floor(PRO_MONTHLY * 0.1)));
+    expect(nearly.left).toBe(Math.floor(PRO_MONTHLY * 0.1));
+    expect(nearly.outOf).toBe(PRO_MONTHLY);
+    expect(nearly.detail).toMatch(/running low/i);
   });
 
   it('never shows a negative balance', () => {

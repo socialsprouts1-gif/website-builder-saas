@@ -1,6 +1,6 @@
 import { FREE_CREDITS } from '@/lib/env';
 import { PLAN_PRICE_LABEL } from '@/lib/env';
-import type { PlanTier } from '@/lib/plans';
+import { PLANS, type PlanTier } from '@/lib/plans';
 
 /**
  * What an account has left, and what that means.
@@ -28,14 +28,20 @@ export interface CreditBalance {
   /** The one-time grant, and what is left of it. It never refills. */
   freeRemaining: number;
   freeTotal: number;
-  /** Today's allowance and its ceiling. Both zero on the free tier. */
-  dailyRemaining: number;
-  dailyLimit: number;
+  /**
+   * This month's allowance and its ceiling. Both zero on the free tier.
+   *
+   * A month rather than a day: a daily bucket makes a subscription feel like a
+   * meter, and "come back tomorrow" is not something somebody who has paid
+   * should ever be told.
+   */
+  periodRemaining: number;
+  periodLimit: number;
 }
 
 export function totalCredits(balance: CreditBalance): number {
   if (balance.unlimited) return Infinity;
-  return Math.max(0, balance.freeRemaining) + Math.max(0, balance.dailyRemaining);
+  return Math.max(0, balance.freeRemaining) + Math.max(0, balance.periodRemaining);
 }
 
 /** Whether a call costing this much may go ahead. */
@@ -47,8 +53,9 @@ export function canAfford(balance: CreditBalance, cost: number): boolean {
  * Whether the only way forward is to pay.
  *
  * A free account that has spent its grant is asked to upgrade. A paid account
- * that has spent today's allowance is not — theirs comes back at midnight, and
- * showing them an upgrade dialog would be selling them what they already have.
+ * that has reached this month's ceiling is not — theirs comes back with the
+ * month, and showing them an upgrade dialog would be selling them what they
+ * already have.
  */
 export function needsUpgrade(balance: CreditBalance, cost: number): boolean {
   if (balance.unlimited || canAfford(balance, cost)) return false;
@@ -57,7 +64,7 @@ export function needsUpgrade(balance: CreditBalance, cost: number): boolean {
 
 /** Whether what is left comes back on its own. */
 export function refills(balance: CreditBalance): boolean {
-  return !balance.unlimited && balance.dailyLimit > 0;
+  return !balance.unlimited && balance.periodLimit > 0;
 }
 
 /**
@@ -66,30 +73,56 @@ export function refills(balance: CreditBalance): boolean {
  */
 export function exhaustedMessage(balance: CreditBalance): string {
   if (refills(balance)) {
-    return "You have used today's credits. More arrive at midnight UTC — or add your own OpenAI key in Settings and there is no limit at all.";
+    return "You have reached this month's ceiling on the shared key. It lifts when the month turns over — or add your own OpenAI key in Settings and there is no limit at all.";
   }
   return `Your ${balance.freeTotal} free credits are used up. Your sites stay live and exportable. Upgrade for ${PLAN_PRICE_LABEL} a month to keep building, or add your own OpenAI key in Settings for no limit at all.`;
 }
 
 /**
- * The number on the meter, and what it is called.
+ * What the meter says.
  *
- * The grant is spent before the daily allowance, so while any of it is left it
- * is the figure that matters — and calling it "today's credits" while it sits
- * there not resetting is how a meter starts lying.
+ * A free account sees its grant counted down, because the number is the whole
+ * point of it — ten credits, and how many are left decides what happens next.
+ * A paid account sees no number at all. Its ceiling is set where nobody will
+ * meet it, and printing "4,000 remaining" turns a subscription into a meter
+ * running down; the figure only appears if somebody is genuinely close to it,
+ * which is the one time it is information rather than anxiety.
  */
-export function meterReading(balance: CreditBalance): {
+export interface MeterReading {
   label: string;
-  left: number;
-  outOf: number;
-} {
-  if (balance.freeRemaining > 0 || balance.dailyLimit === 0) {
-    return { label: 'Free credits', left: Math.max(0, balance.freeRemaining), outOf: balance.freeTotal };
+  /** Null when there is no number worth showing. */
+  left: number | null;
+  outOf: number | null;
+  detail: string;
+}
+
+/** Below this much of a paid ceiling, the number stops being noise. */
+const NEARLY_SPENT = 0.15;
+
+export function meterReading(balance: CreditBalance): MeterReading {
+  if (balance.unlimited) {
+    return { label: 'Credits', left: null, outOf: null, detail: 'Nothing is metered.' };
   }
+
+  if (balance.periodLimit === 0) {
+    return {
+      label: 'Free credits',
+      left: Math.max(0, balance.freeRemaining),
+      outOf: balance.freeTotal,
+      detail: 'These do not reset.',
+    };
+  }
+
+  const left = Math.max(0, balance.periodRemaining);
+  const low = left < balance.periodLimit * NEARLY_SPENT;
   return {
-    label: balance.tier === 'pro' ? 'Pro credits' : 'Credits',
-    left: Math.max(0, balance.dailyRemaining),
-    outOf: balance.dailyLimit,
+    // The plan's own name, so renaming a tier renames the meter with it.
+    label: `${PLANS.find((plan) => plan.tier === balance.tier)?.name ?? 'Plan'}`,
+    left: low ? left : null,
+    outOf: low ? balance.periodLimit : null,
+    detail: low
+      ? 'Running low this month. It refreshes when the month turns over.'
+      : 'No daily cap. Build what the business needs.',
   };
 }
 

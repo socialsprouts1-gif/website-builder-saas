@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { FEATURES, planFor, priceLabel, tierFor, type Feature } from '@/lib/plans';
+import { FEATURES, planFor, priceLabel, tierFor, tierName, type Feature } from '@/lib/plans';
 
 /**
  * What somebody sees instead of a feature their plan does not include.
@@ -19,7 +19,7 @@ export function PlanGate({ feature, children }: { feature: Feature; children?: R
   return (
     <div className="rounded-card border border-accent/25 bg-accent-soft/30 p-6 text-center">
       <Badge tone="accent" className="mb-4">
-        {tier === 'premium' ? 'Premium' : 'Pro'}
+        {tierName(tier)}
       </Badge>
       <h2 className="font-display text-[22px] leading-tight text-ink-primary">{detail.label}</h2>
       {children ? (
@@ -28,7 +28,7 @@ export function PlanGate({ feature, children }: { feature: Feature; children?: R
         </div>
       ) : null}
       <p className="mt-4 text-[13px] text-ink-muted">
-        On the {tier === 'premium' ? 'Premium' : 'Pro'} plan
+        On the {tierName(tier)} plan
         {plan ? `, ${priceLabel(plan)}` : ''}. Everything you have already built is unaffected.
       </p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">

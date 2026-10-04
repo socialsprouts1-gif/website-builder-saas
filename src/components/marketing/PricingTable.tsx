@@ -85,11 +85,9 @@ export function PricingTable() {
               </p>
               <p className="mt-4 text-[13.5px] leading-relaxed text-ink-secondary">{plan.note}</p>
               <ul className="mt-5 flex-1 space-y-2.5">
-                <Line>
-                  <span className="text-ink-primary">{plan.dailyCredits} credits every day</span> — around{' '}
-                  {Math.floor(plan.dailyCredits / CREDIT_COST.generation)} new sites a day
-                </Line>
-                <Line>Everything in Free, with no ceiling on projects or pages</Line>
+                {plan.highlights.map((line) => (
+                  <Line key={line}>{line}</Line>
+                ))}
                 {plan.features.map((feature) => (
                   <Line key={feature} soon={FEATURES[feature].soon}>
                     {FEATURES[feature].label}
