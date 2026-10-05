@@ -25,9 +25,14 @@ export interface CreditBalance {
   tier: Tier;
   /** Admins, and anyone on their own OpenAI key. Nothing below applies. */
   unlimited: boolean;
-  /** The one-time grant, and what is left of it. It never refills. */
+  /**
+   * The one-time grant and anything added by hand, and what is left of it.
+   * It never refills on its own.
+   */
   freeRemaining: number;
   freeTotal: number;
+  /** Of freeTotal, how much an admin gave. Zero for an ordinary account. */
+  granted: number;
   /**
    * This month's allowance and its ceiling. Both zero on the free tier.
    *

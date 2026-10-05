@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { SchemaNotInstalledError, isMissingTableError } from '@/lib/supabase/errors';
 import { requireAdmin } from '@/lib/auth';
 import { CREDIT_COST, FREE_CREDITS, type CreditedEvent } from '@/lib/env';
 
@@ -19,19 +20,16 @@ export interface AdminUserRow {
   createdAt: string;
   projectCount: number;
   hasOwnKey: boolean;
-  creditsUsedToday: number;
-  creditsLimit: number;
+  /** Everything ever spent on the shared key, in credits. */
+  creditsUsed: number;
+  /** Of what they have, how much an admin gave them by hand. */
+  creditsGranted: number;
+  creditsLeft: number;
   plan: {
     status: string;
     periodEnd: string | null;
     cancelledAt: string | null;
   } | null;
-}
-
-function startOfUtcDay(): string {
-  const start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
-  return start.toISOString();
 }
 
 export async function listUsers(search?: string): Promise<AdminUserRow[]> {
@@ -52,7 +50,7 @@ export async function listUsers(search?: string): Promise<AdminUserRow[]> {
   const ids = users.map((user) => user.id);
 
   // Three grouped reads rather than a query per user.
-  const [{ data: projects }, { data: subscriptions }, { data: keys }, { data: usage }] =
+  const [{ data: projects }, { data: subscriptions }, { data: keys }, { data: usage }, { data: grants }] =
     await Promise.all([
       supabase.from('projects').select('user_id').in('user_id', ids).eq('is_template', false),
       supabase
@@ -65,13 +63,15 @@ export async function listUsers(search?: string): Promise<AdminUserRow[]> {
         .in('user_id', ids)
         .eq('provider', 'openai')
         .eq('is_active', true),
+      // Everything ever spent, not today's: the free grant is a lifetime pot,
+      // so "used today" was a number that answered no question anybody asked.
       supabase
         .from('usage_events')
         .select('user_id, event_type')
         .in('user_id', ids)
         .eq('key_source', 'platform')
-        .gte('created_at', startOfUtcDay())
-        .limit(5000),
+        .limit(10_000),
+      supabase.from('credit_grants').select('user_id, credits').in('user_id', ids).limit(2000),
     ]);
 
   const projectCounts = new Map<string, number>();
@@ -83,6 +83,11 @@ export async function listUsers(search?: string): Promise<AdminUserRow[]> {
   for (const row of usage ?? []) {
     const cost = CREDIT_COST[row.event_type as CreditedEvent] ?? 0;
     credits.set(row.user_id, (credits.get(row.user_id) ?? 0) + cost);
+  }
+
+  const granted = new Map<string, number>();
+  for (const row of grants ?? []) {
+    granted.set(row.user_id, (granted.get(row.user_id) ?? 0) + (row.credits ?? 0));
   }
 
   const keyOwners = new Set((keys ?? []).map((row) => row.user_id));
@@ -99,8 +104,12 @@ export async function listUsers(search?: string): Promise<AdminUserRow[]> {
       createdAt: user.created_at,
       projectCount: projectCounts.get(user.id) ?? 0,
       hasOwnKey: keyOwners.has(user.id),
-      creditsUsedToday: credits.get(user.id) ?? 0,
-      creditsLimit: FREE_CREDITS,
+      creditsUsed: credits.get(user.id) ?? 0,
+      creditsGranted: granted.get(user.id) ?? 0,
+      creditsLeft: Math.max(
+        0,
+        FREE_CREDITS + (granted.get(user.id) ?? 0) - (credits.get(user.id) ?? 0),
+      ),
       plan: plan
         ? {
             status: plan.status,
@@ -123,6 +132,52 @@ export async function setUserAdmin(userId: string, isAdmin: boolean) {
   const supabase = createAdminClient();
   const { error } = await supabase.from('users').update({ is_admin: isAdmin }).eq('id', userId);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Gives an account credits by hand.
+ *
+ * A row rather than a balance, for the same reason the free tier is derived:
+ * nothing to keep in step, every credit has a date and a reason against it, and
+ * taking one back is a negative row rather than an edit that erases why.
+ *
+ * Negative amounts are allowed on purpose — a grant made in error has to be
+ * reversible, and reversing it should leave the mistake visible.
+ */
+export async function grantCredits(userId: string, credits: number, reason?: string) {
+  const actor = await requireAdmin();
+
+  if (!Number.isInteger(credits) || credits === 0) {
+    throw new Error('Enter a whole number of credits.');
+  }
+  if (Math.abs(credits) > 10_000) {
+    throw new Error('That is more than 10,000 credits. Add them in smaller grants.');
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.from('credit_grants').insert({
+    user_id: userId,
+    credits,
+    reason: reason?.trim() || null,
+    granted_by: actor.id,
+  });
+
+  if (isMissingTableError(error)) throw new SchemaNotInstalledError();
+  if (error) throw new Error(error.message);
+}
+
+/** Finds an account by email, for granting credits to somebody by address. */
+export async function findUserByEmail(email: string): Promise<{ id: string; email: string } | null> {
+  await requireAdmin();
+
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('users')
+    .select('id, email')
+    .ilike('email', email.trim())
+    .maybeSingle();
+
+  return data ?? null;
 }
 
 /** Extends (or starts) a free trial by a number of days from now. */

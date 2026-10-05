@@ -64,6 +64,31 @@ async function platformCreditsUsedThisMonth(userId: string): Promise<number> {
 }
 
 /**
+ * Credits given to this account by hand, net of anything taken back.
+ *
+ * Added to the free grant rather than tracked as its own pot: from the owner's
+ * side there is one number of free credits, and whether some of them came from
+ * signing up and some from a founder feeling generous is our bookkeeping, not
+ * theirs.
+ */
+async function grantedCredits(userId: string): Promise<number> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('credit_grants')
+    .select('credits')
+    .eq('user_id', userId)
+    .limit(500);
+
+  // The table arrives in migration 0021. Until it does, an account simply has
+  // what it signed up with — which is the behaviour this replaces, so a
+  // database part-way through its migrations loses nothing.
+  if (error) return 0;
+
+  return (data ?? []).reduce((total, row) => total + (row.credits ?? 0), 0);
+}
+
+/**
  * Everything this account has ever spent on the shared key.
  *
  * The welcome grant is derived from this rather than stored as a balance: there
@@ -99,21 +124,26 @@ export async function creditBalance(userId: string): Promise<CreditBalance> {
       unlimited: true,
       freeRemaining: FREE_CREDITS,
       freeTotal: FREE_CREDITS,
+      granted: 0,
       periodRemaining: 0,
       periodLimit: 0,
     };
   }
 
-  const [usedThisMonth, usedEver] = await Promise.all([
+  const [usedThisMonth, usedEver, granted] = await Promise.all([
     platformCreditsUsedThisMonth(userId),
     platformCreditsUsedEver(userId),
+    grantedCredits(userId),
   ]);
+
+  const freeTotal = Math.max(0, FREE_CREDITS + granted);
 
   return {
     tier: allowance.tier,
     unlimited: false,
-    freeRemaining: Math.max(0, FREE_CREDITS - usedEver),
-    freeTotal: FREE_CREDITS,
+    freeRemaining: Math.max(0, freeTotal - usedEver),
+    freeTotal,
+    granted,
     periodRemaining: Math.max(0, allowance.monthlyCredits - usedThisMonth),
     periodLimit: allowance.monthlyCredits,
   };

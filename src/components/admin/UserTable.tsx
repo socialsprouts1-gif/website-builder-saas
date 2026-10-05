@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Field';
 import { cn } from '@/components/ui/cn';
 import {
   endTrialAction,
+  grantCreditsAction,
   grantTrialAction,
   toggleAdminAction,
   type ActionResult,
@@ -76,7 +77,9 @@ export function UserTable({ users, currentUserId }: { users: AdminUserRow[]; cur
                       {user.projectCount} site{user.projectCount === 1 ? '' : 's'} ·{' '}
                       {user.hasOwnKey
                         ? 'own key'
-                        : `${user.creditsUsedToday}/${user.creditsLimit} credits today`}{' '}
+                        : `${user.creditsLeft} credits left${
+                            user.creditsGranted > 0 ? ` (${user.creditsGranted} given)` : ''
+                          }`}{' '}
                       · joined {new Date(user.createdAt).toLocaleDateString('en-IN')}
                     </span>
                   </span>
@@ -103,6 +106,24 @@ export function UserTable({ users, currentUserId }: { users: AdminUserRow[]; cur
                     <Button size="sm" variant="secondary" disabled={pending} onClick={() => run(() => grantTrialAction(user.id, 30))}>
                       +30 days
                     </Button>
+
+                    <span className="mx-1 h-4 w-px bg-hairline" aria-hidden />
+
+                    {/* Credits by hand. The amounts are the ones actually
+                        wanted: a couple of sites to try it, ten to run a pilot.
+                        Anything else goes in the box. */}
+                    {[10, 50].map((amount) => (
+                      <Button
+                        key={amount}
+                        size="sm"
+                        variant="secondary"
+                        disabled={pending}
+                        onClick={() => run(() => grantCreditsAction(user.id, amount))}
+                      >
+                        +{amount} credits
+                      </Button>
+                    ))}
+                    <CustomGrant userId={user.id} pending={pending} run={run} />
 
                     <span className="mx-1 h-4 w-px bg-hairline" aria-hidden />
 
@@ -137,6 +158,60 @@ export function UserTable({ users, currentUserId }: { users: AdminUserRow[]; cur
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Any other number, with a reason beside it.
+ *
+ * The reason is optional and worth asking for anyway: a grant with no note is
+ * a number nobody can explain six months later, including the person who made
+ * it.
+ */
+function CustomGrant({
+  userId,
+  pending,
+  run,
+}: {
+  userId: string;
+  pending: boolean;
+  run: (action: () => Promise<ActionResult>) => void;
+}) {
+  const [credits, setCredits] = useState('');
+  const [reason, setReason] = useState('');
+
+  const amount = Number.parseInt(credits, 10);
+  const valid = Number.isInteger(amount) && amount !== 0;
+
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      <Input
+        value={credits}
+        onChange={(event) => setCredits(event.target.value)}
+        placeholder="±n"
+        aria-label="Credits to add"
+        className="h-8 w-20 text-[12.5px]"
+      />
+      <Input
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        placeholder="Why (optional)"
+        aria-label="Reason for the grant"
+        className="h-8 w-40 text-[12.5px]"
+      />
+      <Button
+        size="sm"
+        variant="secondary"
+        disabled={pending || !valid}
+        onClick={() => {
+          run(() => grantCreditsAction(userId, amount, reason));
+          setCredits('');
+          setReason('');
+        }}
+      >
+        Add
+      </Button>
+    </span>
   );
 }
 

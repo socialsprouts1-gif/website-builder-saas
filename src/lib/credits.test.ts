@@ -14,11 +14,12 @@ import {
   type CreditBalance,
 } from './credits';
 
-const free = (freeRemaining: number): CreditBalance => ({
+const free = (freeRemaining: number, granted = 0): CreditBalance => ({
   tier: 'free',
   unlimited: false,
   freeRemaining,
-  freeTotal: FREE_CREDITS,
+  freeTotal: FREE_CREDITS + granted,
+  granted,
   periodRemaining: 0,
   periodLimit: 0,
 });
@@ -28,6 +29,7 @@ const pro = (periodRemaining: number): CreditBalance => ({
   unlimited: false,
   freeRemaining: 0,
   freeTotal: FREE_CREDITS,
+  granted: 0,
   periodRemaining,
   periodLimit: PRO_MONTHLY,
 });
@@ -37,6 +39,7 @@ const admin: CreditBalance = {
   unlimited: true,
   freeRemaining: FREE_CREDITS,
   freeTotal: FREE_CREDITS,
+  granted: 0,
   periodRemaining: 0,
   periodLimit: 0,
 };
@@ -83,6 +86,34 @@ describe('the free tier', () => {
     expect(message).toMatch(/upgrade/i);
     // What it must promise, because it is what stops the wall being a threat.
     expect(message).toMatch(/stay live/i);
+  });
+});
+
+describe('credits given by hand', () => {
+  /**
+   * The founder adding fifty credits to somebody's account has to show up as
+   * fifty credits, not as fifty credits that the meter still calls ten.
+   */
+  it('counts toward the same pot, and the meter says so', () => {
+    const topped = free(55, 50);
+    expect(totalCredits(topped)).toBe(55);
+    expect(canAfford(topped, CREDIT_COST.generation)).toBe(true);
+    expect(needsUpgrade(topped, CREDIT_COST.generation)).toBe(false);
+
+    const reading = meterReading(topped);
+    expect(reading.left).toBe(55);
+    expect(reading.outOf).toBe(FREE_CREDITS + 50);
+  });
+
+  it('still runs out, and still asks for a plan when it does', () => {
+    const spent = free(0, 50);
+    expect(canAfford(spent, 1)).toBe(false);
+    expect(needsUpgrade(spent, CREDIT_COST.generation)).toBe(true);
+    expect(exhaustedMessage(spent)).toMatch(/upgrade/i);
+  });
+
+  it('never tells somebody a granted credit comes back on its own', () => {
+    expect(refills(free(0, 50))).toBe(false);
   });
 });
 

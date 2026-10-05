@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { endTrial, grantTrialDays, setUserAdmin } from '@/lib/admin';
+import { endTrial, grantCredits, grantTrialDays, setUserAdmin } from '@/lib/admin';
 
 /**
  * Server actions for the users panel. Each delegates to a helper that calls
@@ -30,6 +30,26 @@ export async function grantTrialAction(userId: string, days: number): Promise<Ac
     await grantTrialDays(userId, days);
     revalidatePath('/admin/users');
     return { ok: true, message: `Free access extended by ${days} day${days === 1 ? '' : 's'}.` };
+  } catch (cause) {
+    return fail(cause);
+  }
+}
+
+export async function grantCreditsAction(
+  userId: string,
+  credits: number,
+  reason?: string,
+): Promise<ActionResult> {
+  try {
+    await grantCredits(userId, credits, reason);
+    revalidatePath('/admin/users');
+    return {
+      ok: true,
+      message:
+        credits > 0
+          ? `${credits} credits added. They are available immediately.`
+          : `${Math.abs(credits)} credits taken back.`,
+    };
   } catch (cause) {
     return fail(cause);
   }

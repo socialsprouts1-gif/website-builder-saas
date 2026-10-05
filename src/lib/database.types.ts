@@ -208,6 +208,15 @@ export type SubscriptionRow = {
   updated_at: string;
 }
 
+export type CreditGrantRow = {
+  id: string;
+  user_id: string;
+  credits: number;
+  reason: string | null;
+  granted_by: string | null;
+  created_at: string;
+}
+
 export type InvoiceRow = {
   id: string;
   subscription_id: string;
@@ -392,6 +401,7 @@ export type Database = {
       usage_events: Table<UsageEventRow>;
       subscriptions: Table<SubscriptionRow>;
       invoices: Table<InvoiceRow>;
+      credit_grants: Table<CreditGrantRow>;
       templates: Table<TemplateRow>;
       rate_limit_events: Table<RateLimitEventRow>;
       flagged_content: Table<FlaggedContentRow>;
