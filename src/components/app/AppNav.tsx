@@ -37,6 +37,7 @@ const GROUPS: {
       { href: '/app/deployments', label: 'Deployments' },
       { href: '/app/history', label: 'Version history' },
       { href: '/app/settings/connectors', label: 'Connectors' },
+      { href: '/app/studio', label: '3D Studio', needs: 'three_d' },
       { href: '/app/refer', label: 'Refer a friend' },
     ],
   },

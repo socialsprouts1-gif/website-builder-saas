@@ -277,3 +277,41 @@ body {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
+
+/*
+ * 3D Studio scenes.
+ *
+ * Three animations, deliberately: a slow drift that gives a still arrangement
+ * of planes a sense of being in space, a turn on the one solid object, and a
+ * rise on the particles. Everything else in a scene is static, because a page
+ * where nine things move at nine speeds is a page nobody can read.
+ *
+ * All three stop for anyone who has asked for less motion. A showcase that
+ * makes somebody feel sick is not a showcase.
+ */
+@keyframes lumen-scene-drift {
+  0%, 100% { transform: rotateY(-7deg) rotateX(3deg); }
+  50% { transform: rotateY(7deg) rotateX(-2deg); }
+}
+
+@keyframes lumen-scene-spin {
+  0% { transform: rotateX(14deg) rotateY(-24deg); }
+  100% { transform: rotateX(14deg) rotateY(336deg); }
+}
+
+@keyframes lumen-scene-float {
+  0%, 100% { transform: translateY(6px); opacity: 0.25; }
+  50% { transform: translateY(-10px); opacity: 0.7; }
+}
+
+.lumen-scene-drift { animation: lumen-scene-drift 14s ease-in-out infinite; }
+.lumen-scene-spin { animation: lumen-scene-spin 22s linear infinite; }
+.lumen-scene-float { animation: lumen-scene-float 5.5s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lumen-scene-drift,
+  .lumen-scene-spin,
+  .lumen-scene-float {
+    animation: none;
+  }
+}

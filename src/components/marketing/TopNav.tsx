@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/ideas', label: 'Ideas' },
   { href: '/showcase', label: 'Showcase' },
   { href: '/templates', label: 'Templates' },
+  { href: '/studio', label: '3D Studio' },
 ];
 
 export function TopNav({ signedIn = false }: { signedIn?: boolean }) {

@@ -210,6 +210,15 @@ export type SubscriptionRow = {
   updated_at: string;
 }
 
+export type StudioInterestRow = {
+  id: string;
+  user_id: string | null;
+  email: string | null;
+  brief: string;
+  category: string | null;
+  created_at: string;
+}
+
 export type ReferralRow = {
   id: string;
   referrer_id: string;
@@ -413,6 +422,7 @@ export type Database = {
       invoices: Table<InvoiceRow>;
       credit_grants: Table<CreditGrantRow>;
       referrals: Table<ReferralRow>;
+      studio_interest: Table<StudioInterestRow>;
       templates: Table<TemplateRow>;
       rate_limit_events: Table<RateLimitEventRow>;
       flagged_content: Table<FlaggedContentRow>;

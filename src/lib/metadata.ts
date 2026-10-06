@@ -62,6 +62,7 @@ export function publicPages(): PublicPage[] {
     { path: '/ideas', priority: 0.8, changeFrequency: 'monthly' },
     { path: '/for', priority: 0.8, changeFrequency: 'monthly' },
     { path: '/templates', priority: 0.8, changeFrequency: 'monthly' },
+    { path: '/studio', priority: 0.8, changeFrequency: 'monthly' },
     { path: '/showcase', priority: 0.7, changeFrequency: 'weekly' },
     { path: '/signup', priority: 0.7, changeFrequency: 'yearly' },
     { path: '/login', priority: 0.4, changeFrequency: 'yearly' },
