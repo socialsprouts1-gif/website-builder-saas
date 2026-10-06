@@ -7,7 +7,10 @@ import {
   FREE_PLAN,
   PLANS,
   availableFeatures,
+  INR_PER_USD,
   formatInr,
+  formatUsd,
+  introLabel,
   paidPlans,
   planAllows,
   planByKey,
@@ -163,5 +166,63 @@ describe('the database agrees', () => {
 
   it('migrates the rows that carry the old default', () => {
     expect(sql).toContain("plan = 'lumen_monthly_inr'");
+  });
+});
+
+describe('the introductory offer', () => {
+  it('is cheaper than the plan, and only on the monthly ones', () => {
+    for (const plan of PLANS) {
+      if (!plan.introPricePaise) continue;
+      expect(plan.period, `${plan.name} ${plan.period}`).toBe('monthly');
+      expect(plan.introPricePaise).toBeLessThan(plan.pricePaise);
+      expect(plan.introEnvVar, plan.name).toBeTruthy();
+    }
+  });
+
+  it('charges what the founder said: ₹99 and ₹999 for the first month', () => {
+    expect(planFor('pro', 'monthly')!.introPricePaise).toBe(9_900);
+    expect(planFor('premium', 'monthly')!.introPricePaise).toBe(99_900);
+  });
+
+  /**
+   * The line every subscription somebody regrets was sold with is an intro
+   * price on its own. Both numbers, in that order, always.
+   */
+  it('never shows the first month without the price after it', () => {
+    for (const plan of paidPlans('monthly')) {
+      const label = introLabel(plan);
+      if (!label) continue;
+      expect(label).toContain(formatInr(plan.introPricePaise!));
+      expect(label).toContain(formatInr(plan.pricePaise));
+      expect(label).toMatch(/first month/i);
+      expect(label).toMatch(/then/i);
+    }
+  });
+
+  it('is never advertised on a yearly plan, which already has months free', () => {
+    for (const plan of paidPlans('yearly')) {
+      expect(introLabel(plan), plan.name).toBeNull();
+    }
+  });
+});
+
+describe('prices in dollars', () => {
+  it('converts from the rupee price rather than carrying a second number', () => {
+    const pro = planFor('pro', 'monthly')!;
+    expect(formatUsd(pro.pricePaise)).toBe(
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
+        .format(pro.pricePaise / 100 / INR_PER_USD),
+    );
+  });
+
+  it('keeps the cents on the small numbers, where they are the decision', () => {
+    // ₹99 is about a dollar. Rounded to whole dollars it reads as $1 whether
+    // the real figure is $1.03 or $1.49.
+    expect(formatUsd(9_900)).toMatch(/\$\d+\.\d{2}/);
+  });
+
+  it('uses a rate somebody wrote down rather than one that drifts silently', () => {
+    expect(INR_PER_USD).toBeGreaterThan(50);
+    expect(INR_PER_USD).toBeLessThan(200);
   });
 });

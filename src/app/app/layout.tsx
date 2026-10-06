@@ -2,6 +2,7 @@ import { AppNav } from '@/components/app/AppNav';
 import { ConfirmBanner } from '@/components/app/ConfirmBanner';
 import { MigrationBanner } from '@/components/app/MigrationBanner';
 import { UpgradeDialog } from '@/components/app/UpgradeDialog';
+import { ClaimReferral } from '@/components/app/ClaimReferral';
 import { canAfford, needsUpgrade } from '@/lib/credits';
 import { CREDIT_COST } from '@/lib/env';
 import { isBootstrapAdmin, requireUser } from '@/lib/auth';
@@ -78,6 +79,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           free credits are gone, and on any request that comes back 402 or 403
           — a build, an edit, a feature that needs a different plan. */}
       <UpgradeDialog blocked={outOfCredits} />
+      <ClaimReferral />
     </div>
   );
 }

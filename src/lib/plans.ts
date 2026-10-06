@@ -55,6 +55,16 @@ export interface Plan {
   monthlyCredits: number;
   /** The environment variable holding this plan's Razorpay plan id. */
   envVar: string | null;
+  /**
+   * What the first month costs, when an introductory offer is running.
+   *
+   * Only ever shown when the matching Razorpay offer is actually configured —
+   * a card advertising ₹99 over a checkout that charges ₹500 is the worst bug
+   * this file could have. See `introPlans()` in razorpay.ts.
+   */
+  introPricePaise?: number;
+  /** The environment variable holding that offer's Razorpay offer id. */
+  introEnvVar?: string;
   features: Feature[];
   /** One line on the card. */
   note: string;
@@ -71,6 +81,17 @@ const YEAR_IN_MONTHS = 10;
 
 const PRO_MONTHLY_PAISE = 50_000;
 const PREMIUM_MONTHLY_PAISE = 200_000;
+
+/**
+ * The first month, discounted.
+ *
+ * On the monthly plans only: a year already carries two months free, and
+ * stacking an intro offer on top of that prices the first year below the first
+ * month of the alternative, which is how a pricing page starts arguing with
+ * itself.
+ */
+const PRO_INTRO_PAISE = 9_900;
+const PREMIUM_INTRO_PAISE = 99_900;
 
 const PRO_FEATURES: Feature[] = ['custom_domain', 'gst_invoices'];
 const PREMIUM_FEATURES: Feature[] = [...PRO_FEATURES, 'google_import', 'three_d'];
@@ -129,6 +150,8 @@ export const PLANS: Plan[] = [
     perMonthPaise: PRO_MONTHLY_PAISE,
     monthlyCredits: PRO_MONTHLY_CREDITS,
     envVar: 'RAZORPAY_PLAN_PRO_MONTHLY',
+    introPricePaise: PRO_INTRO_PAISE,
+    introEnvVar: 'RAZORPAY_OFFER_PRO_MONTHLY',
     features: PRO_FEATURES,
     note: 'For somebody whose websites are the business.',
     highlights: PRO_HIGHLIGHTS,
@@ -155,6 +178,8 @@ export const PLANS: Plan[] = [
     perMonthPaise: PREMIUM_MONTHLY_PAISE,
     monthlyCredits: PREMIUM_MONTHLY_CREDITS,
     envVar: 'RAZORPAY_PLAN_PREMIUM_MONTHLY',
+    introPricePaise: PREMIUM_INTRO_PAISE,
+    introEnvVar: 'RAZORPAY_OFFER_PREMIUM_MONTHLY',
     features: PREMIUM_FEATURES,
     note: 'Everything, including what is built next.',
     highlights: PREMIUM_HIGHLIGHTS,
@@ -254,18 +279,62 @@ export function formatInr(paise: number): string {
   }).format(paise / 100);
 }
 
-/** "₹500 / month", "₹5,000 / year". */
-export function priceLabel(plan: Plan): string {
-  if (plan.pricePaise === 0) return '₹0';
-  return `${formatInr(plan.pricePaise)} / ${plan.period === 'yearly' ? 'year' : 'month'}`;
+/**
+ * Prices in dollars, for the people who do not think in rupees.
+ *
+ * Display only. Every charge Lumen makes is in INR through Razorpay, and the
+ * screens that show this say so — a converted figure that reads like the amount
+ * being charged is a surprise on somebody's card statement.
+ *
+ * The rate is a constant rather than a live lookup on purpose: a pricing page
+ * that depends on a foreign exchange API is a pricing page that can fail to
+ * load, and to two significant figures this has not moved enough to matter for
+ * a ₹500 decision. Set from the mid-market rate on the date below; nudge it
+ * when it drifts far enough to look wrong.
+ */
+export const INR_PER_USD = 96; // ~96.4 mid-market, 6 October 2026
+
+export type Currency = 'INR' | 'USD';
+
+export function formatUsd(paise: number): string {
+  // Free is free in both currencies. "$0.00" reads like a price.
+  if (paise === 0) return '$0';
+  const dollars = paise / 100 / INR_PER_USD;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    // Under ten dollars the cents are the difference between $1 and $1.03,
+    // which is exactly where somebody is deciding whether this is cheap.
+    maximumFractionDigits: dollars < 10 ? 2 : 0,
+  }).format(dollars);
+}
+
+export const formatMoney = (paise: number, currency: Currency): string =>
+  currency === 'USD' ? formatUsd(paise) : formatInr(paise);
+
+/** "₹500 / month", "$5.21 / year". */
+export function priceLabel(plan: Plan, currency: Currency = 'INR'): string {
+  if (plan.pricePaise === 0) return formatMoney(0, currency);
+  return `${formatMoney(plan.pricePaise, currency)} / ${plan.period === 'yearly' ? 'year' : 'month'}`;
 }
 
 /** What a year works out at per month, for the comparison that sells it. */
-export function savingLabel(plan: Plan): string | null {
+export function savingLabel(plan: Plan, currency: Currency = 'INR'): string | null {
   if (plan.period !== 'yearly') return null;
   const monthly = planFor(plan.tier, 'monthly');
   if (!monthly) return null;
   const saved = monthly.pricePaise * 12 - plan.pricePaise;
   if (saved <= 0) return null;
-  return `${formatInr(plan.perMonthPaise)} a month — you save ${formatInr(saved)} a year`;
+  return `${formatMoney(plan.perMonthPaise, currency)} a month — you save ${formatMoney(saved, currency)} a year`;
+}
+
+/**
+ * "₹99 for the first month, then ₹500 / month".
+ *
+ * Both numbers, always, in that order. An intro price shown on its own is the
+ * line every subscription somebody regrets was sold with.
+ */
+export function introLabel(plan: Plan, currency: Currency = 'INR'): string | null {
+  if (!plan.introPricePaise) return null;
+  return `${formatMoney(plan.introPricePaise, currency)} for the first month, then ${priceLabel(plan, currency)}`;
 }

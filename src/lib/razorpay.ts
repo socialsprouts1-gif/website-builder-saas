@@ -41,6 +41,22 @@ export function razorpayPlanId(plan: Plan): string | undefined {
   return plan.envVar ? env.razorpay.planIds[plan.envVar] : undefined;
 }
 
+/**
+ * The introductory offer behind a plan, if one is configured.
+ *
+ * This is the guard that keeps the price on the card and the price at the
+ * checkout the same thing. The catalogue says what the intro price would be;
+ * this says whether Razorpay has actually been told about it. Nothing is
+ * advertised on the strength of the first alone.
+ */
+export function introOfferId(plan: Plan): string | undefined {
+  return plan.introEnvVar ? env.razorpay.offerIds[plan.introEnvVar] : undefined;
+}
+
+/** The plan keys whose intro price may be shown, because it will be charged. */
+export const introPlans = (): PlanKey[] =>
+  PLANS.filter((plan) => Boolean(introOfferId(plan))).map((plan) => plan.key);
+
 /** Which plans can actually be bought on this deployment. */
 export const purchasablePlans = (): Plan[] =>
   PLANS.filter((plan) => plan.envVar !== null && Boolean(razorpayPlanId(plan)));
@@ -80,9 +96,15 @@ export async function createSubscription(params: {
     throw new BillingNotConfiguredError();
   }
 
+  const offerId = introOfferId(plan);
+
   const client = razorpayClient();
   const subscription = await client.subscriptions.create({
     plan_id: planId,
+    // Razorpay applies the offer to the cycles its own configuration says —
+    // for an intro price that is the first charge only. Left out entirely when
+    // none is set up, which is also when the card does not mention one.
+    ...(offerId ? { offer_id: offerId } : {}),
     total_count: plan.period === 'yearly' ? 10 : 120,
     customer_notify: 1,
     quantity: 1,

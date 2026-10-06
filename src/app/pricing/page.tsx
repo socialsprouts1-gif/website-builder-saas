@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { FREE_CREDITS } from '@/lib/env';
 import { PricingTable } from '@/components/marketing/PricingTable';
 import { planFor, priceLabel } from '@/lib/plans';
+import { introPlans } from '@/lib/razorpay';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { pageMetadata } from '@/lib/metadata';
 import { breadcrumbJsonLd, softwareApplicationJsonLd } from '@/lib/structured-data';
@@ -75,7 +76,7 @@ export default function PricingPage() {
       </div>
 
       <section className="mx-auto max-w-shell px-6 pb-20">
-        <PricingTable />
+        <PricingTable intro={introPlans()} />
       </section>
 
       <section className="mx-auto max-w-2xl px-6 pb-24">

@@ -136,6 +136,15 @@ export const env = {
       RAZORPAY_PLAN_PREMIUM_MONTHLY: read('RAZORPAY_PLAN_PREMIUM_MONTHLY'),
       RAZORPAY_PLAN_PREMIUM_YEARLY: read('RAZORPAY_PLAN_PREMIUM_YEARLY'),
     } as Record<string, string | undefined>,
+    /**
+     * Razorpay Offer ids for the introductory first month, created in the
+     * dashboard and applied to the subscription at checkout. An offer that is
+     * not configured is not advertised — see introPlans().
+     */
+    offerIds: {
+      RAZORPAY_OFFER_PRO_MONTHLY: read('RAZORPAY_OFFER_PRO_MONTHLY'),
+      RAZORPAY_OFFER_PREMIUM_MONTHLY: read('RAZORPAY_OFFER_PREMIUM_MONTHLY'),
+    } as Record<string, string | undefined>,
   },
 
   encryptionKey: read('LUMEN_ENCRYPTION_KEY'),

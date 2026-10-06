@@ -20,6 +20,8 @@ export type UserRow = {
   default_model: string | null;
   voice_storage_enabled: boolean;
   is_admin: boolean;
+  /** Their own code, for inviting people. Generated on first use. */
+  referral_code: string | null;
   created_at: string;
 }
 
@@ -206,6 +208,14 @@ export type SubscriptionRow = {
   cancelled_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type ReferralRow = {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  code: string;
+  created_at: string;
 }
 
 export type CreditGrantRow = {
@@ -402,6 +412,7 @@ export type Database = {
       subscriptions: Table<SubscriptionRow>;
       invoices: Table<InvoiceRow>;
       credit_grants: Table<CreditGrantRow>;
+      referrals: Table<ReferralRow>;
       templates: Table<TemplateRow>;
       rate_limit_events: Table<RateLimitEventRow>;
       flagged_content: Table<FlaggedContentRow>;

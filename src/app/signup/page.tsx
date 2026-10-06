@@ -5,6 +5,8 @@ import { ButtonLink } from '@/components/ui/Button';
 import { isSupabaseConfigured } from '@/lib/env';
 import { pageMetadata } from '@/lib/metadata';
 import { CREDIT_COST, FREE_CREDITS } from '@/lib/env';
+import { REFERRAL_CREDITS } from '@/lib/referrals.shared';
+import { normaliseCode } from '@/lib/referral-code';
 
 export const metadata = pageMetadata({
   title: 'Create your account',
@@ -13,15 +15,23 @@ export const metadata = pageMetadata({
   path: '/signup',
 });
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ref?: string }>;
+}) {
+  const { ref } = await searchParams;
+  const code = normaliseCode(ref ?? '');
+  const credits = FREE_CREDITS + (code ? REFERRAL_CREDITS : 0);
+
   return (
     <AuthShell
-      title="Ship your first site today"
-      subtitle={`${FREE_CREDITS} free credits — ${Math.floor(FREE_CREDITS / CREDIT_COST.generation)} whole websites, no card. Plans from ₹500 a month after that.`}
+      title={code ? 'Your friend sent you extra credits' : 'Ship your first site today'}
+      subtitle={`${credits} free credits — ${Math.floor(credits / CREDIT_COST.generation)} whole websites, no card. Plans from ₹500 a month after that.`}
     >
       {isSupabaseConfigured ? (
         <Suspense fallback={<div className="h-72" />}>
-          <AuthForm mode="signup" />
+          <AuthForm mode="signup" referralCode={code || undefined} />
         </Suspense>
       ) : (
         <div className="space-y-4 text-center">

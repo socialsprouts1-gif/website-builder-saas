@@ -4,7 +4,7 @@ import { PlanPicker } from '@/components/app/PlanPicker';
 import { requireUser } from '@/lib/auth';
 import { getBillingState } from '@/lib/billing';
 import { createClient } from '@/lib/supabase/server';
-import { purchasablePlans } from '@/lib/razorpay';
+import { introPlans, purchasablePlans } from '@/lib/razorpay';
 import { formatInr, priceLabel, type PlanKey } from '@/lib/plans';
 import { FREE_CREDITS } from '@/lib/env';
 
@@ -66,6 +66,7 @@ export default async function BillingPage() {
           email={user.email}
           existingGstin={state.subscription?.gstin ?? null}
           purchasable={purchasablePlans().map((plan) => plan.key as PlanKey)}
+          intro={introPlans()}
           billingConfigured={state.billingConfigured}
         />
       </Card>

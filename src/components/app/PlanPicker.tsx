@@ -10,13 +10,17 @@ import { cn } from '@/components/ui/cn';
 import {
   FEATURES,
   FREE_CREDITS_NOTE,
+  formatMoney,
+  introLabel,
   paidPlans,
   priceLabel,
   savingLabel,
   type BillingPeriod,
+  type Currency,
   type Plan,
   type PlanKey,
 } from '@/lib/plans';
+import { CurrencyToggle } from '@/components/ui/CurrencyToggle';
 import { CREDIT_COST } from '@/lib/env';
 
 declare global {
@@ -44,6 +48,7 @@ export function PlanPicker({
   email,
   existingGstin,
   purchasable,
+  intro = [],
   billingConfigured,
 }: {
   currentPlan: PlanKey;
@@ -53,10 +58,13 @@ export function PlanPicker({
   existingGstin: string | null;
   /** The plans with a Razorpay plan id behind them on this deployment. */
   purchasable: PlanKey[];
+  /** The plans whose introductory offer is actually set up in Razorpay. */
+  intro?: PlanKey[];
   billingConfigured: boolean;
 }) {
   const router = useRouter();
   const [period, setPeriod] = useState<BillingPeriod>('monthly');
+  const [currency, setCurrency] = useState<Currency>('INR');
   const [gstin, setGstin] = useState(existingGstin ?? '');
   const [busy, setBusy] = useState<PlanKey | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -137,6 +145,10 @@ export function PlanPicker({
 
       <div className="space-y-6">
         <div className="flex justify-center">
+          <CurrencyToggle value={currency} onChange={setCurrency} />
+        </div>
+
+        <div className="flex justify-center">
           <div className="flex rounded-pill border border-hairline p-0.5" role="group" aria-label="Billing period">
             {(['monthly', 'yearly'] as BillingPeriod[]).map((option) => (
               <button
@@ -160,7 +172,8 @@ export function PlanPicker({
           {plans.map((plan) => {
             const current = plan.key === currentPlan && entitled;
             const buyable = purchasable.includes(plan.key);
-            const saving = savingLabel(plan);
+            const saving = savingLabel(plan, currency);
+            const offer = intro.includes(plan.key) && !entitled ? plan : null;
             return (
               <div
                 key={plan.key}
@@ -173,10 +186,26 @@ export function PlanPicker({
                   <p className="font-display text-[19px] text-ink-primary">{plan.name}</p>
                   {current ? <Badge tone="accent">Your plan</Badge> : null}
                 </div>
-                <p className="mt-1.5 font-display text-[26px] leading-none text-ink-primary">
-                  {priceLabel(plan)}
-                </p>
-                {saving ? <p className="mt-1.5 text-[12px] text-accent">{saving}</p> : null}
+                {offer?.introPricePaise ? (
+                  <>
+                    <p className="mt-1.5 flex flex-wrap items-baseline gap-2">
+                      <span className="font-display text-[17px] leading-none text-ink-muted line-through">
+                        {formatMoney(plan.pricePaise, currency)}
+                      </span>
+                      <span className="font-display text-[26px] leading-none text-ink-primary">
+                        {formatMoney(offer.introPricePaise, currency)}
+                      </span>
+                    </p>
+                    <p className="mt-1.5 text-[12px] text-accent">{introLabel(plan, currency)}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-1.5 font-display text-[26px] leading-none text-ink-primary">
+                      {priceLabel(plan, currency)}
+                    </p>
+                    {saving ? <p className="mt-1.5 text-[12px] text-accent">{saving}</p> : null}
+                  </>
+                )}
                 <p className="mt-2 text-[12.5px] leading-relaxed text-ink-secondary">{plan.note}</p>
 
                 <ul className="mt-4 flex-1 space-y-2 text-[12.5px] leading-relaxed text-ink-secondary">
@@ -246,7 +275,12 @@ export function PlanPicker({
           </Field>
         ) : null}
 
-        <p className="text-center text-[12px] leading-relaxed text-ink-muted">{FREE_CREDITS_NOTE}</p>
+        <p className="text-center text-[12px] leading-relaxed text-ink-muted">
+          {currency === 'USD'
+            ? 'Dollar amounts are approximate — every charge is made in Indian rupees through Razorpay. '
+            : ''}
+          {FREE_CREDITS_NOTE}
+        </p>
 
         {error ? (
           <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">

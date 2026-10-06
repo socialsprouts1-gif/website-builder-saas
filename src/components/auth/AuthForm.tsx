@@ -8,7 +8,67 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { checkPassword, MIN_LENGTH } from '@/lib/password';
 
-export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
+/**
+ * Where a referral code waits between the two halves of signing up.
+ *
+ * The code is known before there is an account and the account exists before
+ * anything has been built, so something has to hold it across the gap — and the
+ * gap may include a round trip through Google, or an email confirmation opened
+ * an hour later on the same device. localStorage survives all three; a React
+ * state variable survives none of them.
+ */
+const REFERRAL_KEY = 'lumen:referral';
+
+export function rememberReferral(code: string) {
+  try {
+    window.localStorage.setItem(REFERRAL_KEY, code);
+  } catch {
+    // Private window, or storage refused. The referral is lost, which costs
+    // somebody some credits and breaks nothing.
+  }
+}
+
+/**
+ * Redeems whatever was remembered, once there is a session to attach it to.
+ *
+ * Deliberately quiet: a code that has expired, was mistyped, or belongs to the
+ * person using it is not a problem the new account should be made to read
+ * about. It either pays out or it does not.
+ */
+export async function claimRememberedReferral() {
+  let code: string | null = null;
+  try {
+    code = window.localStorage.getItem(REFERRAL_KEY);
+  } catch {
+    return;
+  }
+  if (!code) return;
+
+  try {
+    await fetch('/api/referral/claim', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+  } catch {
+    // Offline at exactly the wrong moment. Left in storage to try again.
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(REFERRAL_KEY);
+  } catch {
+    // Nothing to do, and nothing breaks: claiming twice is refused server-side.
+  }
+}
+
+export function AuthForm({
+  mode,
+  referralCode,
+}: {
+  mode: 'login' | 'signup';
+  referralCode?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') ?? '/app';
@@ -46,8 +106,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
         });
         if (signUpError) throw signUpError;
 
+        if (referralCode) rememberReferral(referralCode);
+
         // Supabase returns a session immediately only when email confirmation is off.
         if (data.session) {
+          await claimRememberedReferral();
           router.push('/onboarding');
           router.refresh();
           return;
@@ -58,6 +121,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
 
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) throw signInError;
+      // The confirm-your-email path lands here, not above: the code was stored
+      // before the account existed and is redeemed on the first real sign-in.
+      await claimRememberedReferral();
       router.push(next);
       router.refresh();
     } catch (cause) {
@@ -69,6 +135,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
 
   async function handleGoogle() {
     setError(null);
+    if (referralCode) rememberReferral(referralCode);
     try {
       const supabase = createClient();
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
