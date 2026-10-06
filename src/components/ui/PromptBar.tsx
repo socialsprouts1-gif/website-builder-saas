@@ -137,7 +137,7 @@ export function PromptBar({
             <span
               key={item.id}
               className={cn(
-                'inline-flex max-w-full items-center gap-1.5 rounded-pill border px-2.5 py-1 text-[11.5px]',
+                'inline-flex max-w-full items-center gap-1.5 rounded-pill border px-2.5 py-1 text-[13.5px]',
                 item.error
                   ? 'border-[#e5735a]/40 bg-[#e5735a]/10 text-[#e5735a]'
                   : 'border-hairline bg-base text-ink-secondary',
@@ -179,7 +179,7 @@ export function PromptBar({
             onChange(event.target.value);
             autosize();
           }}
-          className="max-h-[180px] min-h-[28px] w-full min-w-0 flex-1 resize-none bg-transparent py-1 text-[15px] text-ink-primary outline-none placeholder:text-ink-muted"
+          className="max-h-[180px] min-h-[28px] w-full min-w-0 flex-1 resize-none bg-transparent py-1 text-[17px] text-ink-primary outline-none placeholder:text-ink-muted"
         />
       </div>
 
@@ -200,7 +200,7 @@ export function PromptBar({
             }}
             placeholder="A site you like — example.com"
             spellCheck={false}
-            className="min-w-0 flex-1 rounded-pill border border-hairline bg-base px-3 py-1.5 text-[12.5px] text-ink-primary outline-none focus:border-accent/40"
+            className="min-w-0 flex-1 rounded-pill border border-hairline bg-base px-3 py-1.5 text-[14.5px] text-ink-primary outline-none focus:border-accent/40"
           />
           <button
             type="button"
@@ -210,7 +210,7 @@ export function PromptBar({
               setReference('');
               setReferenceOpen(false);
             }}
-            className="shrink-0 rounded-pill border border-hairline px-3 py-1.5 text-[12px] text-ink-secondary transition hover:text-ink-primary"
+            className="shrink-0 rounded-pill border border-hairline px-3 py-1.5 text-[14px] text-ink-secondary transition hover:text-ink-primary"
           >
             Add
           </button>
@@ -237,7 +237,7 @@ export function PromptBar({
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
               aria-expanded={menuOpen}
-              className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-hairline px-3 text-[12.5px] text-ink-secondary transition hover:border-accent/40 hover:text-ink-primary"
+              className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-hairline px-3 text-[14.5px] text-ink-secondary transition hover:border-accent/40 hover:text-ink-primary"
             >
               <PlusIcon />
               Add
@@ -254,7 +254,7 @@ export function PromptBar({
                 />
                 <div className="lumen-panel absolute bottom-11 left-0 z-20 max-h-[60vh] w-60 overflow-y-auto rounded-[12px] border border-hairline bg-raised py-1">
                   {onAttachFiles ? (
-                    <p className="px-3 pb-1 pt-2 text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                    <p className="px-3 pb-1 pt-2 text-[12px] uppercase tracking-[0.16em] text-ink-muted">
                       Attach
                     </p>
                   ) : null}
@@ -347,7 +347,7 @@ export function PromptBar({
           type="button"
           onClick={onSubmit}
           disabled={disabled || busy || !canSubmit}
-          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-pill bg-accent px-4 text-[13px] font-medium text-accent-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-pill bg-accent px-4 text-[15px] font-medium text-accent-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? 'Working…' : submitLabel}
           {!busy && <span aria-hidden>→</span>}
@@ -380,10 +380,10 @@ function MenuItem({
 }) {
   const inner = (
     <>
-      <span aria-hidden className="text-[14px]">{icon}</span>
+      <span aria-hidden className="text-[16px]">{icon}</span>
       <span className="min-w-0">
-        <span className="block text-[12.5px] text-ink-primary">{label}</span>
-        <span className="block text-[11px] text-ink-muted">{hint}</span>
+        <span className="block text-[14.5px] text-ink-primary">{label}</span>
+        <span className="block text-[13px] text-ink-muted">{hint}</span>
       </span>
     </>
   );

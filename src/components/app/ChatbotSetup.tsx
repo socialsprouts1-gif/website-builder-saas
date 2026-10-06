@@ -140,13 +140,13 @@ export function ChatbotSetup({
                 }`}
               >
                 <span
-                  className={`block text-[12.5px] ${
+                  className={`block text-[14.5px] ${
                     tone === option.value ? 'text-accent' : 'text-ink-primary'
                   }`}
                 >
                   {option.label}
                 </span>
-                <span className="mt-1 block text-[11.5px] leading-relaxed text-ink-muted">
+                <span className="mt-1 block text-[14.5px] leading-relaxed text-ink-muted">
                   {option.sample}
                 </span>
               </button>
@@ -169,13 +169,13 @@ export function ChatbotSetup({
               }`}
             >
               <span
-                className={`block text-[12.5px] ${
+                className={`block text-[14.5px] ${
                   keyChoice === 'lumen' ? 'text-accent' : 'text-ink-primary'
                 }`}
               >
                 Use my Lumen credits
               </span>
-              <span className="mt-1 block text-[11.5px] leading-relaxed text-ink-muted">
+              <span className="mt-1 block text-[14.5px] leading-relaxed text-ink-muted">
                 Nothing to set up. Replies come out of your credits.
               </span>
             </button>
@@ -188,13 +188,13 @@ export function ChatbotSetup({
               }`}
             >
               <span
-                className={`block text-[12.5px] ${
+                className={`block text-[14.5px] ${
                   keyChoice === 'own' ? 'text-accent' : 'text-ink-primary'
                 }`}
               >
                 Use my own OpenAI key
               </span>
-              <span className="mt-1 block text-[11.5px] leading-relaxed text-ink-muted">
+              <span className="mt-1 block text-[14.5px] leading-relaxed text-ink-muted">
                 Unmetered, billed by OpenAI. Stored encrypted and never shown again.
               </span>
             </button>
@@ -208,7 +208,7 @@ export function ChatbotSetup({
                   secret
                   maxLength={300}
                 />
-                <p className="mt-1.5 text-[11px] leading-relaxed text-ink-muted">
+                <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-muted">
                   From platform.openai.com → API keys. Lumen checks it with OpenAI before saving it.
                 </p>
               </div>
@@ -218,7 +218,7 @@ export function ChatbotSetup({
       ) : null}
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[11.5px] leading-relaxed text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[14.5px] leading-relaxed text-[#e5735a]">
           {error}
         </p>
       ) : null}
@@ -229,7 +229,7 @@ export function ChatbotSetup({
             type="button"
             disabled={!canAdvance}
             onClick={() => setStep((current) => current + 1)}
-            className="lumen-key rounded-pill px-4 py-1.5 text-[12px] disabled:opacity-40"
+            className="lumen-key rounded-pill px-4 py-1.5 text-[14px] disabled:opacity-40"
           >
             Next
           </button>
@@ -238,7 +238,7 @@ export function ChatbotSetup({
             type="button"
             disabled={!canAdvance || busy}
             onClick={create}
-            className="lumen-key rounded-pill px-4 py-1.5 text-[12px] disabled:opacity-40"
+            className="lumen-key rounded-pill px-4 py-1.5 text-[14px] disabled:opacity-40"
           >
             {busy ? 'Building…' : 'Put it on my site'}
           </button>
@@ -246,7 +246,7 @@ export function ChatbotSetup({
         <button
           type="button"
           onClick={() => (step === 0 ? onBack() : setStep((current) => current - 1))}
-          className="text-[11.5px] text-ink-muted transition hover:text-ink-secondary"
+          className="text-[13.5px] text-ink-muted transition hover:text-ink-secondary"
         >
           ← Back
         </button>
@@ -270,7 +270,7 @@ function Progress({ at }: { at: number }) {
           }`}
         />
       ))}
-      <span className="ml-1 text-[10.5px] uppercase tracking-[0.14em] text-ink-muted">
+      <span className="ml-1 text-[12.5px] uppercase tracking-[0.14em] text-ink-muted">
         {at + 1} of {STEPS.length}
       </span>
     </div>
@@ -289,8 +289,8 @@ function Question({
   return (
     <div className="space-y-2.5">
       <div>
-        <p className="text-[13px] text-ink-primary">{title}</p>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-ink-muted">{hint}</p>
+        <p className="text-[15px] text-ink-primary">{title}</p>
+        <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">{hint}</p>
       </div>
       {children}
     </div>
@@ -319,7 +319,7 @@ function Text({
       type={secret ? 'password' : 'text'}
       autoComplete={secret ? 'off' : undefined}
       spellCheck={false}
-      className="lumen-well w-full rounded-[10px] border border-hairline px-3 py-2 text-[13px] text-ink-primary outline-none focus:border-accent/50"
+      className="lumen-well w-full rounded-[10px] border border-hairline px-3 py-2 text-[15px] text-ink-primary outline-none focus:border-accent/50"
     />
   );
 }

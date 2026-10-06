@@ -21,19 +21,19 @@ export function PlanGate({ feature, children }: { feature: Feature; children?: R
       <Badge tone="accent" className="mb-4">
         {tierName(tier)}
       </Badge>
-      <h2 className="font-display text-[22px] leading-tight text-ink-primary">{detail.label}</h2>
+      <h2 className="font-display text-[23px] leading-tight text-ink-primary">{detail.label}</h2>
       {children ? (
-        <div className="mx-auto mt-3 max-w-md text-[13.5px] leading-relaxed text-ink-secondary">
+        <div className="mx-auto mt-3 max-w-md text-[15.5px] leading-relaxed text-ink-secondary">
           {children}
         </div>
       ) : null}
-      <p className="mt-4 text-[13px] text-ink-muted">
+      <p className="mt-4 text-[15px] text-ink-muted">
         On the {tierName(tier)} plan
         {plan ? `, ${priceLabel(plan)}` : ''}. Everything you have already built is unaffected.
       </p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
         <ButtonLink href="/app/settings/billing">See the plans</ButtonLink>
-        <Link href="/pricing" className="text-[12.5px] text-ink-muted transition hover:text-ink-primary">
+        <Link href="/pricing" className="text-[14.5px] text-ink-muted transition hover:text-ink-primary">
           What is in each one
         </Link>
       </div>

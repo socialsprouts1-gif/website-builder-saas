@@ -101,7 +101,7 @@ export function DomainPanel({
   if (!deployed) {
     return (
       <Card>
-        <p className="text-[13px] leading-relaxed text-ink-secondary">
+        <p className="text-[15px] leading-relaxed text-ink-secondary">
           Deploy to Vercel first. A domain needs somewhere to point, and the deploy is what creates it.
         </p>
       </Card>
@@ -123,7 +123,7 @@ export function DomainPanel({
               type="button"
               onClick={() => setTab(value)}
               className={cn(
-                'flex-1 rounded-pill px-3 py-1.5 text-[12.5px] transition',
+                'flex-1 rounded-pill px-3 py-1.5 text-[14.5px] transition',
                 tab === value ? 'bg-accent text-accent-ink' : 'text-ink-secondary hover:text-ink-primary',
               )}
             >
@@ -152,7 +152,7 @@ export function DomainPanel({
         )}
 
         {error ? (
-          <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+          <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
             {error}
           </p>
         ) : null}
@@ -168,7 +168,7 @@ export function DomainPanel({
         done
         body={
           <div className="flex flex-wrap items-center gap-3">
-            <span className="font-mono text-[13.5px] text-ink-primary">{status.domain}</span>
+            <span className="font-mono text-[15.5px] text-ink-primary">{status.domain}</span>
             <Button
               size="sm"
               variant="danger"
@@ -187,13 +187,13 @@ export function DomainPanel({
             done={status.verified}
             body={
               <div className="space-y-2">
-                <p className="text-[12.5px] leading-relaxed text-ink-muted">
+                <p className="text-[14.5px] leading-relaxed text-ink-muted">
                   Wherever you bought the domain — GoDaddy, Namecheap, BigRock — find its DNS settings and
                   add each row below. Delete any existing record with the same type and name.
                 </p>
                 {status.records.map((record) => (
                   <div key={`${record.type}-${record.name}-${record.value}`} className="rounded-[10px] border border-hairline bg-[var(--bg-base-deep)] p-3">
-                    <div className="flex flex-wrap items-center gap-2 font-mono text-[12px]">
+                    <div className="flex flex-wrap items-center gap-2 font-mono text-[14px]">
                       <span className="rounded bg-white/10 px-1.5 py-0.5 text-ink-primary">{record.type}</span>
                       <span className="text-ink-secondary">{record.name}</span>
                       <span className="text-ink-muted">→</span>
@@ -201,12 +201,12 @@ export function DomainPanel({
                       <button
                         type="button"
                         onClick={() => copy(record.value)}
-                        className="shrink-0 text-[11px] text-accent transition hover:underline"
+                        className="shrink-0 text-[13px] text-accent transition hover:underline"
                       >
                         {copied === record.value ? 'copied' : 'copy'}
                       </button>
                     </div>
-                    <p className="mt-1.5 text-[11.5px] text-ink-muted">{record.purpose}</p>
+                    <p className="mt-1.5 text-[13.5px] text-ink-muted">{record.purpose}</p>
                   </div>
                 ))}
               </div>
@@ -232,14 +232,14 @@ export function DomainPanel({
                       href={`https://${status.domain}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[13px] text-accent hover:underline"
+                      className="text-[15px] text-accent hover:underline"
                     >
                       Open {status.domain} ↗
                     </a>
                   ) : null}
                 </div>
                 {!status.verified ? (
-                  <p className="text-[12px] leading-relaxed text-ink-muted">
+                  <p className="text-[14px] leading-relaxed text-ink-muted">
                     DNS usually takes a few minutes and can take up to an hour. Nothing is broken while this
                     says waiting — press Check now again in a bit. Your site stays live on its Vercel URL
                     throughout.
@@ -250,7 +250,7 @@ export function DomainPanel({
           />
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
@@ -276,7 +276,7 @@ function Step({
       <div className="flex flex-col items-center">
         <span
           className={cn(
-            'flex h-6 w-6 shrink-0 items-center justify-center rounded-pill border text-[11px]',
+            'flex h-6 w-6 shrink-0 items-center justify-center rounded-pill border text-[13px]',
             done ? 'border-accent bg-accent text-accent-ink' : 'border-hairline text-ink-muted',
           )}
         >
@@ -285,7 +285,7 @@ function Step({
         {!last ? <span className="mt-1 w-px flex-1 bg-hairline" aria-hidden /> : null}
       </div>
       <div className="min-w-0 flex-1 pb-1">
-        <p className="mb-2 text-[13.5px] text-ink-primary">{title}</p>
+        <p className="mb-2 text-[15.5px] text-ink-primary">{title}</p>
         {body}
       </div>
     </div>
@@ -323,7 +323,7 @@ function ConnectForm({
           {connecting ? 'Connecting…' : 'Connect'}
         </Button>
       </div>
-      <p className="text-[12px] text-ink-muted">
+      <p className="text-[14px] text-ink-muted">
         Enter it exactly as you bought it. Lumen will show you the two DNS records to paste at your
         registrar.
       </p>

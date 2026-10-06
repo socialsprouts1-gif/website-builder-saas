@@ -101,14 +101,14 @@ export function ConnectFlow({
   return (
     <div className="lumen-panel rounded-[16px] border border-accent/25 p-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[13.5px] text-ink-primary">
+        <p className="text-[15.5px] text-ink-primary">
           {step.at === 'choose' ? intent.title : describe(currentProvider(step)).name}
         </p>
         <button
           type="button"
           onClick={onDismiss}
           aria-label="Close"
-          className="-mr-1 -mt-1 shrink-0 text-[16px] leading-none text-ink-muted transition hover:text-ink-primary"
+          className="-mr-1 -mt-1 shrink-0 text-[17.5px] leading-none text-ink-muted transition hover:text-ink-primary"
         >
           ×
         </button>
@@ -118,7 +118,7 @@ export function ConnectFlow({
         <>
           <div className="mt-3 space-y-2">
             {cards === null ? (
-              <p className="text-[12.5px] text-ink-muted">Loading the options…</p>
+              <p className="text-[14.5px] text-ink-muted">Loading the options…</p>
             ) : (
               offered.map((provider) => {
                 const info = describe(provider);
@@ -131,15 +131,15 @@ export function ConnectFlow({
                   >
                     <ConnectorMark provider={provider} name={info.name} connected={info.connected} />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[13px] text-ink-primary">{info.name}</span>
+                      <span className="block text-[15px] text-ink-primary">{info.name}</span>
                       {info.summary ? (
-                        <span className="mt-0.5 block text-[11.5px] leading-relaxed text-ink-muted">
+                        <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ink-muted">
                           {info.summary}
                         </span>
                       ) : null}
                     </span>
                     {info.connected ? (
-                      <span className="shrink-0 text-[10px] uppercase tracking-[0.1em] text-accent">
+                      <span className="shrink-0 text-[12px] uppercase tracking-[0.1em] text-accent">
                         Connected
                       </span>
                     ) : null}
@@ -154,7 +154,7 @@ export function ConnectFlow({
               <button
                 type="button"
                 onClick={() => setShowAll(true)}
-                className="text-[11.5px] text-ink-muted transition hover:text-ink-secondary"
+                className="text-[13.5px] text-ink-muted transition hover:text-ink-secondary"
               >
                 Something else →
               </button>
@@ -162,7 +162,7 @@ export function ConnectFlow({
             <button
               type="button"
               onClick={onEditInstead}
-              className="text-[11.5px] text-ink-muted transition hover:text-ink-secondary"
+              className="text-[13.5px] text-ink-muted transition hover:text-ink-secondary"
             >
               No — change the website instead
             </button>
@@ -184,11 +184,11 @@ export function ConnectFlow({
 
       {step.at === 'done' ? (
         <div className="mt-3">
-          <p className="text-[12.5px] leading-relaxed text-ink-secondary">{step.message}</p>
+          <p className="text-[14.5px] leading-relaxed text-ink-secondary">{step.message}</p>
           <button
             type="button"
             onClick={onDismiss}
-            className="lumen-key mt-3 rounded-pill px-4 py-1.5 text-[12px]"
+            className="lumen-key mt-3 rounded-pill px-4 py-1.5 text-[14px]"
           >
             Done
           </button>
@@ -229,7 +229,7 @@ function ProviderForm({
     <button
       type="button"
       onClick={onBack}
-      className="text-[11.5px] text-ink-muted transition hover:text-ink-secondary"
+      className="text-[13.5px] text-ink-muted transition hover:text-ink-secondary"
     >
       ← Back
     </button>
@@ -254,7 +254,7 @@ function ProviderForm({
 
     return (
       <div className="mt-3 space-y-3">
-        <p className="text-[12.5px] leading-relaxed text-ink-secondary">
+        <p className="text-[14.5px] leading-relaxed text-ink-secondary">
           In Razorpay: Payment Links → create one. Stripe and PayPal have the same thing. Paste it
           here and a button goes into your site&rsquo;s menu.
         </p>
@@ -270,7 +270,7 @@ function ProviderForm({
           onChange={(next) => setValues((current) => ({ ...current, label: next }))}
           placeholder="Book with deposit"
         />
-        {error ? <p className="text-[11.5px] text-[#e5735a]">{error}</p> : null}
+        {error ? <p className="text-[13.5px] text-[#e5735a]">{error}</p> : null}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -293,7 +293,7 @@ function ProviderForm({
                 setBusy(false);
               }
             }}
-            className="lumen-key rounded-pill px-4 py-1.5 text-[12px] disabled:opacity-40"
+            className="lumen-key rounded-pill px-4 py-1.5 text-[14px] disabled:opacity-40"
           >
             {busy ? 'Saving…' : 'Add the button'}
           </button>
@@ -307,7 +307,7 @@ function ProviderForm({
   if (!card) {
     return (
       <div className="mt-3 space-y-3">
-        <p className="text-[12.5px] text-ink-muted">That integration is not available here.</p>
+        <p className="text-[14.5px] text-ink-muted">That integration is not available here.</p>
         {back}
       </div>
     );
@@ -318,13 +318,13 @@ function ProviderForm({
 
   return (
     <div className="mt-3 space-y-3">
-      <p className="text-[12.5px] leading-relaxed text-ink-secondary">{card.summary}</p>
+      <p className="text-[14.5px] leading-relaxed text-ink-secondary">{card.summary}</p>
 
       {card.oauthReady ? (
         <button
           type="button"
           onClick={() => onNavigate(`/api/connectors/${card.provider}/oauth`)}
-          className="lumen-key w-full rounded-pill px-4 py-2 text-[12.5px]"
+          className="lumen-key w-full rounded-pill px-4 py-2 text-[14.5px]"
         >
           Connect with {card.name}
         </button>
@@ -333,7 +333,7 @@ function ProviderForm({
       {card.fields.length > 0 ? (
         <>
           {card.oauthReady ? (
-            <p className="text-[11.5px] text-ink-muted">Or paste a token instead:</p>
+            <p className="text-[13.5px] text-ink-muted">Or paste a token instead:</p>
           ) : null}
           {card.fields.map((field) => (
             <FlowField
@@ -349,7 +349,7 @@ function ProviderForm({
         </>
       ) : null}
 
-      {error ? <p className="text-[11.5px] text-[#e5735a]">{error}</p> : null}
+      {error ? <p className="text-[13.5px] text-[#e5735a]">{error}</p> : null}
 
       <div className="flex items-center gap-3">
         {card.fields.length > 0 ? (
@@ -380,7 +380,7 @@ function ProviderForm({
                 setBusy(false);
               }
             }}
-            className="lumen-key rounded-pill px-4 py-1.5 text-[12px] disabled:opacity-40"
+            className="lumen-key rounded-pill px-4 py-1.5 text-[14px] disabled:opacity-40"
           >
             {busy ? 'Connecting…' : 'Connect'}
           </button>
@@ -408,7 +408,7 @@ function FlowField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10.5px] uppercase tracking-[0.14em] text-ink-muted">
+      <span className="mb-1 block text-[12.5px] uppercase tracking-[0.14em] text-ink-muted">
         {label}
       </span>
       <input
@@ -418,9 +418,9 @@ function FlowField({
         type={secret ? 'password' : 'text'}
         autoComplete={secret ? 'off' : undefined}
         spellCheck={false}
-        className="lumen-well w-full rounded-[10px] border border-hairline px-3 py-2 text-[13px] text-ink-primary outline-none focus:border-accent/50"
+        className="lumen-well w-full rounded-[10px] border border-hairline px-3 py-2 text-[15px] text-ink-primary outline-none focus:border-accent/50"
       />
-      {hint ? <span className="mt-1 block text-[11px] text-ink-muted">{hint}</span> : null}
+      {hint ? <span className="mt-1 block text-[13px] text-ink-muted">{hint}</span> : null}
     </label>
   );
 }

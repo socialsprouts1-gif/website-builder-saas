@@ -23,6 +23,7 @@ import { createClient } from '@/lib/supabase/client';
 import { normaliseReference, referenceLabel, rejectReason } from '@/lib/attachments';
 import type { ModelOption } from '@/lib/openai/models';
 import { signalCreditsExhausted } from '@/components/app/UpgradeDialog';
+import { notifyBuilt } from '@/components/app/NotifyWhenReady';
 
 export interface WorkspaceMessage {
   id: string;
@@ -117,7 +118,11 @@ export function Workspace({
   const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
   // Which of the two panes a phone is looking at. Ignored from `lg` up, where
   // both are on screen at once.
-  const [pane, setPane] = useState<'panel' | 'preview'>('panel');
+  //
+  // A build opens on the preview, not the chat. Somebody who has just answered
+  // nine questions wants to watch their site appear; landing them in an empty
+  // chat log makes them find the thing they came for, and most do not.
+  const [pane, setPane] = useState<'panel' | 'preview'>(opening.busy ? 'preview' : 'panel');
   const [busy, setBusy] = useState(opening.busy);
   const [progress, setProgress] = useState<string | null>(opening.busy ? 'Starting up…' : null);
   const [stage, setStage] = useState<BuildStageId>('brief');
@@ -246,6 +251,12 @@ export function Workspace({
   // Read by the watcher without being a dependency of it.
   const refreshRef = useRef(refreshPreview);
   refreshRef.current = refreshPreview;
+
+  // Read through a ref rather than closed over: the build renames the project
+  // partway through, and a stream that reopened on a new name would drop the
+  // connection at the one moment it is carrying something.
+  const nameRef = useRef(projectName);
+  nameRef.current = projectName;
 
   /**
    * What the site is still missing, read back from the site itself.
@@ -402,6 +413,9 @@ export function Workspace({
         setBusy(false);
         setReady(true);
         setStillAdding(false);
+        // For whoever asked to be told and then switched apps. Silent for
+        // anybody watching the screen, which is most of them.
+        notifyBuilt(nameRef.current);
         source.close();
         refreshRef.current();
         // What you can do with a finished site is worth saying once, here,
@@ -841,7 +855,7 @@ export function Workspace({
                 setMode(item.id);
               }}
               className={cn(
-                'flex-1 rounded-pill px-2 py-2 text-[12.5px] transition disabled:opacity-40',
+                'flex-1 rounded-pill px-2 py-2 text-[14.5px] transition disabled:opacity-40',
                 active ? 'bg-accent text-accent-ink' : 'text-ink-secondary',
               )}
             >
@@ -866,7 +880,7 @@ export function Workspace({
               onClick={() => setMode(item)}
               disabled={!ready && item === 'visual'}
               className={cn(
-                'flex-1 rounded-pill px-3 py-2 text-[13px] transition disabled:opacity-40',
+                'flex-1 rounded-pill px-3 py-2 text-[15px] transition disabled:opacity-40',
                 mode === item ? 'bg-accent text-accent-ink' : 'text-ink-secondary hover:text-ink-primary',
               )}
             >
@@ -882,7 +896,7 @@ export function Workspace({
                 <div key={message.id} className="space-y-4">
                   <div
                     className={cn(
-                      'rounded-[12px] px-3.5 py-2.5 text-[13.5px] leading-relaxed',
+                      'rounded-[12px] px-3.5 py-2.5 text-[15.5px] leading-relaxed',
                       message.role === 'user'
                         ? 'ml-8 bg-accent-soft text-ink-primary'
                         : 'mr-4 border border-hairline bg-raised text-ink-secondary',
@@ -904,7 +918,7 @@ export function Workspace({
                     setConnect(suggest);
                     setSuggest(null);
                   }}
-                  className="lumen-raise w-full rounded-[12px] border border-accent/30 px-3.5 py-2.5 text-left text-[12px] leading-relaxed text-ink-secondary"
+                  className="lumen-raise w-full rounded-[12px] border border-accent/30 px-3.5 py-2.5 text-left text-[14px] leading-relaxed text-ink-secondary"
                 >
                   Did you want to set that up rather than change the page?{' '}
                   <span className="text-accent">Do it properly →</span>
@@ -929,7 +943,7 @@ export function Workspace({
 
               {progress ? (
                 <div className="mr-4 space-y-2.5 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
-                  <p className="flex items-center gap-2 text-[13px] text-accent">
+                  <p className="flex items-center gap-2 text-[15px] text-accent">
                     <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" />
                     {progress}
                   </p>
@@ -940,7 +954,7 @@ export function Workspace({
               ) : null}
 
               {error ? (
-                <p className="rounded-[12px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
+                <p className="rounded-[12px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[15px] text-[#e5735a]">
                   {error}
                 </p>
               ) : null}
@@ -952,17 +966,17 @@ export function Workspace({
                   and a composer that would not take a message. */}
               {ready && stillAdding ? (
                 <div className="lumen-panel mr-4 space-y-2 rounded-[14px] border border-accent/25 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-accent">
+                  <p className="text-[13px] uppercase tracking-[0.16em] text-accent">
                     Your homepage is live
                   </p>
-                  <p className="text-[13px] leading-relaxed text-ink-secondary">
+                  <p className="text-[15px] leading-relaxed text-ink-secondary">
                     The rest of the site is being written now — each page appears in the preview as it
                     lands. Look at the homepage while you wait.
                   </p>
                   {/* Where it has got to. A progress line that names the page
                       being written is the difference between waiting and
                       wondering whether anything is still happening. */}
-                  <p className="flex items-center gap-2 text-[12.5px] leading-relaxed text-accent">
+                  <p className="flex items-center gap-2 text-[14.5px] leading-relaxed text-accent">
                     <span className="h-1.5 w-1.5 shrink-0 animate-pulse-dot rounded-pill bg-accent" />
                     {progress ?? 'Writing the next page…'}
                     {written.expected > 0
@@ -980,7 +994,7 @@ export function Workspace({
                       {builtFiles.map((entry, index) => (
                         <li
                           key={`${entry}-${index}`}
-                          className="flex items-center gap-2 text-[12px] leading-relaxed text-ink-muted"
+                          className="flex items-center gap-2 text-[14px] leading-relaxed text-ink-muted"
                         >
                           <span className="text-accent" aria-hidden>
                             ✓
@@ -991,7 +1005,7 @@ export function Workspace({
                     </ul>
                   ) : null}
 
-                  <p className="text-[12.5px] leading-relaxed text-ink-muted">
+                  <p className="text-[14.5px] leading-relaxed text-ink-muted">
                     Want something specific? Type it below, or attach your photos and logo with{' '}
                     <strong className="text-ink-secondary">Add</strong>. It runs the moment this finishes.
                   </p>
@@ -1000,8 +1014,8 @@ export function Workspace({
 
               {queued ? (
                 <div className="mr-4 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-ink-muted">Queued</p>
-                  <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed text-ink-secondary">
+                  <p className="text-[13px] uppercase tracking-[0.16em] text-ink-muted">Queued</p>
+                  <p className="mt-1 whitespace-pre-wrap text-[14.5px] leading-relaxed text-ink-secondary">
                     {(() => {
                       const shown = queued.label ?? queued.message;
                       return shown.length > 240 ? `${shown.slice(0, 240)}…` : shown;
@@ -1010,7 +1024,7 @@ export function Workspace({
                   <button
                     type="button"
                     onClick={() => setQueued(null)}
-                    className="mt-2 text-[12px] text-ink-muted transition hover:text-ink-primary"
+                    className="mt-2 text-[14px] text-ink-muted transition hover:text-ink-primary"
                   >
                     Cancel this
                   </button>
@@ -1077,23 +1091,23 @@ export function Workspace({
 
               {versions.length > 0 ? (
                 <details className="rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
-                  <summary className="cursor-pointer text-[12.5px] text-ink-muted">
+                  <summary className="cursor-pointer text-[14.5px] text-ink-muted">
                     Version history ({versions.length})
                   </summary>
                   <ul className="mt-3 space-y-2">
                     {versions.map((version, index) => (
                       <li key={version.id} className="flex items-center justify-between gap-3">
-                        <span className="truncate text-[12.5px] text-ink-secondary">
+                        <span className="truncate text-[14.5px] text-ink-secondary">
                           {version.label ?? `v${version.version_number}`}
                         </span>
                         {index === 0 ? (
-                          <Badge className="px-2 py-0.5 text-[10px]">current</Badge>
+                          <Badge className="px-2 py-0.5 text-[12px]">current</Badge>
                         ) : (
                           <button
                             type="button"
                             onClick={() => revert(version.id)}
                             disabled={busy}
-                            className="shrink-0 text-[12px] text-accent transition hover:underline disabled:opacity-40"
+                            className="shrink-0 text-[14px] text-accent transition hover:underline disabled:opacity-40"
                           >
                             restore
                           </button>
@@ -1174,7 +1188,7 @@ export function Workspace({
                       onClick={() => setModel(option.id)}
                       title={option.id}
                       className={cn(
-                        'rounded-pill border px-3 py-1 text-[11.5px] transition',
+                        'rounded-pill border px-3 py-1 text-[13.5px] transition',
                         model === option.id
                           ? 'border-accent/45 bg-accent-soft text-accent'
                           : 'border-hairline text-ink-muted hover:text-ink-secondary',
@@ -1217,14 +1231,14 @@ export function Workspace({
             !ready ? (
               // Nothing in this row does anything until there is a site, so
               // during the build it is one honest status chip instead.
-              <span className="flex items-center gap-2 rounded-pill border border-accent/30 bg-accent-soft px-2.5 py-1 text-[10.5px] uppercase tracking-[0.14em] text-accent">
+              <span className="flex items-center gap-2 rounded-pill border border-accent/30 bg-accent-soft px-2.5 py-1 text-[12.5px] uppercase tracking-[0.14em] text-accent">
                 <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" />
                 Building
               </span>
             ) : (
             <>
               {stillAdding ? (
-                <span className="flex items-center gap-2 rounded-pill border border-accent/30 bg-accent-soft px-2.5 py-1 text-[10.5px] uppercase tracking-[0.14em] text-accent">
+                <span className="flex items-center gap-2 rounded-pill border border-accent/30 bg-accent-soft px-2.5 py-1 text-[12.5px] uppercase tracking-[0.14em] text-accent">
                   <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" />
                   {progress ?? 'Adding pages'}
                 </span>
@@ -1232,7 +1246,7 @@ export function Workspace({
               <select
                 value={page}
                 onChange={(event) => setPage(event.target.value)}
-                className="rounded-pill border border-hairline bg-raised px-2.5 py-1 text-[11px] text-ink-secondary outline-none"
+                className="rounded-pill border border-hairline bg-raised px-2.5 py-1 text-[13px] text-ink-secondary outline-none"
               >
                 {pages.map((item) => (
                   <option key={item} value={item}>
@@ -1248,7 +1262,7 @@ export function Workspace({
                     onClick={() => setViewport(item)}
                     title={item}
                     className={cn(
-                      'rounded-pill px-2 py-1 text-[10.5px] uppercase tracking-[0.1em] transition',
+                      'rounded-pill px-2 py-1 text-[12.5px] uppercase tracking-[0.1em] transition',
                       viewport === item ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:text-ink-primary',
                     )}
                   >
@@ -1260,14 +1274,14 @@ export function Workspace({
                 href={`/preview/${projectId}/${page}`}
                 target="_blank"
                 rel="noreferrer"
-                className="hidden text-[11px] text-ink-muted transition hover:text-ink-primary sm:block"
+                className="hidden text-[13px] text-ink-muted transition hover:text-ink-primary sm:block"
               >
                 open ↗
               </a>
               <button
                 type="button"
                 onClick={() => setNextSteps(true)}
-                className="hidden text-[11px] text-ink-muted transition hover:text-ink-primary sm:block"
+                className="hidden text-[13px] text-ink-muted transition hover:text-ink-primary sm:block"
               >
                 what next?
               </button>
@@ -1306,6 +1320,7 @@ export function Workspace({
                 message={progress}
                 files={builtFiles}
                 percent={percent}
+                written={written}
                 startedAt={jobStartedAt}
               />
             )
@@ -1351,7 +1366,7 @@ function StoppedState({
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-8 py-16 text-center">
       <p className="font-display text-xl text-ink-primary">This build stopped early</p>
-      <p className="max-w-sm text-[13px] leading-relaxed text-ink-muted">
+      <p className="max-w-sm text-[15px] leading-relaxed text-ink-muted">
         {message ??
           'The tab was closed or the connection dropped before the site finished. Nothing was saved, and nothing was charged twice.'}
       </p>
@@ -1374,7 +1389,7 @@ function StepList({ items }: { items: { id: string; label: string; done: boolean
   return (
     <div className="mr-4 space-y-1.5 rounded-[12px] border border-hairline bg-raised px-3.5 py-3">
       {items.map((step) => (
-        <p key={step.id} className="flex items-center gap-2 text-[12.5px]">
+        <p key={step.id} className="flex items-center gap-2 text-[14.5px]">
           {step.done ? (
             <span className="text-accent" aria-hidden>
               ✓

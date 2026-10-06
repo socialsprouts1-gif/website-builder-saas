@@ -13,9 +13,9 @@ export function Field({
 }) {
   return (
     <label className={cn('block space-y-1.5', className)}>
-      <span className="block text-[13px] text-ink-secondary">{label}</span>
+      <span className="block text-[15px] text-ink-secondary">{label}</span>
       {children}
-      {hint ? <span className="block text-[12px] text-ink-muted">{hint}</span> : null}
+      {hint ? <span className="block text-[14px] text-ink-muted">{hint}</span> : null}
     </label>
   );
 }

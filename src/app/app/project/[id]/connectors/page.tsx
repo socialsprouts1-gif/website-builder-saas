@@ -44,7 +44,7 @@ export default async function ProjectConnectorsPage({ params }: { params: Promis
 
       <ConnectorGrid cards={cards} projectId={id} />
 
-      <p className="mt-8 text-[13px] text-ink-muted">
+      <p className="mt-8 text-[15px] text-ink-muted">
         Looking for GitHub, Vercel, Analytics or Slack?{' '}
         <Link href="/app/settings/connectors" className="text-accent hover:underline">
           Those connect once at the account level.

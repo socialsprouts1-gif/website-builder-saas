@@ -34,13 +34,13 @@ export function AddSection({
   return (
     <div className="border-t border-hairline p-3">
       <div className="flex items-baseline justify-between gap-2 px-1 pb-2">
-        <p className="text-[10.5px] uppercase tracking-[0.14em] text-ink-muted">
+        <p className="text-[12.5px] uppercase tracking-[0.14em] text-ink-muted">
           {chosen ? chosen.name : 'Add a section'}
         </p>
         <button
           type="button"
           onClick={chosen ? () => setChosen(null) : onCancel}
-          className="text-[11px] text-ink-muted transition hover:text-ink-primary"
+          className="text-[13px] text-ink-muted transition hover:text-ink-primary"
         >
           {chosen ? '← Back' : 'Cancel'}
         </button>
@@ -48,7 +48,7 @@ export function AddSection({
 
       {!chosen ? (
         <>
-          <p className="px-1 pb-2 text-[11px] leading-relaxed text-ink-muted">
+          <p className="px-1 pb-2 text-[14.5px] leading-relaxed text-ink-muted">
             {belowLabel ? `It goes under “${belowLabel}”.` : 'It goes at the bottom of the page.'}
           </p>
           {GROUP_ORDER.map((group) => {
@@ -56,7 +56,7 @@ export function AddSection({
             if (inGroup.length === 0) return null;
             return (
               <div key={group} className="mb-3">
-                <p className="px-1 pb-1 text-[10px] uppercase tracking-[0.12em] text-ink-muted/70">
+                <p className="px-1 pb-1 text-[12px] uppercase tracking-[0.12em] text-ink-muted/70">
                   {group}
                 </p>
                 <div className="space-y-1">
@@ -69,8 +69,8 @@ export function AddSection({
                       }
                       className="lumen-raise block w-full rounded-[9px] border border-hairline px-2.5 py-2 text-left"
                     >
-                      <span className="block text-[12.5px] text-ink-primary">{block.name}</span>
-                      <span className="block text-[11px] leading-relaxed text-ink-muted">
+                      <span className="block text-[14.5px] text-ink-primary">{block.name}</span>
+                      <span className="block text-[14.5px] leading-relaxed text-ink-muted">
                         {block.description}
                       </span>
                     </button>
@@ -134,10 +134,10 @@ function ImageStep({
           <img src={url} alt="" className="h-full w-full rounded-[9px] object-cover" />
         ) : (
           <>
-            <span className="text-[12.5px] text-ink-secondary">
+            <span className="text-[14.5px] text-ink-secondary">
               {busy ? 'Uploading…' : 'Choose a picture'}
             </span>
-            <span className="text-[10.5px] text-ink-muted">PNG, JPG, WEBP or SVG</span>
+            <span className="text-[12.5px] text-ink-muted">PNG, JPG, WEBP or SVG</span>
           </>
         )}
       </button>
@@ -153,14 +153,14 @@ function ImageStep({
         }}
       />
 
-      {error ? <p className="text-[11px] text-[#e5735a]">{error}</p> : null}
+      {error ? <p className="text-[13px] text-[#e5735a]">{error}</p> : null}
 
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => onAdd(url ?? undefined)}
           disabled={busy}
-          className="lumen-key rounded-pill px-3.5 py-1.5 text-[12px] disabled:opacity-40"
+          className="lumen-key rounded-pill px-3.5 py-1.5 text-[14px] disabled:opacity-40"
         >
           Add section
         </button>
@@ -168,7 +168,7 @@ function ImageStep({
           <button
             type="button"
             onClick={() => onAdd(undefined)}
-            className="text-[11px] text-ink-muted transition hover:text-ink-secondary"
+            className="text-[13px] text-ink-muted transition hover:text-ink-secondary"
           >
             Add it without a picture
           </button>
@@ -189,15 +189,15 @@ function VideoStep({ onAdd }: { onAdd: (videoUrl?: string) => void }) {
         placeholder="https://youtu.be/…"
         inputMode="url"
         spellCheck={false}
-        className="lumen-well w-full rounded-[10px] border border-hairline px-3 py-2 text-[12.5px] text-ink-primary outline-none focus:border-accent/50"
+        className="lumen-well w-full rounded-[10px] border border-hairline px-3 py-2 text-[14.5px] text-ink-primary outline-none focus:border-accent/50"
       />
-      <p className="text-[10.5px] leading-relaxed text-ink-muted">
+      <p className="text-[14.5px] leading-relaxed text-ink-muted">
         A YouTube or Vimeo link. Lumen turns it into an embed itself — nothing else is accepted.
       </p>
       <button
         type="button"
         onClick={() => onAdd(url.trim() || undefined)}
-        className="lumen-key rounded-pill px-3.5 py-1.5 text-[12px]"
+        className="lumen-key rounded-pill px-3.5 py-1.5 text-[14px]"
       >
         Add section
       </button>

@@ -50,8 +50,8 @@ export function BuildSuggestions({
     <div className="lumen-panel mr-4 space-y-3 rounded-[14px] border border-accent/25 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Build the rest</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary">
+          <p className="text-[13px] uppercase tracking-[0.16em] text-accent">Build the rest</p>
+          <p className="mt-1 text-[15px] leading-relaxed text-ink-secondary">
             Your site is up. Press any of these and Lumen writes it now — one at a time, so you see each
             one land.
           </p>
@@ -60,7 +60,7 @@ export function BuildSuggestions({
           type="button"
           onClick={onDismiss}
           aria-label="Hide suggestions"
-          className="-mr-1 -mt-1 shrink-0 rounded-pill px-2 py-0.5 text-[16px] leading-none text-ink-muted transition hover:text-ink-primary"
+          className="-mr-1 -mt-1 shrink-0 rounded-pill px-2 py-0.5 text-[17.5px] leading-none text-ink-muted transition hover:text-ink-primary"
         >
           ×
         </button>
@@ -71,7 +71,7 @@ export function BuildSuggestions({
       ) : null}
       {projectId ? (
         <div>
-          <p className="mb-1.5 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+          <p className="mb-1.5 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
             Or try a different look
           </p>
           <LookPicker projectId={projectId} onApplied={onLookApplied} compact />
@@ -84,7 +84,7 @@ export function BuildSuggestions({
 
       {onGenerateImages ? (
         <div>
-          <p className="mb-1.5 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">Pictures</p>
+          <p className="mb-1.5 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">Pictures</p>
           {readyPhotos > 0 && onPlacePhotos ? (
             <button
               type="button"
@@ -93,15 +93,15 @@ export function BuildSuggestions({
               className="lumen-raise mb-1.5 flex w-full items-center gap-3 rounded-[11px] border border-accent/40 bg-accent-soft px-3 py-2.5 text-left transition hover:border-accent disabled:opacity-40"
             >
               <span className="min-w-0 flex-1">
-                <span className="block text-[13px] text-accent">
+                <span className="block text-[15px] text-accent">
                   Put the {readyPhotos} photograph{readyPhotos === 1 ? '' : 's'} you already have into
                   the site
                 </span>
-                <span className="mt-0.5 block text-[11.5px] text-ink-muted">
+                <span className="mt-0.5 block text-[13.5px] text-ink-muted">
                   Made earlier and never placed. Nothing new to pay for.
                 </span>
               </span>
-              <span className="shrink-0 text-[11px] uppercase tracking-[0.1em] text-ink-muted">Use</span>
+              <span className="shrink-0 text-[13px] uppercase tracking-[0.1em] text-ink-muted">Use</span>
             </button>
           ) : null}
           <button
@@ -111,12 +111,12 @@ export function BuildSuggestions({
             className="lumen-raise flex w-full items-center gap-3 rounded-[11px] border border-hairline px-3 py-2.5 text-left transition hover:border-accent/40 disabled:opacity-40"
           >
             <span className="min-w-0 flex-1">
-              <span className="block text-[13px] text-ink-primary">Generate photos for this site</span>
-              <span className="mt-0.5 block text-[11.5px] text-ink-muted">
+              <span className="block text-[15px] text-ink-primary">Generate photos for this site</span>
+              <span className="mt-0.5 block text-[13.5px] text-ink-muted">
                 Four made for this business, not stock. Takes about a minute.
               </span>
             </span>
-            <span className="shrink-0 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+            <span className="shrink-0 text-[13px] uppercase tracking-[0.1em] text-ink-muted">
               {imagesBusy ? '…' : 'Make'}
             </span>
           </button>
@@ -141,7 +141,7 @@ function Group({
 }) {
   return (
     <div>
-      <p className="mb-1.5 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">{title}</p>
+      <p className="mb-1.5 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">{title}</p>
       <div className="space-y-1.5">
         {items.map((item) => (
           <button
@@ -157,12 +157,12 @@ function Group({
             )}
           >
             <span className="min-w-0 flex-1">
-              <span className={cn('block text-[13px]', emphasis ? 'text-accent' : 'text-ink-primary')}>
+              <span className={cn('block text-[15px]', emphasis ? 'text-accent' : 'text-ink-primary')}>
                 {item.label}
               </span>
-              <span className="mt-0.5 block text-[11.5px] text-ink-muted">{item.hint}</span>
+              <span className="mt-0.5 block text-[13.5px] text-ink-muted">{item.hint}</span>
             </span>
-            <span className="shrink-0 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+            <span className="shrink-0 text-[13px] uppercase tracking-[0.1em] text-ink-muted">
               {busy ? '…' : 'Build'}
             </span>
           </button>

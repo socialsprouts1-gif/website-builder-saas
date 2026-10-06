@@ -14,9 +14,9 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3.5 text-[13px]',
+  sm: 'h-8 px-3.5 text-[15px]',
   md: 'h-10 px-5 text-sm',
-  lg: 'h-12 px-6 text-[15px]',
+  lg: 'h-12 px-6 text-[17px]',
 };
 
 function classesFor(variant: Variant, size: Size, className?: string) {

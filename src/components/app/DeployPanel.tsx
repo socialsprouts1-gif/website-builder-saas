@@ -118,7 +118,7 @@ export function DeployPanel({
       </Card>
 
       {result ? (
-        <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-4 py-3 text-[13px] text-accent">
+        <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-4 py-3 text-[15px] text-accent">
           Done —{' '}
           <a href={result.url} target="_blank" rel="noreferrer" className="underline">
             {result.label}
@@ -127,19 +127,19 @@ export function DeployPanel({
       ) : null}
 
       {warning ? (
-        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[13px] text-ink-secondary">
+        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[15px] text-ink-secondary">
           {warning}
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
 
       {!vercelConnected || !githubConnected ? (
-        <p className="text-[13px] text-ink-muted">
+        <p className="text-[15px] text-ink-muted">
           <Link href="/app/settings/connectors" className="text-accent hover:underline">
             Connect your deploy targets
           </Link>{' '}
@@ -174,7 +174,7 @@ function DeployButton({
   return (
     <div className="rounded-card border border-hairline p-4">
       <p className="text-sm text-ink-primary">{title}</p>
-      <p className="mt-1 text-[12.5px] text-ink-muted">{body}</p>
+      <p className="mt-1 text-[14.5px] text-ink-muted">{body}</p>
       {connected ? (
         <Button size="sm" className="mt-3 w-full" onClick={onClick} disabled={disabled}>
           {busy ? 'Working…' : cta}

@@ -68,7 +68,7 @@ export default function PricingPage() {
           <h1 className="font-display text-[42px] leading-tight text-ink-primary sm:text-[58px]">
             Start free. <em className="italic text-accent">Pay when it earns it.</em>
           </h1>
-          <p className="mx-auto mt-4 max-w-lg text-[15px] text-ink-secondary">
+          <p className="mx-auto mt-4 max-w-lg text-[17px] text-ink-secondary">
             {FREE_CREDITS} credits to begin with, and no card. After that a plan buys model time — never
             access to the sites you have already built.
           </p>

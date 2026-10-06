@@ -250,13 +250,13 @@ export function NewSiteForm({
   const activeMode = MODES.find((item) => item.id === mode)!;
 
   const asked = (
-    <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
+    <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[14.5px] leading-relaxed text-ink-muted">
       <span className="text-ink-secondary">You asked for:</span> {brief}
     </p>
   );
 
   const problem = error ? (
-    <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+    <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
       {error}
     </p>
   ) : null;
@@ -315,7 +315,7 @@ export function NewSiteForm({
             type="button"
             onClick={() => setMode(item.id)}
             className={cn(
-              'flex-1 whitespace-nowrap rounded-pill px-4 py-2 text-[13px] transition',
+              'flex-1 whitespace-nowrap rounded-pill px-4 py-2 text-[15px] transition',
               mode === item.id ? 'bg-accent text-accent-ink' : 'text-ink-secondary hover:text-ink-primary',
             )}
           >
@@ -324,7 +324,7 @@ export function NewSiteForm({
         ))}
       </div>
 
-      <p className="text-center text-[13px] text-ink-muted">{activeMode.hint}</p>
+      <p className="text-center text-[15px] text-ink-muted">{activeMode.hint}</p>
 
       {mode === 'screenshot' ? (
         <div className="space-y-4">
@@ -333,7 +333,7 @@ export function NewSiteForm({
             {UPLOADS.map((item) => (
               <span
                 key={item}
-                className="rounded-pill border border-hairline px-3 py-1.5 text-[11.5px] text-ink-muted"
+                className="rounded-pill border border-hairline px-3 py-1.5 text-[13.5px] text-ink-muted"
               >
                 {item}
               </span>
@@ -365,7 +365,7 @@ export function NewSiteForm({
                   alt="Uploaded reference screenshot"
                   className="mx-auto max-h-56 rounded-[10px] border border-hairline"
                 />
-                <p className="text-[12px] text-ink-muted">{screenshot.name}</p>
+                <p className="text-[14px] text-ink-muted">{screenshot.name}</p>
                 <Button variant="ghost" size="sm" onClick={() => setScreenshot(null)}>
                   Remove
                 </Button>
@@ -388,13 +388,13 @@ export function NewSiteForm({
                     >
                       <span
                         className={cn(
-                          'block text-[12.5px]',
+                          'block text-[14.5px]',
                           ownMaterial === option.own ? 'text-accent' : 'text-ink-secondary',
                         )}
                       >
                         {option.label}
                       </span>
-                      <span className="block text-[11px] text-ink-muted">{option.hint}</span>
+                      <span className="block text-[13px] text-ink-muted">{option.hint}</span>
                     </button>
                   ))}
                 </div>
@@ -419,7 +419,7 @@ export function NewSiteForm({
             />
           </div>
 
-          <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[12px] leading-relaxed text-ink-muted">
+          <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[14px] leading-relaxed text-ink-muted">
             {ownMaterial
               ? 'Lumen reads the business name, phone number, address and anything else printed on your image and builds the site around them — so a visiting card is often all it needs. Upload only material that is yours.'
               : 'Lumen builds a new, original site inspired by the visual structure of your upload. It does not copy or redistribute another business’s content, images or branding — no logo, business name or verbatim copy is carried over.'}
@@ -458,7 +458,7 @@ export function NewSiteForm({
         ]}
       />
 
-      <p className="text-center text-[12px] leading-relaxed text-ink-muted">
+      <p className="text-center text-[14px] leading-relaxed text-ink-muted">
         Next you pick the look, from three real templates, then answer a few questions — all of it
         skippable. Use <strong className="text-ink-secondary">Attach</strong> to hand over your logo
         and your own photographs now, and they go into the site as it is written.
@@ -479,13 +479,13 @@ export function NewSiteForm({
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-3 text-[12.5px] text-ink-muted">
+      <div className="flex flex-wrap items-center justify-center gap-3 text-[14.5px] text-ink-muted">
         <label className="flex items-center gap-2">
           <span>Model</span>
           <select
             value={model}
             onChange={(event) => setModel(event.target.value)}
-            className="rounded-pill border border-hairline bg-raised px-3 py-1.5 text-[12.5px] text-ink-secondary outline-none focus:border-accent/40"
+            className="rounded-pill border border-hairline bg-raised px-3 py-1.5 text-[14.5px] text-ink-secondary outline-none focus:border-accent/40"
           >
             {/* Two GPT choices. The list that used to sit under these offered
                 every id the key could reach, embeddings and Whisper included,
@@ -499,7 +499,7 @@ export function NewSiteForm({
       </div>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-center text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-center text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}

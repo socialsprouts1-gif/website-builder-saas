@@ -214,7 +214,7 @@ export function MicButton({
         onChange={(event) => chooseLanguage(event.target.value)}
         disabled={state !== 'idle'}
         title="Language you will speak"
-        className="h-9 max-w-[92px] shrink-0 truncate rounded-pill border border-hairline bg-raised px-2 text-[11.5px] text-ink-muted outline-none transition hover:text-ink-primary focus:border-accent/40 disabled:opacity-40"
+        className="h-9 max-w-[92px] shrink-0 truncate rounded-pill border border-hairline bg-raised px-2 text-[13.5px] text-ink-muted outline-none transition hover:text-ink-primary focus:border-accent/40 disabled:opacity-40"
       >
         {LANGUAGES.map((item) => (
           <option key={item.code} value={item.code}>
@@ -259,12 +259,12 @@ export function MicButton({
         )}
       </button>
       {state === 'recording' ? (
-        <span className="pointer-events-none absolute -top-7 right-0 whitespace-nowrap rounded-md border border-accent/30 bg-accent-soft px-2 py-1 text-[11px] text-accent">
+        <span className="pointer-events-none absolute -top-7 right-0 whitespace-nowrap rounded-md border border-accent/30 bg-accent-soft px-2 py-1 text-[13px] text-accent">
           {live ? 'Listening…' : 'Recording…'}
         </span>
       ) : null}
       {error ? (
-        <span className="absolute -top-8 right-0 whitespace-nowrap rounded-md border border-hairline bg-raised px-2 py-1 text-[11px] text-ink-secondary">
+        <span className="absolute -top-8 right-0 whitespace-nowrap rounded-md border border-hairline bg-raised px-2 py-1 text-[13px] text-ink-secondary">
           {error}
         </span>
       ) : null}

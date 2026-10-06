@@ -195,7 +195,7 @@ export function ProductEditor({
       </div>
 
       <div>
-        <p className="mb-2 text-[12px] text-ink-secondary">
+        <p className="mb-2 text-[14px] text-ink-secondary">
           Photographs {draft.images.length > 0 ? `(${draft.images.length})` : ''} — the first one is
           the picture on the shop page.
         </p>
@@ -209,13 +209,13 @@ export function ProductEditor({
                 className="h-20 w-20 rounded-[10px] border border-hairline object-cover"
               />
               {index === 0 ? (
-                <Badge className="absolute left-1 top-1 px-1.5 py-0 text-[9px]">main</Badge>
+                <Badge className="absolute left-1 top-1 px-1.5 py-0 text-[11px]">main</Badge>
               ) : null}
               <button
                 type="button"
                 onClick={() => set('images', draft.images.filter((item) => item !== url))}
                 aria-label="Remove this photograph"
-                className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-pill border border-hairline bg-raised text-[11px] leading-none text-ink-muted transition hover:text-ink-primary"
+                className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-pill border border-hairline bg-raised text-[13px] leading-none text-ink-muted transition hover:text-ink-primary"
               >
                 ×
               </button>
@@ -224,7 +224,7 @@ export function ProductEditor({
 
           <label
             className={cn(
-              'flex h-20 w-20 cursor-pointer items-center justify-center rounded-[10px] border border-dashed border-hairline text-center text-[11px] text-ink-muted transition hover:border-accent/40',
+              'flex h-20 w-20 cursor-pointer items-center justify-center rounded-[10px] border border-dashed border-hairline text-center text-[13px] text-ink-muted transition hover:border-accent/40',
               uploading && 'opacity-50',
             )}
           >
@@ -245,7 +245,7 @@ export function ProductEditor({
       </div>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[12.5px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[14.5px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
@@ -258,7 +258,7 @@ export function ProductEditor({
           Cancel
         </Button>
 
-        <label className="flex items-center gap-2 text-[12.5px] text-ink-secondary">
+        <label className="flex items-center gap-2 text-[14.5px] text-ink-secondary">
           <input
             type="checkbox"
             checked={draft.active}
@@ -271,7 +271,7 @@ export function ProductEditor({
             is what the shop will charge — and so a price it cannot read says
             so now rather than being rejected on save. */}
         {draft.price ? (
-          <span className="text-[12.5px] text-ink-muted">
+          <span className="text-[14.5px] text-ink-muted">
             {parseRupees(draft.price) === null
               ? 'That price does not look right'
               : `Shows as ${formatRupees(parseRupees(draft.price)!)}`}
@@ -283,7 +283,7 @@ export function ProductEditor({
             type="button"
             onClick={onDelete}
             disabled={saving}
-            className="ml-auto text-[12.5px] text-[#e5735a] transition hover:underline disabled:opacity-40"
+            className="ml-auto text-[14.5px] text-[#e5735a] transition hover:underline disabled:opacity-40"
           >
             Delete
           </button>

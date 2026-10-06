@@ -32,7 +32,7 @@ export function CodeWindow({
           <span className="h-2.5 w-2.5 rounded-pill bg-white/15" />
           <span className="h-2.5 w-2.5 rounded-pill bg-white/15" />
         </span>
-        <span className="hidden truncate font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted sm:block">
+        <span className="hidden truncate font-mono text-[13px] uppercase tracking-[0.12em] text-ink-muted sm:block">
           {title}
         </span>
         {actions ? (

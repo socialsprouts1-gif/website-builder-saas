@@ -29,7 +29,7 @@ export function Logo({ className, href = '/' }: { className?: string; href?: str
   return (
     <Link href={href} className={cn('inline-flex items-center gap-2.5', className)}>
       <LogoMark />
-      <span className="font-display text-[19px] tracking-tight text-ink-primary">Lumen</span>
+      <span className="font-display text-[20px] tracking-tight text-ink-primary">Lumen</span>
     </Link>
   );
 }

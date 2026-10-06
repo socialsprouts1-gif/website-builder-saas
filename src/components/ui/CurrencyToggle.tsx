@@ -22,7 +22,7 @@ export function CurrencyToggle({
 }) {
   return (
     <div
-      className={cn('flex items-center gap-2 text-[12.5px] text-ink-muted', className)}
+      className={cn('flex items-center gap-2 text-[14.5px] text-ink-muted', className)}
       role="group"
       aria-label="Show prices in"
     >

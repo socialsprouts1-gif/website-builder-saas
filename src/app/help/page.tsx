@@ -131,7 +131,7 @@ export default function HelpPage() {
       <h1 className="font-display text-[34px] leading-tight text-ink-primary sm:text-[40px]">
         Help centre
       </h1>
-      <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-secondary">
+      <p className="mt-3 max-w-xl text-[17px] leading-relaxed text-ink-secondary">
         How each part works, in the order you meet it. If the answer is not here,{' '}
         <Link href="/support" className="text-accent hover:underline">
           write to us
@@ -144,7 +144,7 @@ export default function HelpPage() {
           <a
             key={section.title}
             href={`#${slug(section.title)}`}
-            className="rounded-pill border border-hairline px-3.5 py-1.5 text-[13px] text-ink-secondary transition hover:border-accent/40 hover:text-ink-primary"
+            className="rounded-pill border border-hairline px-3.5 py-1.5 text-[15px] text-ink-secondary transition hover:border-accent/40 hover:text-ink-primary"
           >
             {section.title}
           </a>
@@ -154,20 +154,20 @@ export default function HelpPage() {
       <div className="mt-12 space-y-12">
         {SECTIONS.map((section) => (
           <section key={section.title} id={slug(section.title)} className="scroll-mt-24">
-            <h2 className="font-display text-[20px] text-ink-primary">{section.title}</h2>
+            <h2 className="font-display text-[21px] text-ink-primary">{section.title}</h2>
             <div className="mt-4 space-y-2">
               {section.items.map((item) => (
                 <details
                   key={item.q}
                   className="group rounded-card border border-hairline bg-raised px-4 py-3.5"
                 >
-                  <summary className="cursor-pointer list-none text-[14px] text-ink-primary marker:content-none">
+                  <summary className="cursor-pointer list-none text-[16px] text-ink-primary marker:content-none">
                     <span className="mr-2 text-ink-muted transition group-open:rotate-90 inline-block">
                       ›
                     </span>
                     {item.q}
                   </summary>
-                  <p className="mt-2.5 pl-5 text-[13.5px] leading-relaxed text-ink-secondary">
+                  <p className="mt-2.5 pl-5 text-[15.5px] leading-relaxed text-ink-secondary">
                     {item.a}
                   </p>
                 </details>
@@ -177,7 +177,7 @@ export default function HelpPage() {
         ))}
       </div>
 
-      <p className="mt-14 border-t border-hairline pt-6 text-[13.5px] leading-relaxed text-ink-muted">
+      <p className="mt-14 border-t border-hairline pt-6 text-[15.5px] leading-relaxed text-ink-muted">
         Still stuck?{' '}
         <Link href="/support" className="text-accent hover:underline">
           Support

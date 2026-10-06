@@ -74,7 +74,7 @@ export function TemplateLibrary({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search — “dentist”, “coffee shop”, “online store”…"
-            className="w-full rounded-pill border border-hairline bg-raised px-5 py-3.5 text-[15px] text-ink-primary outline-none placeholder:text-ink-muted focus-visible:border-white/30"
+            className="w-full rounded-pill border border-hairline bg-raised px-5 py-3.5 text-[17px] text-ink-primary outline-none placeholder:text-ink-muted focus-visible:border-white/30"
           />
         </label>
 
@@ -116,7 +116,7 @@ export function TemplateLibrary({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-y border-hairline py-3">
-        <p className="text-[13px] text-ink-secondary">
+        <p className="text-[15px] text-ink-secondary">
           {visible.length} {visible.length === 1 ? 'template' : 'templates'}
           {filtered ? ' matching' : ' in the library'}
         </p>
@@ -172,20 +172,20 @@ function TemplateCardView({ card }: { card: BlueprintCard }) {
 
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div>
-          <h3 className="font-display text-[19px] text-ink-primary">{card.name}</h3>
-          <p className="mt-0.5 text-[12.5px] text-ink-muted">
+          <h3 className="font-display text-[20px] text-ink-primary">{card.name}</h3>
+          <p className="mt-0.5 text-[14.5px] text-ink-muted">
             {card.industryLabel} · <span className="capitalize">{card.style}</span>
           </p>
         </div>
-        <p className="text-[13px] leading-relaxed text-ink-secondary">{card.note}</p>
+        <p className="text-[15px] leading-relaxed text-ink-secondary">{card.note}</p>
         <ul className="flex flex-wrap gap-1.5">
           {card.businessTypes.slice(0, 3).map((type) => (
-            <li key={type} className="rounded-pill border border-hairline px-2.5 py-1 text-[11px] text-ink-secondary">
+            <li key={type} className="rounded-pill border border-hairline px-2.5 py-1 text-[13px] text-ink-secondary">
               {type}
             </li>
           ))}
         </ul>
-        <p className="text-[12px] text-ink-muted">
+        <p className="text-[14px] text-ink-muted">
           {card.sections} sections · {card.pages} pages
         </p>
         <div className="mt-auto flex flex-wrap gap-2 pt-2">
@@ -204,7 +204,7 @@ function TemplateCardView({ card }: { card: BlueprintCard }) {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="w-16 shrink-0 text-[11px] uppercase tracking-[0.14em] text-ink-muted">{label}</span>
+      <span className="w-16 shrink-0 text-[13px] uppercase tracking-[0.14em] text-ink-muted">{label}</span>
       {children}
     </div>
   );
@@ -225,7 +225,7 @@ function Chip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-pill border px-3 py-1.5 text-[12.5px] transition',
+        'rounded-pill border px-3 py-1.5 text-[14.5px] transition',
         active
           ? 'border-accent/60 bg-accent-soft text-ink-primary'
           : 'border-hairline text-ink-secondary hover:border-white/25 hover:text-ink-primary',

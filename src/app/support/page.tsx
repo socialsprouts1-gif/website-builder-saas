@@ -40,27 +40,27 @@ export default function SupportPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-6 sm:py-14">
       <h1 className="font-display text-[34px] leading-tight text-ink-primary sm:text-[40px]">Support</h1>
-      <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-secondary">
+      <p className="mt-3 max-w-xl text-[17px] leading-relaxed text-ink-secondary">
         Lumen is small. Writing to us reaches the people who built it, not a queue.
       </p>
 
       <div className="mt-8 rounded-card border border-accent/25 bg-accent-soft/40 p-5">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Write to us</p>
+        <p className="text-[13px] uppercase tracking-[0.16em] text-accent">Write to us</p>
         <a
           href={`mailto:${COMPANY.email}`}
-          className="mt-1.5 block font-display text-[22px] text-ink-primary transition hover:text-accent"
+          className="mt-1.5 block font-display text-[23px] text-ink-primary transition hover:text-accent"
         >
           {COMPANY.email}
         </a>
-        <p className="mt-3 text-[13px] leading-relaxed text-ink-muted">
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
           We reply within one working day. If something is broken and costing you customers, put
           “urgent” in the subject and we will look at it first.
         </p>
       </div>
 
       <section className="mt-12">
-        <h2 className="font-display text-[20px] text-ink-primary">What to tell us</h2>
-        <p className="mt-1 text-[13.5px] text-ink-muted">
+        <h2 className="font-display text-[21px] text-ink-primary">What to tell us</h2>
+        <p className="mt-1 text-[15.5px] text-ink-muted">
           Four things turn one email into a fix instead of four emails into a fix.
         </p>
         <ol className="mt-5 space-y-3">
@@ -70,33 +70,33 @@ export default function SupportPage() {
             'What happened instead, word for word if there was a message.',
             'Whether it happens every time, and on which device or browser.',
           ].map((item, index) => (
-            <li key={item} className="flex gap-3 text-[14px] leading-relaxed text-ink-secondary">
+            <li key={item} className="flex gap-3 text-[16px] leading-relaxed text-ink-secondary">
               <span className="text-ink-muted">{index + 1}.</span>
               <span>{item}</span>
             </li>
           ))}
         </ol>
-        <p className="mt-5 rounded-card border border-hairline bg-raised px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="mt-5 rounded-card border border-hairline bg-raised px-4 py-3 text-[14.5px] leading-relaxed text-ink-muted">
           Never send us a password, an API key, or a customer&apos;s personal details. If we need
           something like that to help, we will tell you a safer way to share it.
         </p>
       </section>
 
       <section className="mt-12">
-        <h2 className="font-display text-[20px] text-ink-primary">Worth trying first</h2>
+        <h2 className="font-display text-[21px] text-ink-primary">Worth trying first</h2>
         <div className="mt-5 space-y-3">
           {BEFORE.map((item) => (
             <div key={item.title} className="rounded-card border border-hairline bg-raised p-4">
-              <p className="text-[14px] text-ink-primary">{item.title}</p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">{item.body}</p>
+              <p className="text-[16px] text-ink-primary">{item.title}</p>
+              <p className="mt-1.5 text-[15px] leading-relaxed text-ink-muted">{item.body}</p>
             </div>
           ))}
         </div>
       </section>
 
       <section className="mt-12">
-        <h2 className="font-display text-[20px] text-ink-primary">Other routes</h2>
-        <ul className="mt-4 space-y-2.5 text-[14px] leading-relaxed text-ink-secondary">
+        <h2 className="font-display text-[21px] text-ink-primary">Other routes</h2>
+        <ul className="mt-4 space-y-2.5 text-[16px] leading-relaxed text-ink-secondary">
           <li>
             <Link href="/help" className="text-accent hover:underline">
               Help centre

@@ -1,5 +1,7 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { builtEmail, isEmailConfigured, sendEmail } from '@/lib/email';
+import { env } from '@/lib/env';
 import type { GenerationJobRow } from '@/lib/database.types';
 import { nextStep, runBuildStep, type BuildState, type BuildStep } from './pipeline';
 import { logError, noteError } from '@/lib/errors';
@@ -248,6 +250,12 @@ export async function runNextStep(
         .from('generation_jobs')
         .update({ status: 'succeeded', stage: 'done', completed_at: new Date().toISOString() })
         .eq('id', job.id);
+
+      // A build takes minutes and people put their phone down. Told, not left
+      // to come back and check — and never allowed to fail the build it is
+      // reporting on, which is why nothing here is awaited for its result.
+      await notifyBuilt(job).catch(() => undefined);
+
       return { done: true, failed: false };
     }
 
@@ -300,4 +308,32 @@ async function writeState(
     await admin.from('generation_jobs').update({ stage: payload.stage }).eq('id', jobId);
     noteError({ scope: 'generation.writeState', error, detail: { jobId, stage: payload.stage } });
   }
+}
+
+
+/**
+ * "Your website is ready", by email, once.
+ *
+ * Sent from here rather than from the browser watching the stream, because the
+ * browser is the thing that might not be there: the whole point is the person
+ * who started a build and went to make tea.
+ */
+async function notifyBuilt(job: GenerationJobRow): Promise<void> {
+  if (!isEmailConfigured) return;
+
+  const admin = createAdminClient();
+  const [{ data: project }, { data: user }] = await Promise.all([
+    admin.from('projects').select('name').eq('id', job.project_id).maybeSingle(),
+    admin.from('users').select('email').eq('id', job.user_id).maybeSingle(),
+  ]);
+
+  if (!user?.email) return;
+
+  await sendEmail({
+    to: user.email,
+    ...builtEmail({
+      name: project?.name ?? 'Your website',
+      url: `${env.canonicalOrigin}/app/project/${job.project_id}`,
+    }),
+  });
 }

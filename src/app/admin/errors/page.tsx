@@ -47,21 +47,21 @@ export default async function ErrorsPage() {
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 sm:px-6 sm:py-14">
       <h1 className="font-display text-[28px] leading-tight text-ink-primary">What went wrong</h1>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-ink-secondary">
+      <p className="mt-1.5 text-[15px] leading-relaxed text-ink-secondary">
         Failures the product handled quietly, written down so they are not invisible.
       </p>
 
       {events.error ? (
-        <p className="mt-6 rounded-card border border-[#e5a15a]/30 bg-[#e5a15a]/10 px-4 py-3.5 text-[13px] leading-relaxed text-[#e5a15a]">
+        <p className="mt-6 rounded-card border border-[#e5a15a]/30 bg-[#e5a15a]/10 px-4 py-3.5 text-[15px] leading-relaxed text-[#e5a15a]">
           The error table is not in your database yet — it arrives in migration 0014. Run
           supabase/setup.sql. Until then, failures go to the server log only.
         </p>
       ) : null}
 
       <section className="mt-8">
-        <h2 className="mb-3 font-display text-[19px] text-ink-primary">Builds running now</h2>
+        <h2 className="mb-3 font-display text-[20px] text-ink-primary">Builds running now</h2>
         {(jobs.data ?? []).length === 0 ? (
-          <p className="rounded-card border border-hairline bg-raised px-4 py-3.5 text-[13px] text-ink-muted">
+          <p className="rounded-card border border-hairline bg-raised px-4 py-3.5 text-[15px] text-ink-muted">
             Nothing is building.
           </p>
         ) : (
@@ -80,12 +80,12 @@ export default async function ErrorsPage() {
                   }`}
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-mono text-[12px] text-ink-secondary">{job.project_id}</span>
-                    <span className={`text-[12px] ${isStuck ? 'text-[#e5735a]' : 'text-ink-muted'}`}>
+                    <span className="font-mono text-[14px] text-ink-secondary">{job.project_id}</span>
+                    <span className={`text-[14px] ${isStuck ? 'text-[#e5735a]' : 'text-ink-muted'}`}>
                       {isStuck ? `silent for ${quiet}s — presumed stuck` : `${quiet}s since last word`}
                     </span>
                   </div>
-                  <p className="mt-1 text-[12.5px] text-ink-muted">
+                  <p className="mt-1 text-[14.5px] text-ink-muted">
                     {job.stage} · {progress?.message ?? 'no message'}
                   </p>
                 </li>
@@ -97,12 +97,12 @@ export default async function ErrorsPage() {
 
       {scopes.length > 0 ? (
         <section className="mt-8">
-          <h2 className="mb-3 font-display text-[19px] text-ink-primary">Where it fails most</h2>
+          <h2 className="mb-3 font-display text-[20px] text-ink-primary">Where it fails most</h2>
           <div className="flex flex-wrap gap-2">
             {scopes.map(([scope, count]) => (
               <span
                 key={scope}
-                className="rounded-pill border border-hairline px-3 py-1.5 font-mono text-[11.5px] text-ink-secondary"
+                className="rounded-pill border border-hairline px-3 py-1.5 font-mono text-[13.5px] text-ink-secondary"
               >
                 {scope} <span className="text-ink-muted">×{count}</span>
               </span>
@@ -112,9 +112,9 @@ export default async function ErrorsPage() {
       ) : null}
 
       <section className="mt-8">
-        <h2 className="mb-3 font-display text-[19px] text-ink-primary">Lately</h2>
+        <h2 className="mb-3 font-display text-[20px] text-ink-primary">Lately</h2>
         {(events.data ?? []).length === 0 ? (
-          <p className="rounded-card border border-hairline bg-raised px-4 py-3.5 text-[13px] text-ink-muted">
+          <p className="rounded-card border border-hairline bg-raised px-4 py-3.5 text-[15px] text-ink-muted">
             Nothing recorded. Either all is well, or migration 0014 has not run.
           </p>
         ) : (
@@ -122,16 +122,16 @@ export default async function ErrorsPage() {
             {(events.data ?? []).map((event) => (
               <li key={event.id} className="rounded-card border border-hairline bg-raised px-4 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-mono text-[11.5px] text-accent">{event.scope}</span>
-                  <span className="text-[11.5px] text-ink-muted">
+                  <span className="font-mono text-[13.5px] text-accent">{event.scope}</span>
+                  <span className="text-[13.5px] text-ink-muted">
                     {new Date(event.created_at).toLocaleString()}
                   </span>
                 </div>
-                <p className="mt-1 break-words text-[13px] leading-relaxed text-ink-secondary">
+                <p className="mt-1 break-words text-[15px] leading-relaxed text-ink-secondary">
                   {event.message}
                 </p>
                 {event.detail ? (
-                  <p className="mt-1 break-words font-mono text-[11px] text-ink-muted">
+                  <p className="mt-1 break-words font-mono text-[13px] text-ink-muted">
                     {JSON.stringify(event.detail)}
                   </p>
                 ) : null}

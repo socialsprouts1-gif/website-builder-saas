@@ -53,18 +53,18 @@ export function TemplateChoice({
                 <span className="flex items-start gap-2.5 p-3.5">
                   <span
                     className={cn(
-                      'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-pill border text-[9px] font-bold',
+                      'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-pill border text-[11px] font-bold',
                       active ? 'border-accent bg-accent text-accent-ink' : 'border-white/25',
                     )}
                   >
                     {active ? '✓' : ''}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[14px] text-ink-primary">{card.name}</span>
-                    <span className="mt-0.5 block text-[11.5px] capitalize text-ink-muted">
+                    <span className="block text-[16px] text-ink-primary">{card.name}</span>
+                    <span className="mt-0.5 block text-[13.5px] capitalize text-ink-muted">
                       {card.style} · {card.sections} sections · {card.pages} pages
                     </span>
-                    <span className="mt-1 block text-[12.5px] leading-relaxed text-ink-secondary">
+                    <span className="mt-1 block text-[14.5px] leading-relaxed text-ink-secondary">
                       {card.note}
                     </span>
                   </span>
@@ -86,8 +86,8 @@ export function TemplateChoice({
                 : 'border-dashed border-hairline bg-raised hover:border-white/20',
             )}
           >
-            <span className="text-[14px] text-ink-primary">Let Lumen decide</span>
-            <span className="text-[12.5px] leading-relaxed text-ink-secondary">
+            <span className="text-[16px] text-ink-primary">Let Lumen decide</span>
+            <span className="text-[14.5px] leading-relaxed text-ink-secondary">
               It reads what you wrote and works out the pages, the sections and the design itself. Good
               when none of these is quite your business.
             </span>
@@ -95,7 +95,7 @@ export function TemplateChoice({
         </li>
       </ul>
 
-      <p className="text-[12px] leading-relaxed text-ink-muted">
+      <p className="text-[14px] leading-relaxed text-ink-muted">
         Every one of these is a real page, rendered now — not a picture of one.{' '}
         <a href="/templates" target="_blank" rel="noreferrer" className="text-accent hover:underline">
           See all {templates.length > 0 ? 'the templates' : 'templates'} ↗

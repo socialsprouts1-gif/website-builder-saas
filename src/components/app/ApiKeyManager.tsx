@@ -72,8 +72,8 @@ export function ApiKeyManager({
       {hasOwnKey ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-hairline bg-raised px-4 py-3">
           <div>
-            <p className="font-mono text-[13px] text-ink-primary">sk-••••••••••••{last4}</p>
-            <p className="mt-0.5 text-[12px] text-ink-muted">Your key. Unlimited generations, billed by OpenAI.</p>
+            <p className="font-mono text-[15px] text-ink-primary">sk-••••••••••••{last4}</p>
+            <p className="mt-0.5 text-[14px] text-ink-muted">Your key. Unlimited generations, billed by OpenAI.</p>
           </div>
           <Button variant="danger" size="sm" onClick={revoke} disabled={busy}>
             Revoke
@@ -82,12 +82,12 @@ export function ApiKeyManager({
       ) : (
         <div className="rounded-[10px] border border-hairline bg-raised px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[13px] text-ink-primary">Using Lumen&apos;s shared key</p>
+            <p className="text-[15px] text-ink-primary">Using Lumen&apos;s shared key</p>
             <Badge tone={left === 0 ? 'warning' : 'accent'}>
               {left} / {reading.outOf} {reading.label.toLowerCase()}
             </Badge>
           </div>
-          <p className="mt-1 text-[12px] text-ink-muted">
+          <p className="mt-1 text-[14px] text-ink-muted">
             {platformConfigured
               ? `A new site costs ${CREDIT_COST.generation} credits, each edit 1. ${
                   refills(balance)
@@ -117,12 +117,12 @@ export function ApiKeyManager({
       </Button>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
       {notice ? (
-        <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[13px] text-accent">
+        <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[15px] text-accent">
           {notice}
         </p>
       ) : null}

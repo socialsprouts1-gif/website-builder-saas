@@ -134,7 +134,7 @@ export function ProductDemo() {
           <span className="h-2.5 w-2.5 rounded-pill bg-white/15" />
           <span className="h-2.5 w-2.5 rounded-pill bg-white/15" />
         </span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted">
+        <span className="font-mono text-[13px] uppercase tracking-[0.12em] text-ink-muted">
           Lumen / bistro-lunaire
         </span>
         <span className="ml-auto flex items-center gap-2">
@@ -162,12 +162,12 @@ export function ProductDemo() {
           >
             {turns.map((turn, index) => (
               <div key={`${turn.role}-${index}`} className="space-y-1">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                <p className="text-[12px] uppercase tracking-[0.16em] text-ink-muted">
                   {turn.role === 'you' ? 'You' : 'Lumen'}
                 </p>
                 <p
                   className={cn(
-                    'rounded-[10px] px-3 py-2 text-[12.5px] leading-relaxed',
+                    'rounded-[10px] px-3 py-2 text-[14.5px] leading-relaxed',
                     turn.role === 'you'
                       ? 'bg-[var(--bg-base-deep)] text-ink-primary'
                       : 'border border-hairline text-ink-secondary',
@@ -178,7 +178,7 @@ export function ProductDemo() {
               </div>
             ))}
             {pending ? (
-              <p className="flex items-center gap-2 px-1 text-[12px] text-ink-muted">
+              <p className="flex items-center gap-2 px-1 text-[14px] text-ink-muted">
                 <span className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" />
                 Lumen is editing…
               </p>
@@ -186,7 +186,7 @@ export function ProductDemo() {
           </div>
 
           <div className="space-y-2 border-t border-hairline p-4">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">Try one</p>
+            <p className="text-[12px] uppercase tracking-[0.16em] text-ink-muted">Try one</p>
             <div className="flex flex-wrap gap-1.5">
               {SCRIPT.map((step) => (
                 <button
@@ -195,7 +195,7 @@ export function ProductDemo() {
                   onClick={() => run(step.id)}
                   disabled={Boolean(pending) || done.includes(step.id)}
                   className={cn(
-                    'rounded-pill border px-3 py-1.5 text-left text-[11.5px] transition',
+                    'rounded-pill border px-3 py-1.5 text-left text-[13.5px] transition',
                     done.includes(step.id)
                       ? 'border-hairline text-ink-muted'
                       : 'border-hairline text-ink-secondary hover:border-white/25 hover:text-ink-primary',
@@ -209,7 +209,7 @@ export function ProductDemo() {
                 <button
                   type="button"
                   onClick={reset}
-                  className="rounded-pill border border-hairline px-3 py-1.5 text-[11.5px] text-ink-muted transition hover:text-ink-primary"
+                  className="rounded-pill border border-hairline px-3 py-1.5 text-[13.5px] text-ink-muted transition hover:text-ink-primary"
                 >
                   Start over
                 </button>
@@ -225,7 +225,7 @@ export function ProductDemo() {
                 <span
                   key={section.id}
                   className={cn(
-                    'rounded-pill border px-2.5 py-1 text-[11px] transition-colors duration-300',
+                    'rounded-pill border px-2.5 py-1 text-[13px] transition-colors duration-300',
                     touched.includes(section.id)
                       ? 'border-accent/60 bg-accent-soft text-ink-primary'
                       : 'border-hairline text-ink-muted',
@@ -236,7 +236,7 @@ export function ProductDemo() {
               ))}
             </span>
             <span className="ml-auto flex items-center gap-1.5">
-              <span className="text-[10px] uppercase tracking-[0.14em] text-ink-muted">Theme</span>
+              <span className="text-[12px] uppercase tracking-[0.14em] text-ink-muted">Theme</span>
               {DEMO_PALETTES.map((option) => (
                 <button
                   key={option.id}
@@ -275,13 +275,13 @@ export function ProductDemo() {
 
           <div className="flex flex-wrap items-center gap-3 border-t border-hairline px-4 py-3">
             {published ? (
-              <p className="text-[12px] text-ink-secondary">
+              <p className="text-[14px] text-ink-secondary">
                 Live at{' '}
                 <span style={{ color: site.palette.accent }}>bistro-lunaire.lumensite.in</span> — point
                 your own domain at it whenever you like.
               </p>
             ) : (
-              <p className="text-[12px] text-ink-muted">
+              <p className="text-[14px] text-ink-muted">
                 A demo of the editor, not a recording — the preview is drawn from the same state the
                 chat is changing. No model is called on this page.
               </p>
@@ -312,7 +312,7 @@ function DeviceToggle({
           onClick={() => onChange(option)}
           aria-pressed={device === option}
           className={cn(
-            'rounded-pill px-3 py-1 text-[11px] capitalize transition',
+            'rounded-pill px-3 py-1 text-[13px] capitalize transition',
             device === option ? 'bg-white/10 text-ink-primary' : 'text-ink-muted hover:text-ink-secondary',
           )}
         >

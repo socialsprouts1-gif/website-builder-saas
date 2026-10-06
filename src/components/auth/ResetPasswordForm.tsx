@@ -74,19 +74,19 @@ export function ResetPasswordForm() {
   }
 
   if (ready === null) {
-    return <p className="py-8 text-center text-[13.5px] text-ink-muted">Checking your link…</p>;
+    return <p className="py-8 text-center text-[15.5px] text-ink-muted">Checking your link…</p>;
   }
 
   if (!ready) {
     return (
       <div className="space-y-4">
-        <p className="rounded-card border border-[#e5a15a]/30 bg-[#e5a15a]/10 px-4 py-3.5 text-[13.5px] leading-relaxed text-[#e5a15a]">
+        <p className="rounded-card border border-[#e5a15a]/30 bg-[#e5a15a]/10 px-4 py-3.5 text-[15.5px] leading-relaxed text-[#e5a15a]">
           This link has expired or has already been used. They last an hour and work once.
         </p>
         <Link href="/forgot-password" className="block">
           <Button className="w-full">Send me a new one</Button>
         </Link>
-        <p className="text-center text-[13px] text-ink-muted">
+        <p className="text-center text-[15px] text-ink-muted">
           <Link href="/login" className="text-accent transition hover:underline">
             Back to log in
           </Link>
@@ -97,7 +97,7 @@ export function ResetPasswordForm() {
 
   if (done) {
     return (
-      <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3.5 text-[13.5px] leading-relaxed text-ink-primary">
+      <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3.5 text-[15.5px] leading-relaxed text-ink-primary">
         Password changed. Taking you to your sites…
       </p>
     );
@@ -106,7 +106,7 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {email ? (
-        <p className="text-[13.5px] leading-relaxed text-ink-secondary">
+        <p className="text-[15.5px] leading-relaxed text-ink-secondary">
           Setting a new password for <strong className="text-ink-primary">{email}</strong>.
         </p>
       ) : null}
@@ -135,7 +135,7 @@ export function ResetPasswordForm() {
               />
             ))}
           </div>
-          <p className={cn('text-[12px]', verdict.ok ? 'text-ink-muted' : 'text-[#e5a15a]')}>
+          <p className={cn('text-[14px]', verdict.ok ? 'text-ink-muted' : 'text-[#e5a15a]')}>
             {verdict.ok ? STRENGTH_LABELS[strength] : verdict.problem}
           </p>
         </div>
@@ -152,11 +152,11 @@ export function ResetPasswordForm() {
       </Field>
 
       {confirm.length > 0 && !matches ? (
-        <p className="text-[12px] text-[#e5a15a]">Those two do not match.</p>
+        <p className="text-[14px] text-[#e5a15a]">Those two do not match.</p>
       ) : null}
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}

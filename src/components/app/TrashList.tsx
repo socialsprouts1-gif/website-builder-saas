@@ -47,7 +47,7 @@ export function TrashList({ projects }: { projects: TrashedProject[] }) {
   return (
     <>
       {error ? (
-        <p className="mt-4 rounded-card border border-[#c46026]/40 bg-[#c46026]/10 px-4 py-3 text-[13px] text-ink-secondary">
+        <p className="mt-4 rounded-card border border-[#c46026]/40 bg-[#c46026]/10 px-4 py-3 text-[15px] text-ink-secondary">
           {error}
         </p>
       ) : null}
@@ -56,8 +56,8 @@ export function TrashList({ projects }: { projects: TrashedProject[] }) {
         {projects.map((project) => (
           <li key={project.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-4">
             <div className="min-w-0 flex-1">
-              <p className="text-[15px] text-ink-primary">{project.name}</p>
-              <p className="mt-0.5 text-[12.5px] text-ink-muted">
+              <p className="text-[17px] text-ink-primary">{project.name}</p>
+              <p className="mt-0.5 text-[14.5px] text-ink-muted">
                 In the trash since{' '}
                 {new Date(project.deletedAt).toLocaleDateString('en-IN', {
                   day: 'numeric',
@@ -69,7 +69,7 @@ export function TrashList({ projects }: { projects: TrashedProject[] }) {
 
             {confirming === project.id ? (
               <span className="flex flex-wrap items-center gap-2">
-                <span className="text-[12.5px] text-ink-secondary">
+                <span className="text-[14.5px] text-ink-secondary">
                   Delete for good, with every version, enquiry and order?
                 </span>
                 <Button size="sm" onClick={() => act(project.id, 'purge')} disabled={busy === project.id}>
@@ -92,7 +92,7 @@ export function TrashList({ projects }: { projects: TrashedProject[] }) {
                 <button
                   type="button"
                   onClick={() => setConfirming(project.id)}
-                  className="text-[12.5px] text-ink-muted transition hover:text-[#e5735a]"
+                  className="text-[14.5px] text-ink-muted transition hover:text-[#e5735a]"
                 >
                   Delete for good
                 </button>

@@ -64,7 +64,7 @@ export default async function SetupPage() {
       <div className="relative mx-auto max-w-2xl px-6 py-12">
         <div className="mb-10 flex items-center justify-between">
           <Logo />
-          <Link href="/" className="text-[13px] text-ink-muted transition hover:text-ink-primary">
+          <Link href="/" className="text-[15px] text-ink-muted transition hover:text-ink-primary">
             ← Back to site
           </Link>
         </div>
@@ -94,10 +94,10 @@ export default async function SetupPage() {
                     {missing === 0 ? 'Configured' : group.required ? `${missing} missing` : 'Optional'}
                   </Badge>
                 </div>
-                <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">{group.unlocks}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-ink-secondary">{group.unlocks}</p>
                 <ul className="mt-4 space-y-1.5">
                   {group.vars.map((item) => (
-                    <li key={item.name} className="flex items-center gap-2.5 font-mono text-[12px]">
+                    <li key={item.name} className="flex items-center gap-2.5 font-mono text-[14px]">
                       <span className={item.set ? 'text-accent' : 'text-ink-muted'} aria-hidden>
                         {item.set ? '●' : '○'}
                       </span>
@@ -122,10 +122,10 @@ export default async function SetupPage() {
               {schemaInstalled ? 'Tables installed' : 'Not run yet'}
             </Badge>
           </div>
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
-            Paste <span className="font-mono text-[12px] text-ink-primary">supabase/migrations/0001_init.sql</span>{' '}
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-secondary">
+            Paste <span className="font-mono text-[14px] text-ink-primary">supabase/migrations/0001_init.sql</span>{' '}
             through{' '}
-            <span className="font-mono text-[12px] text-ink-primary">0004_freemium.sql</span> into your
+            <span className="font-mono text-[14px] text-ink-primary">0004_freemium.sql</span> into your
             project&apos;s SQL editor, in order. They create the schema, enable row-level security on every
             table, add the storage bucket, grant the first admin and set up the free tier.
           </p>

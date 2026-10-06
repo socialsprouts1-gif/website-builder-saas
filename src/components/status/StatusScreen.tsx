@@ -52,7 +52,7 @@ export function StatusScreen({
         </div>
 
         {code ? (
-          <p className="text-[11px] uppercase tracking-[0.2em] text-ink-muted">{code}</p>
+          <p className="text-[13px] uppercase tracking-[0.2em] text-ink-muted">{code}</p>
         ) : null}
 
         <h1 className="font-display text-[34px] leading-tight text-ink-primary sm:text-[40px]">
@@ -65,10 +65,10 @@ export function StatusScreen({
           ) : null}
         </h1>
 
-        <p className="mx-auto max-w-sm text-[14.5px] leading-relaxed text-ink-secondary">{message}</p>
+        <p className="mx-auto max-w-sm text-[16.5px] leading-relaxed text-ink-secondary">{message}</p>
 
         {detail ? (
-          <p className="mx-auto max-w-sm text-[13px] leading-relaxed text-ink-muted">{detail}</p>
+          <p className="mx-auto max-w-sm text-[15px] leading-relaxed text-ink-muted">{detail}</p>
         ) : null}
 
         {children}
@@ -80,7 +80,7 @@ export function StatusScreen({
                 <Link
                   key={action.href}
                   href={action.href}
-                  className="text-[13px] text-ink-muted transition hover:text-ink-primary"
+                  className="text-[15px] text-ink-muted transition hover:text-ink-primary"
                 >
                   {action.label}
                 </Link>
@@ -112,7 +112,7 @@ export function StatusRetry({
       type="button"
       onClick={onRetry}
       className={cn(
-        'rounded-pill bg-accent px-5 py-2.5 text-[14px] text-accent-ink transition hover:opacity-90',
+        'rounded-pill bg-accent px-5 py-2.5 text-[16px] text-accent-ink transition hover:opacity-90',
         className,
       )}
     >

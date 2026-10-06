@@ -127,11 +127,11 @@ export function UpgradeDialog({ blocked = false }: { blocked?: boolean }) {
           both off the edge is a trap rather than an offer. */}
       <div className="flex max-h-[88dvh] w-full max-w-lg flex-col overflow-hidden rounded-card border border-hairline bg-[var(--surface-raised)] shadow-2xl">
         <div className="shrink-0 border-b border-hairline px-6 py-5">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Free credits used</p>
-          <h2 id="upgrade-title" className="mt-1.5 font-display text-[22px] leading-tight text-ink-primary">
+          <p className="text-[13px] uppercase tracking-[0.16em] text-accent">Free credits used</p>
+          <h2 id="upgrade-title" className="mt-1.5 font-display text-[23px] leading-tight text-ink-primary">
             Choose a plan to keep building
           </h2>
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-secondary">
             {message ??
               `You have used all ${FREE_CREDITS} free credits, so Lumen cannot build anything new yet. ${FREE_CREDITS_NOTE}`}
           </p>
@@ -144,11 +144,11 @@ export function UpgradeDialog({ blocked = false }: { blocked?: boolean }) {
         <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto px-6 py-5 sm:grid-cols-2">
           {paidPlans('monthly').map((plan) => (
             <div key={plan.key} className="rounded-card border border-hairline p-4">
-              <p className="font-display text-[17px] text-ink-primary">{plan.name}</p>
-              <p className="mt-0.5 font-display text-[21px] leading-none text-ink-primary">
+              <p className="font-display text-[18.5px] text-ink-primary">{plan.name}</p>
+              <p className="mt-0.5 font-display text-[22px] leading-none text-ink-primary">
                 {priceLabel(plan)}
               </p>
-              <ul className="mt-3 space-y-1.5 text-[12px] leading-relaxed text-ink-secondary">
+              <ul className="mt-3 space-y-1.5 text-[14px] leading-relaxed text-ink-secondary">
                 {plan.highlights.map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -172,7 +172,7 @@ export function UpgradeDialog({ blocked = false }: { blocked?: boolean }) {
           </Button>
           <Link
             href="/app/settings/api-keys"
-            className="ml-auto text-[12.5px] text-ink-muted transition hover:text-ink-primary"
+            className="ml-auto text-[14.5px] text-ink-muted transition hover:text-ink-primary"
             onClick={close}
           >
             Or use your own OpenAI key

@@ -59,8 +59,8 @@ export function PaymentPanel({
     <Card className="mb-8 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[14px] text-ink-primary">Take payments on this site</p>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+          <p className="text-[16px] text-ink-primary">Take payments on this site</p>
+          <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">
             Paste a payment link and Lumen puts a button in your site&rsquo;s menu. The money goes
             straight to you — Lumen never holds it and never asks for your API keys.
           </p>
@@ -91,7 +91,7 @@ export function PaymentPanel({
       </div>
 
       {!valid ? (
-        <p className="text-[12.5px] text-[#e5735a]">
+        <p className="text-[14.5px] text-[#e5735a]">
           That is not a link a browser can open. It needs to start with https:// (or upi://).
         </p>
       ) : null}
@@ -105,16 +105,16 @@ export function PaymentPanel({
             type="button"
             onClick={() => save({ url: '', label: '' })}
             disabled={busy}
-            className="text-[12.5px] text-ink-muted transition hover:text-[#e5735a] disabled:opacity-40"
+            className="text-[14.5px] text-ink-muted transition hover:text-[#e5735a] disabled:opacity-40"
           >
             Remove it from the site
           </button>
         ) : null}
-        {saved ? <span className="text-[12.5px] text-accent">Saved.</span> : null}
+        {saved ? <span className="text-[14.5px] text-accent">Saved.</span> : null}
       </div>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}

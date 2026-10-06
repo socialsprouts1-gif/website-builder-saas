@@ -82,7 +82,7 @@ export function VisualEditPanel({
             type="button"
             onClick={() => setTab(item.id)}
             className={cn(
-              'flex-1 rounded-[8px] px-2 py-1.5 text-[11.5px] transition',
+              'flex-1 rounded-[8px] px-2 py-1.5 text-[13.5px] transition',
               tab === item.id ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:text-ink-primary',
             )}
           >
@@ -91,7 +91,7 @@ export function VisualEditPanel({
         ))}
       </div>
 
-      <p className="shrink-0 border-b border-hairline px-4 py-2.5 text-[12px] leading-relaxed text-ink-muted">
+      <p className="shrink-0 border-b border-hairline px-4 py-2.5 text-[14px] leading-relaxed text-ink-muted">
         Click anything in <strong className="text-ink-secondary">{projectName}</strong> to select it, or
         pick a block below. Nothing is written to your site until you save.
       </p>
@@ -166,10 +166,10 @@ export function VisualEditPanel({
 
         {pending.length > 0 ? (
           <div className="border-t border-hairline p-4">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Not saved yet</p>
+            <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">Not saved yet</p>
             <ul className="mt-2 space-y-1">
               {pending.map((edit, index) => (
-                <li key={index} className="truncate text-[11.5px] text-ink-secondary">
+                <li key={index} className="truncate text-[13.5px] text-ink-secondary">
                   {describeEdit(edit)}
                 </li>
               ))}
@@ -178,7 +178,7 @@ export function VisualEditPanel({
         ) : null}
 
         {error ? (
-          <p className="mx-4 mb-4 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[12px] text-[#e5735a]">
+          <p className="mx-4 mb-4 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[14px] text-[#e5735a]">
             {error}
           </p>
         ) : null}
@@ -188,7 +188,7 @@ export function VisualEditPanel({
         {pending.length > 0 ? (
           <Badge tone="accent">{pending.length} unsaved</Badge>
         ) : notice ? (
-          <span className="truncate text-[11.5px] text-accent">{notice}</span>
+          <span className="truncate text-[13.5px] text-accent">{notice}</span>
         ) : null}
         <div className="ml-auto flex gap-2">
           <Button

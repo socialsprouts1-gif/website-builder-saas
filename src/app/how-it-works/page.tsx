@@ -55,7 +55,7 @@ export default function HowItWorksPage() {
           <h1 className="mx-auto max-w-3xl font-display text-[40px] leading-[1.06] text-ink-primary sm:text-[58px]">
             One sentence in. <em className="italic text-accent">A finished site out.</em>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-[15px] text-ink-secondary">
+          <p className="mx-auto mt-5 max-w-xl text-[17px] text-ink-secondary">
             No page builder, no drag-and-drop grid, no template to fight. Here is exactly what happens
             between your prompt and your live site.
           </p>
@@ -67,7 +67,7 @@ export default function HowItWorksPage() {
           {STEPS.map((item) => (
             <li key={item.step} className="bg-raised px-7 py-8">
               <div className="flex gap-6">
-                <span className="font-mono text-[12px] text-accent">{item.step}</span>
+                <span className="font-mono text-[14px] text-accent">{item.step}</span>
                 <div className="space-y-2">
                   <h2 className="font-display text-xl text-ink-primary">{item.title}</h2>
                   <p className="text-sm leading-relaxed text-ink-secondary">{item.body}</p>

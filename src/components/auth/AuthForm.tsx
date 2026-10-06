@@ -161,7 +161,7 @@ export function AuthForm({
 
       <div className="flex items-center gap-3 py-1">
         <span className="h-px flex-1 bg-hairline" />
-        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">or</span>
+        <span className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">or</span>
         <span className="h-px flex-1 bg-hairline" />
       </div>
 
@@ -206,25 +206,25 @@ export function AuthForm({
           reset-password screen uses, so an account can never be created with a
           password that flow would refuse. */}
       {mode === 'signup' && password.length > 0 && !checkPassword(password, email).ok ? (
-        <p className="-mt-2 text-[12px] text-[#e5a15a]">{checkPassword(password, email).problem}</p>
+        <p className="-mt-2 text-[14px] text-[#e5a15a]">{checkPassword(password, email).problem}</p>
       ) : null}
 
       {/* The way back in, on the screen where people discover they need it. */}
       {mode === 'login' ? (
         <p className="-mt-2 text-right">
-          <Link href="/forgot-password" className="text-[12.5px] text-ink-muted transition hover:text-accent">
+          <Link href="/forgot-password" className="text-[14.5px] text-ink-muted transition hover:text-accent">
             Forgotten your password?
           </Link>
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
       {notice ? (
-        <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[13px] text-accent">
+        <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[15px] text-accent">
           {notice}
         </p>
       ) : null}
@@ -233,7 +233,7 @@ export function AuthForm({
         {busy ? 'One moment…' : mode === 'signup' ? 'Create account' : 'Log in'}
       </Button>
 
-      <p className="pt-1 text-center text-[13px] text-ink-muted">
+      <p className="pt-1 text-center text-[15px] text-ink-muted">
         {mode === 'signup' ? (
           <>
             Already have an account?{' '}

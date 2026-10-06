@@ -15,7 +15,7 @@ export function AuthShell({
       <div className="lumen-glow-field" aria-hidden />
       <div className="relative mx-auto flex w-full max-w-shell items-center px-6 py-6">
         <Logo />
-        <Link href="/" className="ml-auto text-[13px] text-ink-muted transition hover:text-ink-primary">
+        <Link href="/" className="ml-auto text-[15px] text-ink-muted transition hover:text-ink-primary">
           ← Back to site
         </Link>
       </div>

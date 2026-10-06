@@ -51,7 +51,7 @@ export function HeroPrompt() {
           <button
             type="button"
             onClick={() => setShowAll((current) => !current)}
-            className="rounded-pill border border-hairline px-3.5 py-1.5 text-[12.5px] text-ink-muted transition hover:border-white/25 hover:text-ink-primary"
+            className="rounded-pill border border-hairline px-3.5 py-1.5 text-[14.5px] text-ink-muted transition hover:border-white/25 hover:text-ink-primary"
           >
             {showAll ? 'Fewer' : `${HERO_CATEGORIES.length - 12} more`}
           </button>

@@ -19,7 +19,7 @@ export function CategoryChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-pill border px-3.5 py-1.5 text-[13px] transition',
+        'rounded-pill border px-3.5 py-1.5 text-[15px] transition',
         active
           ? 'border-accent/45 bg-accent-soft text-accent'
           : 'border-hairline text-ink-secondary hover:border-white/20 hover:text-ink-primary',

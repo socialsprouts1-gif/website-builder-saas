@@ -117,7 +117,7 @@ export function LayersPanel({
   return (
     <div className="flex min-h-0 flex-col">
       <div className="flex items-center justify-between border-b border-hairline px-4 py-3">
-        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Blocks</span>
+        <span className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">Blocks</span>
         <Button size="sm" variant="secondary" onClick={onAdd}>
           + Add
         </Button>
@@ -125,7 +125,7 @@ export function LayersPanel({
 
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto p-2">
         {blocks.length === 0 ? (
-          <p className="px-2 py-6 text-center text-[12.5px] text-ink-muted">
+          <p className="px-2 py-6 text-center text-[14.5px] text-ink-muted">
             {loading ? 'Reading the page…' : 'No editable blocks on this page.'}
           </p>
         ) : (
@@ -174,19 +174,19 @@ export function LayersPanel({
                       }}
                       title="Drag to reorder"
                       aria-label={`Drag ${block.label} to reorder`}
-                      className="-my-1 cursor-grab touch-none select-none px-1 py-1 text-[12px] leading-none text-ink-muted active:cursor-grabbing"
+                      className="-my-1 cursor-grab touch-none select-none px-1 py-1 text-[14px] leading-none text-ink-muted active:cursor-grabbing"
                     >
                       ⠿
                     </span>
                     <span
                       className={cn(
-                        'min-w-0 flex-1 truncate text-[12.5px]',
+                        'min-w-0 flex-1 truncate text-[14.5px]',
                         selected === block.lumenId ? 'text-accent' : 'text-ink-secondary',
                       )}
                     >
                       {block.label}
                     </span>
-                    <span className="shrink-0 font-mono text-[10px] text-ink-muted">{block.tag}</span>
+                    <span className="shrink-0 font-mono text-[12px] text-ink-muted">{block.tag}</span>
                   </div>
 
                   <div className="mt-1.5 hidden gap-1 group-hover:flex group-focus-within:flex">
@@ -214,7 +214,7 @@ export function LayersPanel({
       </div>
 
       {blocks.length > 1 ? (
-        <p className="border-t border-hairline px-4 py-2 text-[11px] leading-relaxed text-ink-muted">
+        <p className="border-t border-hairline px-4 py-2 text-[14.5px] leading-relaxed text-ink-muted">
           Drag ⠿ to reorder, or hold Alt and press ↑ ↓.
         </p>
       ) : null}
@@ -255,7 +255,7 @@ function RowAction({
         onClick();
       }}
       className={cn(
-        'rounded-[6px] border border-hairline px-1.5 py-0.5 text-[11px] leading-none transition disabled:opacity-30',
+        'rounded-[6px] border border-hairline px-1.5 py-0.5 text-[13px] leading-none transition disabled:opacity-30',
         danger
           ? 'text-[#e5735a] hover:bg-[#e5735a]/10'
           : 'text-ink-muted hover:bg-white/5 hover:text-ink-primary',

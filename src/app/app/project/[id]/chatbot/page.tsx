@@ -59,22 +59,22 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
       />
 
       {project.status !== 'ready' ? (
-        <p className="rounded-card border border-hairline bg-raised px-4 py-6 text-center text-[13px] text-ink-muted">
+        <p className="rounded-card border border-hairline bg-raised px-4 py-6 text-center text-[15px] text-ink-muted">
           Generate the site first — the chatbot learns from its content.
         </p>
       ) : (
         <Card>
           {health?.last_error ? (
             <div className="mb-5 rounded-[12px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3">
-              <p className="text-[12.5px] text-[#e5735a]">
+              <p className="text-[14.5px] text-[#e5735a]">
                 The last visitor question could not be answered.
               </p>
               {/* The visitor sees something neutral; the person who can fix it
                   sees what actually happened. */}
-              <p className="mt-1.5 break-words font-mono text-[11px] leading-relaxed text-[#e5735a]/80">
+              <p className="mt-1.5 break-words font-mono text-[14.5px] leading-relaxed text-[#e5735a]/80">
                 {health.last_error}
               </p>
-              <p className="mt-2 text-[11.5px] text-ink-muted">
+              <p className="mt-2 text-[13.5px] text-ink-muted">
                 {health.last_error_at
                   ? `Last seen ${new Date(health.last_error_at).toLocaleString()}. `
                   : ''}
@@ -99,16 +99,16 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
 
       <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">What visitors are asking</h2>
       {conversations.length === 0 ? (
-        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[13px] text-ink-muted">
+        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[15px] text-ink-muted">
           No conversations yet. They appear here once the widget is live.
         </p>
       ) : (
         <div className="space-y-3">
           {conversations.map((conversation) => (
             <details key={conversation.id} className="rounded-card border border-hairline bg-raised px-4 py-3">
-              <summary className="cursor-pointer text-[13px] text-ink-secondary">
+              <summary className="cursor-pointer text-[15px] text-ink-secondary">
                 {conversation.firstQuestion}
-                <span className="ml-2 text-[11.5px] text-ink-muted">
+                <span className="ml-2 text-[13.5px] text-ink-muted">
                   {new Date(conversation.createdAt).toLocaleDateString('en-IN')}
                 </span>
               </summary>
@@ -118,8 +118,8 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
                     key={index}
                     className={
                       message.role === 'user'
-                        ? 'rounded-[10px] bg-accent-soft px-3 py-2 text-[12.5px] text-ink-primary'
-                        : 'rounded-[10px] border border-hairline px-3 py-2 text-[12.5px] text-ink-secondary'
+                        ? 'rounded-[10px] bg-accent-soft px-3 py-2 text-[14.5px] text-ink-primary'
+                        : 'rounded-[10px] border border-hairline px-3 py-2 text-[14.5px] text-ink-secondary'
                     }
                   >
                     {message.content}

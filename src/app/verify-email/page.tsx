@@ -22,12 +22,12 @@ export default async function VerifyEmailPage() {
     return (
       <AuthShell title="You are all set" subtitle="That address is confirmed.">
         <div className="space-y-4">
-          <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3.5 text-[13.5px] leading-relaxed text-ink-primary">
+          <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3.5 text-[15.5px] leading-relaxed text-ink-primary">
             <strong>{user.email}</strong> is confirmed. Nothing else to do.
           </p>
           <Link
             href="/app"
-            className="block rounded-pill bg-accent px-4 py-2.5 text-center text-[14px] text-accent-ink transition hover:opacity-90"
+            className="block rounded-pill bg-accent px-4 py-2.5 text-center text-[16px] text-accent-ink transition hover:opacity-90"
           >
             Go to my sites
           </Link>
@@ -42,7 +42,7 @@ export default async function VerifyEmailPage() {
       subtitle="One click in your inbox and you are in."
     >
       <div className="space-y-5">
-        <p className="text-[13.5px] leading-relaxed text-ink-secondary">
+        <p className="text-[15.5px] leading-relaxed text-ink-secondary">
           {user?.email ? (
             <>
               We sent a link to <strong className="text-ink-primary">{user.email}</strong>. Open it and
@@ -56,8 +56,8 @@ export default async function VerifyEmailPage() {
         </p>
 
         <div className="rounded-card border border-hairline bg-raised p-4">
-          <p className="text-[12.5px] uppercase tracking-[0.14em] text-ink-muted">Nothing arrived?</p>
-          <ul className="mt-2.5 space-y-1.5 text-[13px] leading-relaxed text-ink-secondary">
+          <p className="text-[14.5px] uppercase tracking-[0.14em] text-ink-muted">Nothing arrived?</p>
+          <ul className="mt-2.5 space-y-1.5 text-[15px] leading-relaxed text-ink-secondary">
             <li>· Look in spam or promotions — it often lands there first.</li>
             <li>· Give it two or three minutes.</li>
             <li>· Check the address was typed correctly when you signed up.</li>
@@ -66,7 +66,7 @@ export default async function VerifyEmailPage() {
 
         {user?.email ? <ResendConfirmation email={user.email} /> : null}
 
-        <p className="text-center text-[13px] text-ink-muted">
+        <p className="text-center text-[15px] text-ink-muted">
           Wrong address?{' '}
           <Link href="/signup" className="text-accent transition hover:underline">
             Sign up again

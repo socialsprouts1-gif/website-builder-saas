@@ -17,7 +17,7 @@ export function ReferPanel({ state, origin }: { state: ReferralState; origin: st
 
   if (!state.code) {
     return (
-      <p className="rounded-card border border-hairline bg-raised px-4 py-3 text-[13px] text-ink-muted">
+      <p className="rounded-card border border-hairline bg-raised px-4 py-3 text-[15px] text-ink-muted">
         Referrals are not switched on for this deployment yet. Run supabase/setup.sql and reload.
       </p>
     );
@@ -41,12 +41,12 @@ export function ReferPanel({ state, origin }: { state: ReferralState; origin: st
   return (
     <div className="space-y-5">
       <div className="rounded-card border border-hairline bg-raised p-5">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-ink-muted">Your link</p>
+        <p className="text-[13px] uppercase tracking-[0.16em] text-ink-muted">Your link</p>
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <Input value={link} readOnly onFocus={(event) => event.currentTarget.select()} className="flex-1 min-w-[16rem] font-mono text-[12.5px]" />
+          <Input value={link} readOnly onFocus={(event) => event.currentTarget.select()} className="flex-1 min-w-[16rem] font-mono text-[14.5px]" />
           <Button onClick={() => void copy()}>{copied ? 'Copied' : 'Copy link'}</Button>
         </div>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="mt-3 text-[14.5px] leading-relaxed text-ink-muted">
           Anyone who signs up through it gets {REFERRAL_CREDITS} extra credits — {sites} more websites —
           and you get the same, the moment they create their account. Up to {state.limit} friends.
         </p>
@@ -57,7 +57,7 @@ export function ReferPanel({ state, origin }: { state: ReferralState; origin: st
         <Stat label="Credits earned" value={String(state.creditsEarned)} />
       </div>
 
-      <p className="text-[12.5px] leading-relaxed text-ink-muted">
+      <p className="text-[14.5px] leading-relaxed text-ink-muted">
         Or just give them the code: <span className="font-mono text-ink-primary">{state.code}</span>. They
         can type it on the sign-up screen.
       </p>
@@ -68,8 +68,8 @@ export function ReferPanel({ state, origin }: { state: ReferralState; origin: st
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-card border border-hairline bg-raised px-4 py-3.5">
-      <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{label}</p>
-      <p className="mt-1 font-display text-[24px] leading-none text-ink-primary">{value}</p>
+      <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">{label}</p>
+      <p className="mt-1 font-display text-[25px] leading-none text-ink-primary">{value}</p>
     </div>
   );
 }

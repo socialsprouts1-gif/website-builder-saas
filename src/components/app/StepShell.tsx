@@ -72,14 +72,14 @@ export function StepShell({
               ))
             : null}
         </div>
-        <p className="text-[11.5px] text-ink-muted">
+        <p className="text-[13.5px] text-ink-muted">
           {dots ? `${index! + 1} of ${total}` : (label ?? '')}
         </p>
       </div>
 
       <div>
-        <h2 className="font-display text-[24px] leading-tight text-ink-primary">{title}</h2>
-        {help ? <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">{help}</p> : null}
+        <h2 className="font-display text-[25px] leading-tight text-ink-primary">{title}</h2>
+        {help ? <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">{help}</p> : null}
       </div>
 
       {children}
@@ -105,7 +105,7 @@ export function StepShell({
             </Button>
           ) : null}
         </div>
-        {aside ? <div className="text-[12.5px] leading-relaxed text-ink-muted">{aside}</div> : null}
+        {aside ? <div className="text-[14.5px] leading-relaxed text-ink-muted">{aside}</div> : null}
       </div>
     </div>
   );

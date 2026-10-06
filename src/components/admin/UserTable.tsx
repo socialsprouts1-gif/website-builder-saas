@@ -46,7 +46,7 @@ export function UserTable({ users, currentUserId }: { users: AdminUserRow[]; cur
       {notice ? (
         <p
           className={cn(
-            'rounded-[10px] border px-4 py-2.5 text-[13px]',
+            'rounded-[10px] border px-4 py-2.5 text-[15px]',
             notice.ok
               ? 'border-accent/30 bg-accent-soft text-accent'
               : 'border-[#e5735a]/30 bg-[#e5735a]/10 text-[#e5735a]',
@@ -57,7 +57,7 @@ export function UserTable({ users, currentUserId }: { users: AdminUserRow[]; cur
       ) : null}
 
       {visible.length === 0 ? (
-        <p className="rounded-card border border-dashed border-hairline px-4 py-10 text-center text-[13px] text-ink-muted">
+        <p className="rounded-card border border-dashed border-hairline px-4 py-10 text-center text-[15px] text-ink-muted">
           {users.length === 0 ? 'No accounts yet.' : 'No account matches that.'}
         </p>
       ) : (
@@ -72,8 +72,8 @@ export function UserTable({ users, currentUserId }: { users: AdminUserRow[]; cur
                   className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13.5px] text-ink-primary">{user.email}</span>
-                    <span className="mt-0.5 block text-[11.5px] text-ink-muted">
+                    <span className="block truncate text-[15.5px] text-ink-primary">{user.email}</span>
+                    <span className="mt-0.5 block text-[13.5px] text-ink-muted">
                       {user.projectCount} site{user.projectCount === 1 ? '' : 's'} ·{' '}
                       {user.hasOwnKey
                         ? 'own key'
@@ -85,7 +85,7 @@ export function UserTable({ users, currentUserId }: { users: AdminUserRow[]; cur
                   </span>
 
                   {user.isAdmin ? (
-                    <Badge tone="accent" className="shrink-0 px-2 py-0.5 text-[10px]">
+                    <Badge tone="accent" className="shrink-0 px-2 py-0.5 text-[12px]">
                       Admin
                     </Badge>
                   ) : null}
@@ -146,7 +146,7 @@ export function UserTable({ users, currentUserId }: { users: AdminUserRow[]; cur
                     </Button>
 
                     {user.id === currentUserId ? (
-                      <span className="text-[11.5px] text-ink-muted">
+                      <span className="text-[13.5px] text-ink-muted">
                         This is you — self-changes are blocked.
                       </span>
                     ) : null}
@@ -190,14 +190,14 @@ function CustomGrant({
         onChange={(event) => setCredits(event.target.value)}
         placeholder="±n"
         aria-label="Credits to add"
-        className="h-8 w-20 text-[12.5px]"
+        className="h-8 w-20 text-[14.5px]"
       />
       <Input
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         placeholder="Why (optional)"
         aria-label="Reason for the grant"
-        className="h-8 w-40 text-[12.5px]"
+        className="h-8 w-40 text-[14.5px]"
       />
       <Button
         size="sm"
@@ -218,7 +218,7 @@ function CustomGrant({
 function PlanBadge({ plan }: { plan: AdminUserRow['plan'] }) {
   if (!plan) {
     return (
-      <Badge className="shrink-0 px-2 py-0.5 text-[10px]" dot={false}>
+      <Badge className="shrink-0 px-2 py-0.5 text-[12px]" dot={false}>
         no plan
       </Badge>
     );
@@ -229,7 +229,7 @@ function PlanBadge({ plan }: { plan: AdminUserRow['plan'] }) {
   const tone = label === 'active' ? 'accent' : label === 'trialing' ? 'neutral' : 'warning';
 
   return (
-    <Badge tone={tone} className="shrink-0 px-2 py-0.5 text-[10px]">
+    <Badge tone={tone} className="shrink-0 px-2 py-0.5 text-[12px]">
       {label}
     </Badge>
   );

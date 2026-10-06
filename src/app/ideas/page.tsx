@@ -26,7 +26,7 @@ export default async function IdeasPage() {
           <h1 className="font-display text-[40px] leading-tight text-ink-primary sm:text-[56px]">
             What yours could <em className="italic text-accent">look like.</em>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-[15px] text-ink-secondary">
+          <p className="mx-auto mt-4 max-w-xl text-[17px] text-ink-secondary">
             A dozen kinds of business, each with the sections it actually needs and a design direction to
             match. Pick the one closest to yours and Lumen builds it in about a minute.
           </p>

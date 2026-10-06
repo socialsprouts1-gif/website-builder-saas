@@ -59,7 +59,7 @@ export default async function DeployPage({ params }: { params: Promise<{ id: str
       </div>
 
       {project.status !== 'ready' ? (
-        <p className="rounded-card border border-hairline bg-raised px-4 py-6 text-center text-[13px] text-ink-muted">
+        <p className="rounded-card border border-hairline bg-raised px-4 py-6 text-center text-[15px] text-ink-muted">
           Nothing to deploy yet — generate the site first.
         </p>
       ) : (

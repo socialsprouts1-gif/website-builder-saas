@@ -141,8 +141,8 @@ export function NextSteps({
       <div className="lumen-panel max-h-full w-full max-w-lg overflow-y-auto rounded-[20px] border border-hairline p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Your site is ready</p>
-            <h2 className="mt-1.5 font-display text-[22px] leading-tight text-ink-primary">
+            <p className="text-[13px] uppercase tracking-[0.16em] text-accent">Your site is ready</p>
+            <h2 className="mt-1.5 font-display text-[23px] leading-tight text-ink-primary">
               Now make it earn its keep
             </h2>
           </div>
@@ -150,7 +150,7 @@ export function NextSteps({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-1 -mt-1 shrink-0 rounded-pill px-2 py-1 text-[18px] leading-none text-ink-muted transition hover:text-ink-primary"
+            className="-mr-1 -mt-1 shrink-0 rounded-pill px-2 py-1 text-[19.5px] leading-none text-ink-muted transition hover:text-ink-primary"
           >
             ×
           </button>
@@ -158,8 +158,8 @@ export function NextSteps({
 
         {photos ? (
           <div className="mt-5 rounded-[14px] border border-hairline bg-raised p-4">
-            <p className="text-[13.5px] text-ink-primary">Put your own photos in it</p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+            <p className="text-[15.5px] text-ink-primary">Put your own photos in it</p>
+            <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">
               The pictures on the site are stand-ins. Add your logo and a few real photographs and Lumen
               swaps them in — this is the single biggest difference between a site that looks generic and
               one that looks like yours.
@@ -197,8 +197,8 @@ export function NextSteps({
 
         {onSuggest ? (
           <div className="mt-6 border-t border-hairline pt-5">
-            <p className="text-[13.5px] text-ink-primary">Or add something to the site</p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+            <p className="text-[15.5px] text-ink-primary">Or add something to the site</p>
+            <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">
               Tap one and Lumen makes the change. You can undo it from the version history.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -210,7 +210,7 @@ export function NextSteps({
                     onClose();
                     onSuggest(idea.prompt);
                   }}
-                  className="rounded-pill border border-hairline px-3 py-1.5 text-[12px] text-ink-secondary transition hover:border-accent/45 hover:text-accent"
+                  className="rounded-pill border border-hairline px-3 py-1.5 text-[14px] text-ink-secondary transition hover:border-accent/45 hover:text-accent"
                 >
                   {idea.label}
                 </button>
@@ -222,7 +222,7 @@ export function NextSteps({
         <button
           type="button"
           onClick={onClose}
-          className="mt-5 w-full text-[12.5px] text-ink-muted transition hover:text-ink-secondary"
+          className="mt-5 w-full text-[14.5px] text-ink-muted transition hover:text-ink-secondary"
         >
           Not now — I want to keep editing
         </button>
@@ -243,11 +243,11 @@ function StepBody({ step, highlight }: { step: Step; highlight?: boolean }) {
         {step.mark}
       </span>
       <div className="min-w-0 flex-1">
-        <p className={`text-[14px] ${highlight ? 'text-accent' : 'text-ink-primary'}`}>{step.title}</p>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">{step.body}</p>
+        <p className={`text-[16px] ${highlight ? 'text-accent' : 'text-ink-primary'}`}>{step.title}</p>
+        <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">{step.body}</p>
       </div>
       <span
-        className={`shrink-0 rounded-pill px-3 py-1.5 text-[11.5px] uppercase tracking-[0.1em] ${
+        className={`shrink-0 rounded-pill px-3 py-1.5 text-[13.5px] uppercase tracking-[0.1em] ${
           highlight ? 'lumen-key' : 'border border-hairline text-ink-secondary'
         }`}
       >

@@ -37,12 +37,12 @@ export function TopNav({ signedIn = false }: { signedIn?: boolean }) {
             <Link
               key={link.href}
               href={link.href}
-              className="text-[13.5px] text-ink-muted transition hover:text-ink-primary"
+              className="text-[15.5px] text-ink-muted transition hover:text-ink-primary"
             >
               {link.label}
             </Link>
           ))}
-          <Link href="/pricing" className="text-[13.5px] text-ink-muted transition hover:text-ink-primary">
+          <Link href="/pricing" className="text-[15.5px] text-ink-muted transition hover:text-ink-primary">
             Pricing
           </Link>
         </div>
@@ -53,7 +53,7 @@ export function TopNav({ signedIn = false }: { signedIn?: boolean }) {
             </ButtonLink>
           ) : (
             <>
-              <Link href="/login" className="hidden text-[13.5px] text-ink-muted transition hover:text-ink-primary sm:block">
+              <Link href="/login" className="hidden text-[15.5px] text-ink-muted transition hover:text-ink-primary sm:block">
                 Log in
               </Link>
               <ButtonLink href="/signup" size="sm">

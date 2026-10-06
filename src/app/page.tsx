@@ -57,7 +57,7 @@ export default async function HomePage() {
             <em className="italic text-accent">from a sentence.</em>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-[15px] leading-relaxed text-ink-secondary sm:text-[17px]">
+          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-secondary sm:text-[18.5px]">
             Describe your business. Lumen writes the design system, the copy, every page and the shop
             if you need one — then publishes it. Change anything afterwards by saying so.
           </p>
@@ -68,7 +68,7 @@ export default async function HomePage() {
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
             <BetaBadge />
-            <span className="text-[12.5px] text-ink-muted">
+            <span className="text-[14.5px] text-ink-muted">
               Free to build · No card until you want your own domain
             </span>
           </div>
@@ -84,9 +84,9 @@ export default async function HomePage() {
           {STEPS.map((step, index) => (
             <Reveal key={step.number} delay={index * 90}>
               <div className="h-full bg-base px-6 py-9 sm:px-8 sm:py-11">
-                <span className="font-mono text-[12px] tracking-[0.18em] text-accent">{step.number}</span>
-                <h3 className="mt-4 font-display text-[22px] text-ink-primary">{step.title}</h3>
-                <p className="mt-3 text-[14px] leading-relaxed text-ink-secondary">{step.body}</p>
+                <span className="font-mono text-[14px] tracking-[0.18em] text-accent">{step.number}</span>
+                <h3 className="mt-4 font-display text-[23px] text-ink-primary">{step.title}</h3>
+                <p className="mt-3 text-[16px] leading-relaxed text-ink-secondary">{step.body}</p>
               </div>
             </Reveal>
           ))}
@@ -122,9 +122,9 @@ export default async function HomePage() {
                 href={build.href}
                 className="lumen-raise flex h-full flex-col gap-3 rounded-card border border-hairline bg-raised p-6 transition hover:border-white/25"
               >
-                <h3 className="font-display text-[20px] text-ink-primary">{build.title}</h3>
-                <p className="text-[13.5px] leading-relaxed text-ink-secondary">{build.body}</p>
-                <span className="mt-auto pt-2 text-[12.5px] text-accent">See what it looks like →</span>
+                <h3 className="font-display text-[21px] text-ink-primary">{build.title}</h3>
+                <p className="text-[15.5px] leading-relaxed text-ink-secondary">{build.body}</p>
+                <span className="mt-auto pt-2 text-[14.5px] text-accent">See what it looks like →</span>
               </Link>
             </Reveal>
           ))}
@@ -144,11 +144,11 @@ export default async function HomePage() {
         <div className="mt-12 grid gap-px overflow-hidden rounded-card bg-hairline sm:grid-cols-2 lg:grid-cols-5">
           {CAPABILITIES.map((capability, index) => (
             <div key={capability.title} className="bg-base p-6">
-              <span className="font-mono text-[11px] text-ink-muted">
+              <span className="font-mono text-[13px] text-ink-muted">
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <h3 className="mt-3 text-[14.5px] text-ink-primary">{capability.title}</h3>
-              <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-secondary">
+              <h3 className="mt-3 text-[16.5px] text-ink-primary">{capability.title}</h3>
+              <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-secondary">
                 {capability.body}
               </p>
             </div>
@@ -164,19 +164,19 @@ export default async function HomePage() {
         <div className="mt-12 grid items-center gap-8 lg:grid-cols-[minmax(0,320px)_1fr]">
           <Reveal>
             <div className="space-y-5">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-ink-muted">Before</p>
+              <p className="text-[13px] uppercase tracking-[0.18em] text-ink-muted">Before</p>
               <div className="rounded-card border border-dashed border-hairline bg-raised/40 px-6 py-10">
-                <p className="font-display text-[22px] leading-snug text-ink-secondary">
+                <p className="font-display text-[23px] leading-snug text-ink-secondary">
                   “I need a website for my restaurant.”
                 </p>
               </div>
-              <p className="flex items-center gap-3 text-[12.5px] text-ink-muted">
+              <p className="flex items-center gap-3 text-[14.5px] text-ink-muted">
                 <span aria-hidden className="h-px flex-1 bg-hairline" />
                 about a minute
                 <span aria-hidden className="h-px flex-1 bg-hairline" />
               </p>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-ink-muted">After</p>
-              <p className="text-[14px] leading-relaxed text-ink-secondary">
+              <p className="text-[13px] uppercase tracking-[0.18em] text-ink-muted">After</p>
+              <p className="text-[16px] leading-relaxed text-ink-secondary">
                 A whole site: menu, bookings, the room, hours and directions — written, designed and
                 published. Not a wireframe, and not one page with the rest to come.
               </p>
@@ -206,7 +206,7 @@ export default async function HomePage() {
               <Reveal key={slug} delay={(index % 3) * 80}>
                 <figure className="space-y-3">
                   <MockFrame idea={idea} />
-                  <figcaption className="text-[12.5px] text-ink-muted">
+                  <figcaption className="text-[14.5px] text-ink-muted">
                     {idea.business} — {idea.direction.name.toLowerCase()}
                   </figcaption>
                 </figure>
@@ -231,16 +231,16 @@ export default async function HomePage() {
         </Reveal>
         <Reveal>
           <div className="mt-12 overflow-hidden rounded-card border border-hairline">
-            <div className="grid grid-cols-2 border-b border-hairline bg-raised text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+            <div className="grid grid-cols-2 border-b border-hairline bg-raised text-[13px] uppercase tracking-[0.14em] text-ink-muted">
               <span className="px-5 py-3 sm:px-7">Building a site the usual way</span>
               <span className="border-l border-hairline px-5 py-3 sm:px-7">With Lumen</span>
             </div>
             {COMPARISON.map((row) => (
               <div key={row.before} className="grid grid-cols-2 border-b border-hairline last:border-b-0">
-                <span className="px-5 py-4 text-[13.5px] text-ink-muted line-through decoration-ink-muted/40 sm:px-7">
+                <span className="px-5 py-4 text-[15.5px] text-ink-muted line-through decoration-ink-muted/40 sm:px-7">
                   {row.before}
                 </span>
-                <span className="border-l border-hairline px-5 py-4 text-[13.5px] text-ink-primary sm:px-7">
+                <span className="border-l border-hairline px-5 py-4 text-[15.5px] text-ink-primary sm:px-7">
                   {row.after}
                 </span>
               </div>
@@ -264,12 +264,12 @@ export default async function HomePage() {
             <Reveal key={example} delay={(index % 3) * 70}>
               <div className="flex h-full items-start gap-3 rounded-card border border-hairline bg-raised p-5">
                 <span aria-hidden className="mt-1 text-accent">›</span>
-                <p className="text-[14px] leading-relaxed text-ink-primary">{example}</p>
+                <p className="text-[16px] leading-relaxed text-ink-primary">{example}</p>
               </div>
             </Reveal>
           ))}
         </div>
-        <p className="mt-6 text-[13px] text-ink-secondary">
+        <p className="mt-6 text-[15px] text-ink-secondary">
           Or click the thing on the page and change it there — the visual editor edits the same file.
         </p>
       </Section>
@@ -287,8 +287,8 @@ export default async function HomePage() {
         <div className="mt-12 grid gap-px overflow-hidden rounded-card bg-hairline sm:grid-cols-2 lg:grid-cols-3">
           {PUBLISH_FEATURES.map((feature) => (
             <div key={feature.title} className="bg-base p-6">
-              <h3 className="text-[14.5px] text-ink-primary">{feature.title}</h3>
-              <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-secondary">{feature.body}</p>
+              <h3 className="text-[16.5px] text-ink-primary">{feature.title}</h3>
+              <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-secondary">{feature.body}</p>
             </div>
           ))}
         </div>
@@ -318,19 +318,19 @@ export default async function HomePage() {
                 }`}
               >
                 <div className="flex items-baseline justify-between gap-3">
-                  <h3 className="font-display text-[22px] text-ink-primary">{plan.name}</h3>
+                  <h3 className="font-display text-[23px] text-ink-primary">{plan.name}</h3>
                   <span
-                    className={`font-display text-[20px] ${
+                    className={`font-display text-[21px] ${
                       plan.available ? 'text-accent' : 'text-ink-muted'
                     }`}
                   >
                     {plan.price}
                   </span>
                 </div>
-                <p className="mt-3 text-[13px] leading-relaxed text-ink-secondary">{plan.note}</p>
+                <p className="mt-3 text-[15px] leading-relaxed text-ink-secondary">{plan.note}</p>
                 <ul className="mt-6 space-y-2.5">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex gap-3 text-[13.5px] text-ink-secondary">
+                    <li key={feature} className="flex gap-3 text-[15.5px] text-ink-secondary">
                       <span
                         aria-hidden
                         className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-pill ${
@@ -369,7 +369,7 @@ export default async function HomePage() {
               <br />
               <em className="italic text-accent">with a sentence.</em>
             </h2>
-            <p className="mx-auto mt-5 max-w-lg text-[15px] text-ink-secondary">
+            <p className="mx-auto mt-5 max-w-lg text-[17px] text-ink-secondary">
               Describe it. Lumen builds it. Look at it before you decide anything.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-3">
@@ -418,11 +418,11 @@ function Heading({
 }) {
   return (
     <div className="max-w-2xl">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-ink-muted">{eyebrow}</p>
+      <p className="text-[13px] uppercase tracking-[0.18em] text-ink-muted">{eyebrow}</p>
       <h2 className="mt-4 font-display text-[32px] leading-[1.08] tracking-[-0.02em] text-ink-primary sm:text-[44px]">
         {title} <em className="italic text-accent">{accent}</em>
       </h2>
-      {body ? <p className="mt-5 text-[14.5px] leading-relaxed text-ink-secondary">{body}</p> : null}
+      {body ? <p className="mt-5 text-[16.5px] leading-relaxed text-ink-secondary">{body}</p> : null}
     </div>
   );
 }

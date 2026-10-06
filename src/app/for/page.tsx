@@ -46,7 +46,7 @@ export default async function ByTradePage() {
           <h1 className="font-display text-[40px] leading-tight text-ink-primary sm:text-[56px]">
             Built for <em className="italic text-accent">your trade.</em>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-[15px] text-ink-secondary">
+          <p className="mx-auto mt-4 max-w-2xl text-[17px] text-ink-secondary">
             Every business needs a different page. A restaurant needs the menu and a table; a plumber
             needs a phone number the size of a thumb. Pick yours and see what Lumen builds.
           </p>
@@ -73,12 +73,12 @@ export default async function ByTradePage() {
                         />
                       ),
                     )}
-                    <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+                    <span className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">
                       {industry.name}
                     </span>
                   </div>
-                  <p className="text-[15.5px] text-ink-primary">{industry.title}</p>
-                  <p className="text-[13px] leading-relaxed text-ink-secondary">
+                  <p className="text-[17.5px] text-ink-primary">{industry.title}</p>
+                  <p className="text-[15px] leading-relaxed text-ink-secondary">
                     {industry.description}
                   </p>
                 </Link>

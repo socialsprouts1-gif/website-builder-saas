@@ -48,16 +48,16 @@ export function TrafficPanel({ traffic, leadsThisWeek }: { traffic: TrafficSumma
           />
         ))}
       </div>
-      <p className="text-[11px] text-ink-muted">Last 14 days</p>
+      <p className="text-[13px] text-ink-muted">Last 14 days</p>
 
       {pages.length > 0 ? (
         <div className="border-t border-hairline pt-3">
-          <p className="mb-2 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+          <p className="mb-2 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
             Most visited this week
           </p>
           <ul className="space-y-1">
             {pages.map((entry) => (
-              <li key={entry.path} className="flex items-center justify-between gap-3 text-[12.5px]">
+              <li key={entry.path} className="flex items-center justify-between gap-3 text-[14.5px]">
                 <span className="truncate text-ink-secondary">{pageLabel(entry.path)}</span>
                 <span className="shrink-0 text-ink-muted">{entry.views}</span>
               </li>
@@ -66,7 +66,7 @@ export function TrafficPanel({ traffic, leadsThisWeek }: { traffic: TrafficSumma
         </div>
       ) : null}
 
-      <p className="text-[11px] leading-relaxed text-ink-muted">
+      <p className="text-[14.5px] leading-relaxed text-ink-muted">
         Counted on our server as pages are served — no cookies, no tracking script, and nothing that
         identifies anyone. Obvious bots are left out.
       </p>
@@ -88,9 +88,9 @@ function Figure({
   return (
     <div>
       <p className="font-display text-[30px] leading-none text-ink-primary">{value}</p>
-      <p className="mt-1.5 text-[12.5px] text-ink-secondary">{label}</p>
+      <p className="mt-1.5 text-[14.5px] text-ink-secondary">{label}</p>
       {note ? (
-        <p className={`mt-0.5 text-[11.5px] ${tone === 'down' ? 'text-[#e5a15a]' : 'text-ink-muted'}`}>
+        <p className={`mt-0.5 text-[13.5px] ${tone === 'down' ? 'text-[#e5a15a]' : 'text-ink-muted'}`}>
           {note}
         </p>
       ) : null}

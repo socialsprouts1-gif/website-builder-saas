@@ -37,7 +37,7 @@ export function ConfirmBanner({ email }: { email: string }) {
 
   return (
     <div className="border-b border-[#e5a15a]/30 bg-[#e5a15a]/10 px-5 py-2.5 sm:px-6">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] leading-relaxed">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-1.5 text-[14.5px] leading-relaxed">
         <span className="text-[#e5a15a]">
           Confirm your email to build your first site. We sent a link to{' '}
           <strong className="font-normal">{email}</strong>.

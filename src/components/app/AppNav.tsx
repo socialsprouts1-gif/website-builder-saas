@@ -93,7 +93,7 @@ export function AppNav({
       <div className="flex items-center justify-between lg:block">
         <div>
           <Logo href="/app" />
-          <p className="mt-1.5 hidden px-[38px] text-[9.5px] uppercase tracking-[0.22em] text-ink-muted lg:block">
+          <p className="mt-1.5 hidden px-[38px] text-[11.5px] uppercase tracking-[0.22em] text-ink-muted lg:block">
             Build · Ship · Iterate
           </p>
         </div>
@@ -102,7 +102,7 @@ export function AppNav({
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           aria-label={open ? 'Close menu' : 'Open menu'}
-          className="rounded-[9px] border border-hairline px-3 py-1.5 text-[13px] text-ink-secondary transition hover:text-ink-primary lg:hidden"
+          className="rounded-[9px] border border-hairline px-3 py-1.5 text-[15px] text-ink-secondary transition hover:text-ink-primary lg:hidden"
         >
           {open ? 'Close' : 'Menu'}
         </button>
@@ -116,7 +116,7 @@ export function AppNav({
       >
         {GROUPS.map((group) => (
           <div key={group.title} className="space-y-1">
-            <p className="px-3 pb-1 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">{group.title}</p>
+            <p className="px-3 pb-1 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">{group.title}</p>
             {group.items.map((item) => {
               // Exact for the section roots, so "My sites" does not stay lit
               // on every page under /app and Settings does not light up for
@@ -130,13 +130,13 @@ export function AppNav({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center justify-between gap-2 rounded-[9px] px-3 py-2 text-[13.5px] transition',
+                    'flex items-center justify-between gap-2 rounded-[9px] px-3 py-2 text-[15.5px] transition',
                     active ? 'bg-accent-soft text-accent' : 'text-ink-secondary hover:bg-white/5 hover:text-ink-primary',
                   )}
                 >
                   <span>{item.label}</span>
                   {item.needs && !planAllows(tier, item.needs) ? (
-                    <span className="rounded-pill border border-accent/35 px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.1em] text-accent">
+                    <span className="rounded-pill border border-accent/35 px-1.5 py-0.5 text-[11.5px] uppercase tracking-[0.1em] text-accent">
                       {tierName(tierFor(item.needs))}
                     </span>
                   ) : null}
@@ -148,10 +148,10 @@ export function AppNav({
 
         {isAdmin ? (
           <div className="space-y-1">
-            <p className="px-3 pb-1 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">Internal</p>
+            <p className="px-3 pb-1 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">Internal</p>
             <Link
               href="/admin"
-              className="block rounded-[9px] px-3 py-2 text-[13.5px] text-ink-secondary transition hover:bg-white/5 hover:text-ink-primary"
+              className="block rounded-[9px] px-3 py-2 text-[15.5px] text-ink-secondary transition hover:bg-white/5 hover:text-ink-primary"
             >
               Admin panel
             </Link>
@@ -171,13 +171,13 @@ export function AppNav({
           open ? 'block' : 'hidden lg:block',
         )}
       >
-        <p className="truncate px-3 text-[12px] text-ink-muted" title={email}>
+        <p className="truncate px-3 text-[14px] text-ink-muted" title={email}>
           {email}
         </p>
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="w-full rounded-[9px] px-3 py-2 text-left text-[13px] text-ink-muted transition hover:bg-white/5 hover:text-ink-primary"
+            className="w-full rounded-[9px] px-3 py-2 text-left text-[15px] text-ink-muted transition hover:bg-white/5 hover:text-ink-primary"
           >
             Sign out
           </button>

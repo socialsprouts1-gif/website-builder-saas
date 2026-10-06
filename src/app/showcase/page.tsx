@@ -40,7 +40,7 @@ export default async function ShowcasePage() {
           <h1 className="font-display text-[40px] leading-tight text-ink-primary sm:text-[56px]">
             Built with <em className="italic text-accent">one sentence.</em>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-[15px] text-ink-secondary">
+          <p className="mx-auto mt-4 max-w-xl text-[17px] text-ink-secondary">
             Every site below is a live preview of real generated output — not a screenshot.
           </p>
         </section>
@@ -67,7 +67,7 @@ export default async function ShowcasePage() {
                   />
                   <div className="border-t border-hairline px-4 py-3">
                     <p className="text-sm text-ink-primary">{project.name}</p>
-                    <p className="mt-0.5 text-[12px] text-ink-muted">
+                    <p className="mt-0.5 text-[14px] text-ink-muted">
                       {project.description ?? project.business_type ?? 'Generated with Lumen'}
                     </p>
                   </div>

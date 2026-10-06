@@ -34,9 +34,9 @@ export default async function OnboardingPage() {
               href={`/app/new?category=${encodeURIComponent(category.slug)}`}
               className="lumen-raise group rounded-[12px] border border-hairline px-4 py-3 transition hover:border-accent/50 focus:outline-none focus-visible:border-accent"
             >
-              <span className="block text-[13.5px] text-ink-primary">{category.label}</span>
+              <span className="block text-[15.5px] text-ink-primary">{category.label}</span>
               {/* What you are actually choosing, rather than a bare word. */}
-              <span className="mt-0.5 line-clamp-2 block text-[11.5px] leading-relaxed text-ink-muted">
+              <span className="mt-0.5 line-clamp-2 block text-[14.5px] leading-relaxed text-ink-muted">
                 {category.seedPrompt}
               </span>
             </Link>
@@ -45,7 +45,7 @@ export default async function OnboardingPage() {
 
         <Link
           href="/app/new"
-          className="block w-full text-center text-[13px] text-ink-muted transition hover:text-ink-primary"
+          className="block w-full text-center text-[15px] text-ink-muted transition hover:text-ink-primary"
         >
           Skip this — I will describe it myself
         </Link>

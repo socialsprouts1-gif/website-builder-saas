@@ -104,7 +104,7 @@ export function SiteCard({ site }: { site: SiteSummary }) {
               className="pointer-events-none h-[500px] w-[800px] border-0 bg-white"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center px-6 text-center text-[12px] text-ink-muted">
+            <div className="flex h-full w-full items-center justify-center px-6 text-center text-[14px] text-ink-muted">
               {site.status === 'generating' ? 'Building…' : stopped ? 'Never finished' : 'No preview yet'}
             </div>
           )}
@@ -124,21 +124,21 @@ export function SiteCard({ site }: { site: SiteSummary }) {
           </h2>
           <Badge
             tone={TONE[site.status as keyof typeof TONE] ?? 'neutral'}
-            className="shrink-0 px-2 py-1 text-[10px]"
+            className="shrink-0 px-2 py-1 text-[12px]"
           >
             {LABEL[site.status] ?? site.status}
           </Badge>
         </div>
 
-        <p className="line-clamp-2 text-[12.5px] text-ink-muted">
+        <p className="line-clamp-2 text-[14.5px] text-ink-muted">
           {stopped
             ? 'The build stopped before it finished. Nothing was charged twice — start it again.'
             : (site.description ?? site.businessType ?? 'Generated with Lumen')}
         </p>
 
-        {error ? <p className="text-[11.5px] text-[#e5735a]">{error}</p> : null}
+        {error ? <p className="text-[13.5px] text-[#e5735a]">{error}</p> : null}
 
-        <div className="mt-auto flex flex-wrap items-center gap-3 pt-2 text-[12px]">
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-2 text-[14px]">
           {stopped ? (
             <button
               type="button"

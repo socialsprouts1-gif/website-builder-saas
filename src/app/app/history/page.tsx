@@ -75,17 +75,17 @@ export default async function HistoryPage() {
             <li key={version.id} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 py-3.5">
               <Link
                 href={`/app/project/${version.project_id}`}
-                className="text-[14.5px] text-ink-primary hover:underline"
+                className="text-[16.5px] text-ink-primary hover:underline"
               >
                 {names.get(version.project_id) ?? 'A site'}
               </Link>
-              <span className="text-[12.5px] text-ink-muted">v{version.version_number}</span>
-              <span className="text-[13px] text-ink-secondary">
+              <span className="text-[14.5px] text-ink-muted">v{version.version_number}</span>
+              <span className="text-[15px] text-ink-secondary">
                 {version.label || SOURCE_LABEL[version.source] || 'Saved'}
               </span>
               <time
                 dateTime={version.created_at}
-                className="ml-auto shrink-0 text-[12px] text-ink-muted"
+                className="ml-auto shrink-0 text-[14px] text-ink-muted"
               >
                 {new Date(version.created_at).toLocaleString('en-IN', {
                   day: 'numeric',

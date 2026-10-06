@@ -71,15 +71,15 @@ export function ReachSetup({
   return (
     <div className="space-y-5 rounded-card border border-hairline bg-raised p-5">
       <div>
-        <p className="text-[14px] text-ink-primary">WhatsApp</p>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="text-[16px] text-ink-primary">WhatsApp</p>
+        <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">
           A green button on every page that opens a chat with you, with the first message already
           typed. No Business account, no API, no approval.
         </p>
       </div>
 
       <label className="block">
-        <span className="mb-1.5 block text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+        <span className="mb-1.5 block text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
           Your WhatsApp number
         </span>
         <Input
@@ -88,13 +88,13 @@ export function ReachSetup({
           placeholder="98765 43210"
           inputMode="tel"
         />
-        <span className="mt-1.5 block text-[11px] text-ink-muted">
+        <span className="mt-1.5 block text-[13px] text-ink-muted">
           Ten digits is read as an Indian number. Add the country code for anywhere else.
         </span>
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+        <span className="mb-1.5 block text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
           What their first message says
         </span>
         <Input
@@ -112,8 +112,8 @@ export function ReachSetup({
       />
 
       <div className="border-t border-hairline pt-5">
-        <p className="text-[14px] text-ink-primary">Bookings</p>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="text-[16px] text-ink-primary">Bookings</p>
+        <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">
           A form on your contact page asking what for, which day and what time. Requests land in
           Enquiries next to everything else — nothing to keep in sync.
         </p>
@@ -124,7 +124,7 @@ export function ReachSetup({
       {booking ? (
         <>
           <label className="block">
-            <span className="mb-1.5 block text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+            <span className="mb-1.5 block text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
               What can be booked
             </span>
             <Input
@@ -132,13 +132,13 @@ export function ReachSetup({
               onChange={(event) => setServices(event.target.value)}
               placeholder="Haircut, Colour, Bridal package"
             />
-            <span className="mt-1.5 block text-[11px] text-ink-muted">
+            <span className="mt-1.5 block text-[13px] text-ink-muted">
               Separated by commas. Leave empty and the form just asks for a day and a time.
             </span>
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+            <span className="mb-1.5 block text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
               A line above the form
             </span>
             <Input
@@ -154,8 +154,8 @@ export function ReachSetup({
         <Button onClick={save} disabled={busy}>
           {busy ? 'Saving…' : 'Save'}
         </Button>
-        {saved ? <span className="text-[12.5px] text-accent">Saved — live on your site now.</span> : null}
-        {error ? <span className="text-[12.5px] text-[#e5735a]">{error}</span> : null}
+        {saved ? <span className="text-[14.5px] text-accent">Saved — live on your site now.</span> : null}
+        {error ? <span className="text-[14.5px] text-[#e5735a]">{error}</span> : null}
       </div>
     </div>
   );
@@ -184,16 +184,16 @@ function Toggle({
     >
       <span
         className={cn(
-          'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-[9px] font-bold',
+          'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-[11px] font-bold',
           on ? 'border-accent bg-accent text-accent-ink' : 'border-white/25',
         )}
       >
         {on ? '✓' : ''}
       </span>
       <span className="min-w-0">
-        <span className={cn('block text-[13px]', on ? 'text-accent' : 'text-ink-primary')}>{label}</span>
+        <span className={cn('block text-[15px]', on ? 'text-accent' : 'text-ink-primary')}>{label}</span>
         {hint ? (
-          <span className="mt-0.5 block text-[11.5px] leading-relaxed text-ink-muted">{hint}</span>
+          <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ink-muted">{hint}</span>
         ) : null}
       </span>
     </button>

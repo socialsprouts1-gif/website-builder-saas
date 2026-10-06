@@ -92,7 +92,7 @@ export function PublishPanel({
   if (!ready) {
     return (
       <Card>
-        <p className="text-[13px] text-ink-secondary">
+        <p className="text-[15px] text-ink-secondary">
           Once the site has finished building it gets a public address you can share straight away.
         </p>
       </Card>
@@ -102,13 +102,13 @@ export function PublishPanel({
   return (
     <Card className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13.5px] text-ink-primary">Public address</p>
+        <p className="text-[15.5px] text-ink-primary">Public address</p>
         <Badge tone={published ? 'positive' : 'neutral'}>{published ? 'Live' : 'Not published'}</Badge>
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
         <label className="min-w-[220px] flex-1">
-          <span className="mb-1.5 block text-[11px] uppercase tracking-[0.16em] text-ink-muted">
+          <span className="mb-1.5 block text-[13px] uppercase tracking-[0.16em] text-ink-muted">
             {siteUrl.replace(/^https?:\/\//, '')}/s/
           </span>
           <Input
@@ -118,7 +118,7 @@ export function PublishPanel({
             aria-label="Public address"
           />
           {address && address !== slug ? (
-            <span className="mt-1 block text-[11.5px] text-ink-muted">Will be published as {address}</span>
+            <span className="mt-1 block text-[13.5px] text-ink-muted">Will be published as {address}</span>
           ) : null}
         </label>
         <Button onClick={() => send('publish')} disabled={busy !== null || !address}>
@@ -132,7 +132,7 @@ export function PublishPanel({
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="min-w-0 flex-1 truncate text-[13px] text-accent underline"
+            className="min-w-0 flex-1 truncate text-[15px] text-accent underline"
           >
             {url}
           </a>
@@ -144,7 +144,7 @@ export function PublishPanel({
                 setTimeout(() => setCopied(false), 1800);
               });
             }}
-            className="shrink-0 text-[12px] text-accent hover:underline"
+            className="shrink-0 text-[14px] text-accent hover:underline"
           >
             {copied ? 'Copied' : 'Copy'}
           </button>
@@ -152,7 +152,7 @@ export function PublishPanel({
             type="button"
             onClick={() => send('unpublish')}
             disabled={busy !== null}
-            className="shrink-0 text-[12px] text-ink-muted transition hover:text-[#e5735a] disabled:opacity-40"
+            className="shrink-0 text-[14px] text-ink-muted transition hover:text-[#e5735a] disabled:opacity-40"
           >
             {busy === 'unpublish' ? 'Taking down…' : 'Take offline'}
           </button>
@@ -165,15 +165,15 @@ export function PublishPanel({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={favicon} alt="" className="h-6 w-6 object-contain" />
           ) : (
-            <span className="text-[10px] text-ink-muted">ico</span>
+            <span className="text-[12px] text-ink-muted">ico</span>
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] text-ink-primary">Browser tab icon</p>
-          <p className="text-[11.5px] text-ink-muted">A square PNG or SVG, 512KB or less.</p>
+          <p className="text-[15px] text-ink-primary">Browser tab icon</p>
+          <p className="text-[13.5px] text-ink-muted">A square PNG or SVG, 512KB or less.</p>
         </div>
         <label className="shrink-0">
-          <span className="cursor-pointer rounded-pill border border-hairline px-3.5 py-2 text-[13px] text-ink-secondary transition hover:text-ink-primary">
+          <span className="cursor-pointer rounded-pill border border-hairline px-3.5 py-2 text-[15px] text-ink-secondary transition hover:text-ink-primary">
             {busy === 'favicon' ? 'Uploading…' : favicon ? 'Replace' : 'Upload'}
           </span>
           <input
@@ -189,7 +189,7 @@ export function PublishPanel({
       </div>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}

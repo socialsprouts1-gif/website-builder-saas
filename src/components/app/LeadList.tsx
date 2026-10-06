@@ -87,7 +87,7 @@ export function LeadList({ projectId, leads }: { projectId: string; leads: Lead[
         <button
           type="button"
           onClick={exportCsv}
-          className="lumen-raise rounded-pill border border-hairline px-3.5 py-1.5 text-[12px] text-ink-secondary transition hover:text-ink-primary"
+          className="lumen-raise rounded-pill border border-hairline px-3.5 py-1.5 text-[14px] text-ink-secondary transition hover:text-ink-primary"
         >
           Download as CSV
         </button>
@@ -107,12 +107,12 @@ export function LeadList({ projectId, leads }: { projectId: string; leads: Lead[
               <div className="min-w-0">
                 {lead.kind === 'booking' ? (
                   // The slot is the thing being asked for, so it goes first.
-                  <p className="mb-1 text-[12px] uppercase tracking-[0.14em] text-accent">
+                  <p className="mb-1 text-[14px] uppercase tracking-[0.14em] text-accent">
                     Booking{lead.service ? ` · ${lead.service}` : ''}
                   </p>
                 ) : null}
                 {lead.preferred_date ? (
-                  <p className="mb-1 text-[14px] text-ink-primary">
+                  <p className="mb-1 text-[16px] text-ink-primary">
                     {new Date(`${lead.preferred_date}T00:00:00`).toLocaleDateString(undefined, {
                       weekday: 'short',
                       day: 'numeric',
@@ -121,39 +121,39 @@ export function LeadList({ projectId, leads }: { projectId: string; leads: Lead[
                     {lead.preferred_time ? ` at ${lead.preferred_time}` : ''}
                   </p>
                 ) : null}
-                <p className="text-[15px] text-ink-primary">{lead.name || 'Someone'}</p>
+                <p className="text-[17px] text-ink-primary">{lead.name || 'Someone'}</p>
                 {lead.contact ? (
                   telephone ? (
                     <a
                       href={`tel:${telephone}`}
-                      className="mt-0.5 block text-[17px] text-accent hover:underline"
+                      className="mt-0.5 block text-[18.5px] text-accent hover:underline"
                     >
                       {lead.contact}
                     </a>
                   ) : lead.contact.includes('@') ? (
                     <a
                       href={`mailto:${lead.contact}`}
-                      className="mt-0.5 block break-all text-[15px] text-accent hover:underline"
+                      className="mt-0.5 block break-all text-[17px] text-accent hover:underline"
                     >
                       {lead.contact}
                     </a>
                   ) : (
-                    <p className="mt-0.5 break-all text-[15px] text-ink-secondary">{lead.contact}</p>
+                    <p className="mt-0.5 break-all text-[17px] text-ink-secondary">{lead.contact}</p>
                   )
                 ) : (
-                  <p className="mt-0.5 text-[13px] text-ink-muted">No contact details left</p>
+                  <p className="mt-0.5 text-[15px] text-ink-muted">No contact details left</p>
                 )}
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-[11.5px] text-ink-muted">{when(lead.created_at)}</p>
+                <p className="text-[13.5px] text-ink-muted">{when(lead.created_at)}</p>
                 {lead.pageLabel ? (
-                  <p className="mt-0.5 text-[11px] text-ink-muted">from {lead.pageLabel}</p>
+                  <p className="mt-0.5 text-[13px] text-ink-muted">from {lead.pageLabel}</p>
                 ) : null}
               </div>
             </div>
 
             {lead.message ? (
-              <p className="mt-3 whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-ink-secondary">
+              <p className="mt-3 whitespace-pre-wrap break-words text-[15.5px] leading-relaxed text-ink-secondary">
                 {lead.message}
               </p>
             ) : null}
@@ -163,7 +163,7 @@ export function LeadList({ projectId, leads }: { projectId: string; leads: Lead[
                 type="button"
                 disabled={busy === lead.id}
                 onClick={() => markRead(lead.id, !lead.read_at)}
-                className="text-[12px] text-ink-muted transition hover:text-ink-primary disabled:opacity-40"
+                className="text-[14px] text-ink-muted transition hover:text-ink-primary disabled:opacity-40"
               >
                 {lead.read_at ? 'Mark unread' : 'Mark as done'}
               </button>
@@ -172,7 +172,7 @@ export function LeadList({ projectId, leads }: { projectId: string; leads: Lead[
                   href={`https://wa.me/${telephone.replace(/\D/g, '')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="ml-auto text-[12px] text-accent hover:underline"
+                  className="ml-auto text-[14px] text-accent hover:underline"
                 >
                   Reply on WhatsApp ↗
                 </a>

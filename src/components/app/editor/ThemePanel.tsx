@@ -50,12 +50,12 @@ export function ThemePanel({
   // want, and picking one colour at a time is the specialist case.
   const [open, setOpen] = useState<Group>('looks');
   if (loading && palette.length === 0) {
-    return <p className="p-4 text-[12px] text-ink-muted">Reading the site&rsquo;s palette…</p>;
+    return <p className="p-4 text-[14px] text-ink-muted">Reading the site&rsquo;s palette…</p>;
   }
 
   if (palette.length === 0) {
     return (
-      <p className="p-4 text-[12px] leading-relaxed text-ink-muted">
+      <p className="p-4 text-[14px] leading-relaxed text-ink-muted">
         This page does not define a palette, so there is nothing to change site-wide. You can still
         recolour anything by selecting it in the page.
       </p>
@@ -97,8 +97,8 @@ export function ThemePanel({
               />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[12.5px] text-ink-primary">{token.label}</span>
-              <span className="block truncate font-mono text-[10.5px] text-ink-muted">
+              <span className="block text-[14.5px] text-ink-primary">{token.label}</span>
+              <span className="block truncate font-mono text-[12.5px] text-ink-muted">
                 {hex ?? token.value}
               </span>
             </span>
@@ -132,7 +132,7 @@ export function ThemePanel({
         />
       </Section>
 
-      <p className="px-1 pt-3 text-[11px] leading-relaxed text-ink-muted">
+      <p className="px-1 pt-3 text-[14.5px] leading-relaxed text-ink-muted">
         Changes show immediately and apply to every page. Save to keep them.
       </p>
     </div>
@@ -157,10 +157,10 @@ function Section({
         onClick={onToggle}
         className="flex w-full items-center justify-between gap-2 px-1 py-2.5 text-left"
       >
-        <span className={`text-[12.5px] ${open ? 'text-ink-primary' : 'text-ink-secondary'}`}>
+        <span className={`text-[14.5px] ${open ? 'text-ink-primary' : 'text-ink-secondary'}`}>
           {title}
         </span>
-        <span className={`text-[11px] text-ink-muted transition ${open ? 'rotate-180' : ''}`}>⌄</span>
+        <span className={`text-[13px] text-ink-muted transition ${open ? 'rotate-180' : ''}`}>⌄</span>
       </button>
       {open ? <div className="space-y-1.5 pb-3">{children}</div> : null}
     </div>
@@ -181,7 +181,7 @@ function FontPicker({
 
   return (
     <label className="block px-1">
-      <span className="mb-1 block text-[11px] text-ink-muted">{label}</span>
+      <span className="mb-1 block text-[13px] text-ink-muted">{label}</span>
       <select
         value={chosen}
         onChange={(event) => {
@@ -189,7 +189,7 @@ function FontPicker({
           const font = options.find((option) => option.id === event.target.value);
           if (font) onPick(role, font.family, font.googleHref);
         }}
-        className="lumen-well w-full rounded-[9px] border border-hairline px-2.5 py-1.5 text-[12.5px] text-ink-primary outline-none focus:border-accent/50"
+        className="lumen-well w-full rounded-[9px] border border-hairline px-2.5 py-1.5 text-[14.5px] text-ink-primary outline-none focus:border-accent/50"
       >
         <option value="">Leave as it is</option>
         {options.map((option) => (
@@ -215,7 +215,7 @@ function Choices({
 
   return (
     <div className="px-1">
-      <span className="mb-1 block text-[11px] text-ink-muted">{label}</span>
+      <span className="mb-1 block text-[13px] text-ink-muted">{label}</span>
       <div className="flex gap-1">
         {options.map((option, index) => (
           <button
@@ -225,7 +225,7 @@ function Choices({
               setActive(index);
               onPick(index);
             }}
-            className={`flex-1 rounded-[8px] border px-1.5 py-1.5 text-[11px] transition ${
+            className={`flex-1 rounded-[8px] border px-1.5 py-1.5 text-[13px] transition ${
               active === index
                 ? 'border-accent/50 bg-accent-soft text-accent'
                 : 'border-hairline text-ink-secondary hover:text-ink-primary'

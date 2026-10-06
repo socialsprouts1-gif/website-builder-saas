@@ -66,12 +66,12 @@ export default async function DeploymentsPage() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/app/project/${project.id}`}
-                    className="text-[15px] text-ink-primary hover:underline"
+                    className="text-[17px] text-ink-primary hover:underline"
                   >
                     {project.name}
                   </Link>
                   {address ? (
-                    <p className="mt-0.5 truncate text-[12.5px] text-ink-muted">
+                    <p className="mt-0.5 truncate text-[14.5px] text-ink-muted">
                       <a
                         href={address}
                         target="_blank"
@@ -101,7 +101,7 @@ export default async function DeploymentsPage() {
 
       {unpublished.length > 0 ? (
         <section className="mt-12">
-          <h2 className="text-[11px] uppercase tracking-[0.16em] text-ink-muted">
+          <h2 className="text-[13px] uppercase tracking-[0.16em] text-ink-muted">
             Built but not published ({unpublished.length})
           </h2>
           <ul className="mt-4 flex flex-wrap gap-2">
@@ -109,7 +109,7 @@ export default async function DeploymentsPage() {
               <li key={project.id}>
                 <Link
                   href={`/app/project/${project.id}`}
-                  className="inline-flex rounded-pill border border-hairline px-3.5 py-1.5 text-[13px] text-ink-secondary transition hover:border-white/25 hover:text-ink-primary"
+                  className="inline-flex rounded-pill border border-hairline px-3.5 py-1.5 text-[15px] text-ink-secondary transition hover:border-white/25 hover:text-ink-primary"
                 >
                   {project.name}
                 </Link>

@@ -102,9 +102,9 @@ export function AccountForm({
           onChange={(event) => setVoiceStorage(event.target.checked)}
           className="mt-0.5 accent-[var(--accent)]"
         />
-        <span className="text-[13px] text-ink-secondary">
+        <span className="text-[15px] text-ink-secondary">
           Keep voice transcripts with my projects.
-          <span className="mt-0.5 block text-[12px] text-ink-muted">
+          <span className="mt-0.5 block text-[14px] text-ink-muted">
             Audio is never stored either way — it is streamed to the transcription model and discarded. This
             only controls whether the resulting text is kept in your chat history.
           </span>
@@ -115,8 +115,8 @@ export function AccountForm({
         {busy ? 'Saving…' : 'Save changes'}
       </Button>
 
-      {error ? <p className="text-[13px] text-[#e5735a]">{error}</p> : null}
-      {notice ? <p className="text-[13px] text-accent">{notice}</p> : null}
+      {error ? <p className="text-[15px] text-[#e5735a]">{error}</p> : null}
+      {notice ? <p className="text-[15px] text-accent">{notice}</p> : null}
     </div>
   );
 }

@@ -23,12 +23,12 @@ export default async function AccountConnectorsPage({
       />
 
       {connected ? (
-        <p className="mb-6 rounded-[10px] border border-accent/30 bg-accent-soft px-4 py-3 text-[13px] text-accent">
+        <p className="mb-6 rounded-[10px] border border-accent/30 bg-accent-soft px-4 py-3 text-[15px] text-accent">
           {connected} connected.
         </p>
       ) : null}
       {error ? (
-        <p className="mb-6 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+        <p className="mb-6 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
           {OAUTH_ERRORS[error] ?? 'That connection did not complete.'}
         </p>
       ) : null}

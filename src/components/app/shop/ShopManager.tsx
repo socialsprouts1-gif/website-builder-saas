@@ -108,8 +108,8 @@ export function ShopManager({
   if (migrationMissing) {
     return (
       <div className="lumen-panel space-y-3 rounded-card border border-[#e5a15a]/30 bg-[#e5a15a]/10 p-5">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-[#e5a15a]">One step first</p>
-        <p className="text-[13.5px] leading-relaxed text-ink-secondary">
+        <p className="text-[13px] uppercase tracking-[0.16em] text-[#e5a15a]">One step first</p>
+        <p className="text-[15.5px] leading-relaxed text-ink-secondary">
           The shop needs its tables, which arrive in migration 0015. Open{' '}
           <code className="text-ink-primary">supabase/setup.sql</code>, paste the whole file into the
           Supabase SQL editor and run it — it is safe to re-run — then reload this page.
@@ -123,8 +123,8 @@ export function ShopManager({
       {!settings.enabled ? (
         <div className="lumen-panel flex flex-wrap items-center gap-4 rounded-card border border-accent/25 p-4">
           <div className="min-w-[240px] flex-1">
-            <p className="text-[13.5px] text-ink-primary">This shop is switched off.</p>
-            <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-muted">
+            <p className="text-[15.5px] text-ink-primary">This shop is switched off.</p>
+            <p className="mt-0.5 text-[14.5px] leading-relaxed text-ink-muted">
               Nobody can see the Shop, Basket or Checkout pages until you switch it on.
             </p>
           </div>
@@ -155,7 +155,7 @@ export function ShopManager({
             type="button"
             onClick={() => setTab(item.id)}
             className={cn(
-              'rounded-pill px-3.5 py-1.5 text-[13px] transition',
+              'rounded-pill px-3.5 py-1.5 text-[15px] transition',
               tab === item.id ? 'bg-accent-soft text-accent' : 'text-ink-secondary hover:text-ink-primary',
             )}
           >
@@ -234,13 +234,13 @@ export function ShopManager({
                       className="h-12 w-12 shrink-0 rounded-[8px] border border-hairline object-cover"
                     />
                   ) : (
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] border border-dashed border-hairline text-[10px] text-ink-muted">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] border border-dashed border-hairline text-[12px] text-ink-muted">
                       no photo
                     </span>
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13.5px] text-ink-primary">{product.title}</span>
-                    <span className="mt-0.5 block text-[12px] text-ink-muted">
+                    <span className="block truncate text-[15.5px] text-ink-primary">{product.title}</span>
+                    <span className="mt-0.5 block text-[14px] text-ink-muted">
                       {[
                         formatRupees(product.pricePaise),
                         product.category,
@@ -302,11 +302,11 @@ function Orders({
       {orders.map((order) => (
         <details key={order.id} className="rounded-card border border-hairline bg-raised px-4 py-3">
           <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-mono text-[13px] text-ink-primary">{order.reference}</span>
-            <span className="text-[13px] text-ink-secondary">{order.customerName ?? 'No name'}</span>
-            <span className="text-[13px] text-ink-primary">{formatRupees(order.totalPaise)}</span>
+            <span className="font-mono text-[15px] text-ink-primary">{order.reference}</span>
+            <span className="text-[15px] text-ink-secondary">{order.customerName ?? 'No name'}</span>
+            <span className="text-[15px] text-ink-primary">{formatRupees(order.totalPaise)}</span>
             {order.status === 'placed' ? <Badge tone="accent">new</Badge> : null}
-            <span className="ml-auto text-[12px] text-ink-muted">
+            <span className="ml-auto text-[14px] text-ink-muted">
               {new Date(order.createdAt).toLocaleDateString('en-IN', {
                 day: 'numeric',
                 month: 'short',
@@ -317,20 +317,20 @@ function Orders({
           <div className="mt-3 space-y-3 border-t border-hairline pt-3">
             <ul className="space-y-1">
               {order.items.map((item, index) => (
-                <li key={index} className="flex justify-between gap-3 text-[12.5px] text-ink-secondary">
+                <li key={index} className="flex justify-between gap-3 text-[14.5px] text-ink-secondary">
                   <span>
                     {item.title} × {item.quantity}
                   </span>
                   <span>{formatRupees(item.linePaise)}</span>
                 </li>
               ))}
-              <li className="flex justify-between gap-3 text-[12.5px] text-ink-muted">
+              <li className="flex justify-between gap-3 text-[14.5px] text-ink-muted">
                 <span>{order.shippingLabel ?? 'Delivery'}</span>
                 <span>{order.shippingPaise === 0 ? 'Free' : formatRupees(order.shippingPaise)}</span>
               </li>
             </ul>
 
-            <div className="grid gap-1 text-[12.5px] leading-relaxed text-ink-secondary">
+            <div className="grid gap-1 text-[14.5px] leading-relaxed text-ink-secondary">
               {order.customerContact ? (
                 <p>
                   <a href={`tel:${order.customerContact}`} className="text-accent hover:underline">
@@ -357,7 +357,7 @@ function Orders({
                   disabled={busy || order.status === status}
                   onClick={() => void onStatus('/orders', 'PATCH', { id: order.id, status })}
                   className={cn(
-                    'rounded-pill border px-3 py-1 text-[12px] transition disabled:opacity-100',
+                    'rounded-pill border px-3 py-1 text-[14px] transition disabled:opacity-100',
                     order.status === status
                       ? 'border-accent/45 bg-accent-soft text-accent'
                       : 'border-hairline text-ink-muted hover:text-ink-primary',
@@ -398,8 +398,8 @@ function Delivery({
             className="flex flex-wrap items-center gap-3 rounded-card border border-hairline bg-raised px-4 py-3"
           >
             <span className="min-w-0 flex-1">
-              <span className="block text-[13.5px] text-ink-primary">{rate.label}</span>
-              <span className="mt-0.5 block text-[12px] text-ink-muted">
+              <span className="block text-[15.5px] text-ink-primary">{rate.label}</span>
+              <span className="mt-0.5 block text-[14px] text-ink-muted">
                 {[
                   rate.note,
                   rate.pricePaise === 0 ? 'Free' : formatRupees(rate.pricePaise),
@@ -416,7 +416,7 @@ function Delivery({
               type="button"
               disabled={busy}
               onClick={() => void onSend('/shipping', 'PATCH', { id: rate.id, active: !rate.active })}
-              className="text-[12.5px] text-ink-muted transition hover:text-ink-primary disabled:opacity-40"
+              className="text-[14.5px] text-ink-muted transition hover:text-ink-primary disabled:opacity-40"
             >
               {rate.active ? 'Turn off' : 'Turn on'}
             </button>
@@ -424,7 +424,7 @@ function Delivery({
               type="button"
               disabled={busy}
               onClick={() => void onSend('/shipping', 'DELETE', { id: rate.id })}
-              className="text-[12.5px] text-[#e5735a] transition hover:underline disabled:opacity-40"
+              className="text-[14.5px] text-[#e5735a] transition hover:underline disabled:opacity-40"
             >
               Delete
             </button>
@@ -516,8 +516,8 @@ function Settings({
             onChange={(event) => onChange({ ...settings, enabled: event.target.checked })}
           />
           <span>
-            <span className="block text-[13.5px] text-ink-primary">The shop is open</span>
-            <span className="mt-0.5 block text-[12.5px] leading-relaxed text-ink-muted">
+            <span className="block text-[15.5px] text-ink-primary">The shop is open</span>
+            <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ink-muted">
               Adds Shop and Basket to your site&apos;s menu, and makes the checkout work.
             </span>
           </span>
@@ -531,8 +531,8 @@ function Settings({
             onChange={(event) => onChange({ ...settings, codEnabled: event.target.checked })}
           />
           <span>
-            <span className="block text-[13.5px] text-ink-primary">Pay on delivery</span>
-            <span className="mt-0.5 block text-[12.5px] leading-relaxed text-ink-muted">
+            <span className="block text-[15.5px] text-ink-primary">Pay on delivery</span>
+            <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ink-muted">
               Customers order without paying online and you collect on delivery. Leave this on unless
               you have a reason not to — it is how most orders in India are actually paid for.
             </span>
@@ -568,7 +568,7 @@ function Settings({
               href={`${siteUrl}shop.html`}
               target="_blank"
               rel="noreferrer"
-              className="text-[12.5px] text-accent hover:underline"
+              className="text-[14.5px] text-accent hover:underline"
             >
               See the shop ↗
             </a>
@@ -576,7 +576,7 @@ function Settings({
         </div>
       </div>
 
-      <p className="text-[12px] leading-relaxed text-ink-muted">
+      <p className="text-[14px] leading-relaxed text-ink-muted">
         Lumen never holds your money. An order is recorded here with the customer&apos;s address and
         what they owe; payment happens through your own link or on delivery, between you and them.
       </p>

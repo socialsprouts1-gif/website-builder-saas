@@ -74,7 +74,7 @@ export default async function AdminPage() {
       </div>
 
       {modelRows.length === 0 ? (
-        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[13px] text-ink-muted">
+        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[15px] text-ink-muted">
           No usage recorded in the last 30 days.
         </p>
       ) : (
@@ -82,8 +82,8 @@ export default async function AdminPage() {
         // scrolls sideways inside its own box rather than squeezing every
         // column to two characters or pushing the page wider than the screen.
         <div className="overflow-x-auto rounded-card border border-hairline">
-          <table className="w-full min-w-[520px] text-left text-[13px]">
-            <thead className="bg-raised text-[11px] uppercase tracking-[0.12em] text-ink-muted">
+          <table className="w-full min-w-[520px] text-left text-[15px]">
+            <thead className="bg-raised text-[13px] uppercase tracking-[0.12em] text-ink-muted">
               <tr>
                 <th className="px-4 py-3 font-normal">Model</th>
                 <th className="px-4 py-3 font-normal">Calls</th>
@@ -93,7 +93,7 @@ export default async function AdminPage() {
             <tbody>
               {modelRows.map(([model, entry]) => (
                 <tr key={model} className="border-t border-hairline text-ink-secondary">
-                  <td className="px-4 py-3 font-mono text-[12px]">{model}</td>
+                  <td className="px-4 py-3 font-mono text-[14px]">{model}</td>
                   <td className="px-4 py-3">{entry.calls}</td>
                   <td className="px-4 py-3">${entry.cost.toFixed(4)}</td>
                 </tr>
@@ -105,15 +105,15 @@ export default async function AdminPage() {
 
       <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">Flagged content</h2>
       {(flagged.data ?? []).length === 0 ? (
-        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[13px] text-ink-muted">
+        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[15px] text-ink-muted">
           Nothing flagged. Review this before anything reaches the public showcase.
         </p>
       ) : (
         <ul className="space-y-2">
           {(flagged.data ?? []).map((row) => (
-            <li key={row.id} className="rounded-card border border-hairline bg-raised px-4 py-3 text-[13px]">
+            <li key={row.id} className="rounded-card border border-hairline bg-raised px-4 py-3 text-[15px]">
               <p className="text-ink-primary">{row.reason}</p>
-              <p className="mt-1 text-[12px] text-ink-muted">{row.detail ?? row.project_id}</p>
+              <p className="mt-1 text-[14px] text-ink-muted">{row.detail ?? row.project_id}</p>
             </li>
           ))}
         </ul>
@@ -125,9 +125,9 @@ export default async function AdminPage() {
 function Stat({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
     <Card className="space-y-1">
-      <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{label}</p>
+      <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">{label}</p>
       <p className="font-display text-2xl text-ink-primary">{value}</p>
-      <p className="text-[12px] text-ink-muted">{detail}</p>
+      <p className="text-[14px] text-ink-muted">{detail}</p>
     </Card>
   );
 }

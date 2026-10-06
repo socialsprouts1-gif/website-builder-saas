@@ -76,14 +76,14 @@ export function CookiePreferences() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-6 sm:py-14">
-      <Link href="/legal" className="text-[13px] text-ink-muted transition hover:text-ink-primary">
+      <Link href="/legal" className="text-[15px] text-ink-muted transition hover:text-ink-primary">
         ← All policies
       </Link>
 
       <h1 className="mt-5 font-display text-[34px] leading-tight text-ink-primary sm:text-[40px]">
         Cookie Preferences
       </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-ink-secondary">
+      <p className="mt-3 text-[17px] leading-relaxed text-ink-secondary">
         There are no toggles on this page, because there is nothing here worth pretending about:
         Lumen sets the cookies it needs to keep you signed in, and no others.
       </p>
@@ -92,10 +92,10 @@ export function CookiePreferences() {
         {CATEGORIES.map((category) => (
           <div key={category.name} className="rounded-card border border-hairline bg-raised p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-[15px] text-ink-primary">{category.name}</p>
+              <p className="text-[17px] text-ink-primary">{category.name}</p>
               <span
                 className={cn(
-                  'rounded-pill border px-2.5 py-0.5 text-[11px] uppercase tracking-[0.1em]',
+                  'rounded-pill border px-2.5 py-0.5 text-[13px] uppercase tracking-[0.1em]',
                   category.state === 'always-on'
                     ? 'border-accent/45 bg-accent-soft text-accent'
                     : 'border-hairline text-ink-muted',
@@ -104,25 +104,25 @@ export function CookiePreferences() {
                 {category.state === 'always-on' ? 'Always on' : 'None used'}
               </span>
             </div>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-ink-muted">{category.detail}</p>
+            <p className="mt-2 text-[15.5px] leading-relaxed text-ink-muted">{category.detail}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-10 rounded-card border border-hairline p-4 sm:p-5">
-        <p className="text-[15px] text-ink-primary">What this browser is holding for Lumen</p>
+        <p className="text-[17px] text-ink-primary">What this browser is holding for Lumen</p>
 
         {stored === null ? (
-          <p className="mt-2 text-[13.5px] text-ink-muted">Checking…</p>
+          <p className="mt-2 text-[15.5px] text-ink-muted">Checking…</p>
         ) : stored.length === 0 ? (
-          <p className="mt-2 text-[13.5px] text-ink-muted">
+          <p className="mt-2 text-[15.5px] text-ink-muted">
             {cleared ? 'Cleared. Nothing of ours is left in this browser’s storage.' : 'Nothing.'}
           </p>
         ) : (
           <>
             <ul className="mt-3 space-y-1.5">
               {stored.map((key) => (
-                <li key={key} className="font-mono text-[12.5px] text-ink-secondary">
+                <li key={key} className="font-mono text-[14.5px] text-ink-secondary">
                   {key}
                 </li>
               ))}
@@ -133,13 +133,13 @@ export function CookiePreferences() {
           </>
         )}
 
-        <p className="mt-4 text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="mt-4 text-[14.5px] leading-relaxed text-ink-muted">
           Signing out clears the session cookies. Clearing site data in your browser clears
           everything, and will sign you out.
         </p>
       </div>
 
-      <p className="mt-10 text-[13.5px] leading-relaxed text-ink-secondary">
+      <p className="mt-10 text-[15.5px] leading-relaxed text-ink-secondary">
         The full detail is in the{' '}
         <Link href="/legal/cookie-policy" className="text-accent hover:underline">
           Cookie Policy

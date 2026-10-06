@@ -62,7 +62,7 @@ export function Footer() {
         <div className="flex flex-wrap gap-10 sm:gap-14">
           {COLUMNS.map((column) => (
             <div key={column.title} className="space-y-3">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{column.title}</p>
+              <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">{column.title}</p>
               <ul className="space-y-2">
                 {column.links.map((link) => (
                   <li key={link.href}>
@@ -77,7 +77,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-hairline">
-        <div className="mx-auto flex max-w-shell flex-col gap-2 px-6 py-5 text-[12px] text-ink-muted sm:flex-row sm:justify-between">
+        <div className="mx-auto flex max-w-shell flex-col gap-2 px-6 py-5 text-[14px] text-ink-muted sm:flex-row sm:justify-between">
           <span>© {new Date().getFullYear()} Lumen. Pricing in INR, billed monthly or yearly.</span>
           <span className="flex flex-wrap gap-x-4 gap-y-1">
             <Link href="/legal/cookie-preferences" className="transition hover:text-ink-primary">

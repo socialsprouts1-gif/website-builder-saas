@@ -116,22 +116,22 @@ export function LookPicker({
             <span className="block border-t border-hairline px-2.5 py-2">
               <span
                 className={cn(
-                  'block text-[12.5px]',
+                  'block text-[14.5px]',
                   applied === look.id ? 'text-accent' : 'text-ink-primary',
                 )}
               >
                 {busy === look.id ? 'Applying…' : applied === look.id ? `${look.name} ✓` : look.name}
               </span>
               {!compact ? (
-                <span className="mt-0.5 block text-[11px] leading-relaxed text-ink-muted">{look.note}</span>
+                <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ink-muted">{look.note}</span>
               ) : null}
             </span>
           </button>
         ))}
       </div>
 
-      {error ? <p className="text-[12px] text-[#e5735a]">{error}</p> : null}
-      <p className="text-[11px] leading-relaxed text-ink-muted">
+      {error ? <p className="text-[14px] text-[#e5735a]">{error}</p> : null}
+      <p className="text-[14.5px] leading-relaxed text-ink-muted">
         Only the styling changes — your words and pictures stay exactly as they are. Undo from version
         history.
       </p>

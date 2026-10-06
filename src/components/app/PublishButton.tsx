@@ -146,7 +146,7 @@ export function PublishButton({
         type="button"
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'rounded-pill px-3 py-1 text-[11px] uppercase tracking-[0.12em] transition',
+          'rounded-pill px-3 py-1 text-[13px] uppercase tracking-[0.12em] transition',
           published
             ? 'border border-accent/40 bg-accent-soft text-accent'
             : 'lumen-key',
@@ -172,10 +172,10 @@ export function PublishButton({
               <GlobeMark />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[13.5px] leading-tight text-ink-primary">
+              <p className="text-[15.5px] leading-tight text-ink-primary">
                 {showLink ? 'Your site is live' : 'Put this site on the internet'}
               </p>
-              <p className="mt-1 text-[11.5px] leading-relaxed text-ink-muted">
+              <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">
                 {showLink
                   ? 'Anyone with this link can open it. No domain needed.'
                   : 'You get a link you can send straight away.'}
@@ -185,7 +185,7 @@ export function PublishButton({
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close"
-              className="-mr-1 -mt-1 shrink-0 rounded-pill px-1.5 text-[16px] leading-none text-ink-muted transition hover:text-ink-primary"
+              className="-mr-1 -mt-1 shrink-0 rounded-pill px-1.5 text-[17.5px] leading-none text-ink-muted transition hover:text-ink-primary"
             >
               ×
             </button>
@@ -195,26 +195,26 @@ export function PublishButton({
             {showLink ? (
               <>
                 <div className="lumen-well rounded-[12px] border border-accent/25 px-3.5 py-3">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">Your link</p>
+                  <p className="text-[12px] uppercase tracking-[0.16em] text-ink-muted">Your link</p>
                   <a
                     href={url}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-1.5 block truncate text-[12.5px] text-accent underline decoration-accent/40 underline-offset-2"
+                    className="mt-1.5 block truncate text-[14.5px] text-accent underline decoration-accent/40 underline-offset-2"
                   >
                     {url.replace(/^https?:\/\//, '')}
                   </a>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={copy} className="lumen-key rounded-pill px-4 py-2 text-[12.5px]">
+                  <button type="button" onClick={copy} className="lumen-key rounded-pill px-4 py-2 text-[14.5px]">
                     {copied ? 'Copied ✓' : 'Copy link'}
                   </button>
                   <a
                     href={url}
                     target="_blank"
                     rel="noreferrer"
-                    className="lumen-raise rounded-pill border border-hairline px-4 py-2 text-center text-[12.5px] text-ink-secondary"
+                    className="lumen-raise rounded-pill border border-hairline px-4 py-2 text-center text-[14.5px] text-ink-secondary"
                   >
                     Open ↗
                   </a>
@@ -225,7 +225,7 @@ export function PublishButton({
                     files on every request, so there is nothing to press to
                     push an edit out — and a button that did nothing would be
                     worse than this sentence. */}
-                <p className="rounded-[10px] border border-hairline bg-raised px-3 py-2.5 text-[11.5px] leading-relaxed text-ink-muted">
+                <p className="rounded-[10px] border border-hairline bg-raised px-3 py-2.5 text-[14.5px] leading-relaxed text-ink-muted">
                   <span className="text-ink-secondary">Edits go live by themselves.</span> Every change you
                   make in chat or the editor is on this link the moment it saves — there is nothing to
                   publish a second time.
@@ -239,19 +239,19 @@ export function PublishButton({
                     <TagMark />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[12.5px] text-ink-primary">Use your own domain</span>
-                    <span className="mt-0.5 block text-[11px] leading-relaxed text-ink-muted">
+                    <span className="block text-[14.5px] text-ink-primary">Use your own domain</span>
+                    <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ink-muted">
                       Point one you own at this site, or buy one
                     </span>
                   </span>
-                  <span className="shrink-0 text-[12px] text-ink-muted">→</span>
+                  <span className="shrink-0 text-[14px] text-ink-muted">→</span>
                 </a>
 
                 <div className="flex items-center justify-between gap-3 border-t border-hairline pt-3">
                   <button
                     type="button"
                     onClick={() => setEditing(true)}
-                    className="text-[11.5px] text-ink-muted transition hover:text-ink-primary"
+                    className="text-[13.5px] text-ink-muted transition hover:text-ink-primary"
                   >
                     Change address or icon
                   </button>
@@ -259,7 +259,7 @@ export function PublishButton({
                     type="button"
                     onClick={() => send('unpublish')}
                     disabled={busy !== null}
-                    className="text-[11.5px] text-ink-muted transition hover:text-[#e5735a] disabled:opacity-40"
+                    className="text-[13.5px] text-ink-muted transition hover:text-[#e5735a] disabled:opacity-40"
                   >
                     {busy === 'unpublish' ? 'Taking down…' : 'Take offline'}
                   </button>
@@ -272,11 +272,11 @@ export function PublishButton({
                       deployment's hostname is sixty characters long and eats
                       the box it is supposed to be labelling. */}
                   <span className="mb-1.5 flex items-baseline justify-between gap-2">
-                    <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                    <span className="shrink-0 text-[12px] uppercase tracking-[0.16em] text-ink-muted">
                       Address
                     </span>
                     <span
-                      className="min-w-0 truncate text-[10.5px] text-ink-muted"
+                      className="min-w-0 truncate text-[12.5px] text-ink-muted"
                       dir="rtl"
                       title={url || undefined}
                     >
@@ -289,11 +289,11 @@ export function PublishButton({
                       onChange={(event) => setSlug(event.target.value)}
                       placeholder="hairtie-bandra"
                       aria-label="Public address"
-                      className="w-full min-w-0 flex-1 bg-transparent px-3 py-2 text-[13px] text-ink-primary outline-none"
+                      className="w-full min-w-0 flex-1 bg-transparent px-3 py-2 text-[15px] text-ink-primary outline-none"
                     />
                   </span>
                   {address && address !== slug ? (
-                    <span className="mt-1.5 block text-[11px] text-ink-muted">
+                    <span className="mt-1.5 block text-[13px] text-ink-muted">
                       Published as {address}
                     </span>
                   ) : null}
@@ -307,19 +307,19 @@ export function PublishButton({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={favicon} alt="" className="h-6 w-6 object-contain" />
                     ) : (
-                      <span className="text-[9px] uppercase tracking-[0.1em] text-ink-muted">ico</span>
+                      <span className="text-[11px] uppercase tracking-[0.1em] text-ink-muted">ico</span>
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[12.5px] text-ink-primary">
+                    <span className="block text-[14.5px] text-ink-primary">
                       Tab icon <span className="text-ink-muted">— optional</span>
                     </span>
-                    <span className="mt-0.5 block text-[11px] leading-relaxed text-ink-muted">
+                    <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ink-muted">
                       A square PNG or SVG, under 512KB.
                     </span>
                   </span>
                   <label className="shrink-0">
-                    <span className="lumen-raise cursor-pointer rounded-pill border border-hairline px-3 py-1.5 text-[11.5px] text-ink-secondary">
+                    <span className="lumen-raise cursor-pointer rounded-pill border border-hairline px-3 py-1.5 text-[13.5px] text-ink-secondary">
                       {busy === 'favicon' ? 'Uploading…' : favicon ? 'Replace' : 'Upload'}
                     </span>
                     <input
@@ -338,7 +338,7 @@ export function PublishButton({
                   type="button"
                   onClick={() => send('publish')}
                   disabled={busy !== null || !address}
-                  className="lumen-key w-full rounded-pill px-4 py-2.5 text-[13px] disabled:opacity-40"
+                  className="lumen-key w-full rounded-pill px-4 py-2.5 text-[15px] disabled:opacity-40"
                 >
                   {busy === 'publish'
                     ? 'Publishing…'
@@ -351,7 +351,7 @@ export function PublishButton({
                   <button
                     type="button"
                     onClick={() => setEditing(false)}
-                    className="w-full text-[11.5px] text-ink-muted transition hover:text-ink-secondary"
+                    className="w-full text-[13.5px] text-ink-muted transition hover:text-ink-secondary"
                   >
                     Back to the link
                   </button>
@@ -360,7 +360,7 @@ export function PublishButton({
             )}
 
             {error ? (
-              <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[11.5px] leading-relaxed text-[#e5735a]">
+              <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[14.5px] leading-relaxed text-[#e5735a]">
                 {error}
               </p>
             ) : null}

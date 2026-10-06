@@ -79,7 +79,7 @@ export function ConnectorGrid({ cards, projectId }: { cards: ConnectorCard[]; pr
         </div>
 
         <div className="space-y-0.5">
-          <p className="px-3 pb-1.5 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+          <p className="px-3 pb-1.5 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
             Categories
           </p>
           {categories.map(([category, count]) => (
@@ -98,7 +98,7 @@ export function ConnectorGrid({ cards, projectId }: { cards: ConnectorCard[]; pr
 
       <div>
         {visible.length === 0 ? (
-          <p className="rounded-card border border-dashed border-hairline px-4 py-12 text-center text-[13px] text-ink-muted">
+          <p className="rounded-card border border-dashed border-hairline px-4 py-12 text-center text-[15px] text-ink-muted">
             {query.trim() ? `Nothing matches “${query.trim()}”.` : 'Nothing here yet.'}
           </p>
         ) : (
@@ -137,12 +137,12 @@ function RailRow({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center justify-between gap-2 rounded-[9px] px-3 py-2 text-left text-[13px] transition',
+        'flex w-full items-center justify-between gap-2 rounded-[9px] px-3 py-2 text-left text-[15px] transition',
         active ? 'bg-accent-soft text-accent' : 'text-ink-secondary hover:bg-white/5 hover:text-ink-primary',
       )}
     >
       <span className="truncate">{label}</span>
-      <span className={cn('shrink-0 text-[12px]', active ? 'text-accent' : 'text-ink-muted')}>{count}</span>
+      <span className={cn('shrink-0 text-[14px]', active ? 'text-accent' : 'text-ink-muted')}>{count}</span>
     </button>
   );
 }
@@ -152,8 +152,8 @@ function RequestConnector() {
 
   return (
     <div className="rounded-card border border-hairline bg-raised p-4">
-      <p className="text-[13px] text-ink-primary">Missing a connector?</p>
-      <p className="mt-1 text-[11.5px] leading-relaxed text-ink-muted">
+      <p className="text-[15px] text-ink-primary">Missing a connector?</p>
+      <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">
         Adding one is a registry entry, not a rebuild — tell us which and it can ship quickly.
       </p>
       <Button
@@ -229,13 +229,13 @@ function ConnectorTile({
         <ConnectorMark provider={card.provider} name={card.name} connected={connected} />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13.5px] text-ink-primary">{card.name}</p>
-          <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-ink-muted">{card.summary}</p>
+          <p className="truncate text-[15.5px] text-ink-primary">{card.name}</p>
+          <p className="mt-0.5 line-clamp-2 text-[14px] leading-relaxed text-ink-muted">{card.summary}</p>
         </div>
       </div>
 
       {!card.configured ? (
-        <p className="mt-auto pt-3 text-[11.5px] text-ink-muted">
+        <p className="mt-auto pt-3 text-[13.5px] text-ink-muted">
           Not configured on this deployment — add its client ID and secret.
         </p>
       ) : (
@@ -298,7 +298,7 @@ function ConnectorTile({
       ) : null}
 
       {message ? (
-        <p className={cn('mt-3 text-[12px]', failed ? 'text-[#e5735a]' : 'text-accent')}>{message}</p>
+        <p className={cn('mt-3 text-[14px]', failed ? 'text-[#e5735a]' : 'text-accent')}>{message}</p>
       ) : null}
     </div>
   );

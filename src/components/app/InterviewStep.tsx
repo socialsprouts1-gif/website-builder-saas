@@ -114,7 +114,7 @@ export function InterviewStep({
       skipAllLabel="Skip the questions and build"
     >
       {!onMedia && question.kind === 'multi' ? (
-        <p className="-mt-3 text-[11.5px] text-ink-muted">Pick as many as apply.</p>
+        <p className="-mt-3 text-[13.5px] text-ink-muted">Pick as many as apply.</p>
       ) : null}
 
       {onMedia ? <div>{media}</div> : null}
@@ -138,7 +138,7 @@ export function InterviewStep({
               >
                 <span
                   className={cn(
-                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center border text-[9px] font-bold',
+                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center border text-[11px] font-bold',
                     question.kind === 'multi' ? 'rounded-[4px]' : 'rounded-pill',
                     active ? 'border-accent bg-accent text-accent-ink' : 'border-white/25',
                   )}
@@ -146,9 +146,9 @@ export function InterviewStep({
                   {active ? '✓' : ''}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[13.5px] text-ink-primary">{option.label}</span>
+                  <span className="block text-[15.5px] text-ink-primary">{option.label}</span>
                   {option.hint ? (
-                    <span className="mt-0.5 block text-[11.5px] leading-relaxed text-ink-muted">
+                    <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ink-muted">
                       {option.hint}
                     </span>
                   ) : null}

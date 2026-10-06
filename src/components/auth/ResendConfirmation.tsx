@@ -34,7 +34,7 @@ export function ResendConfirmation({ email }: { email: string }) {
 
   if (state === 'sent') {
     return (
-      <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3 text-[13px] leading-relaxed text-ink-primary">
+      <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3 text-[15px] leading-relaxed text-ink-primary">
         Sent again to {email}. It can take a couple of minutes.
       </p>
     );
@@ -45,7 +45,7 @@ export function ResendConfirmation({ email }: { email: string }) {
       <Button variant="secondary" className="w-full" onClick={() => void resend()} disabled={state === 'sending'}>
         {state === 'sending' ? 'Sending…' : 'Send it again'}
       </Button>
-      {error ? <p className="text-[12.5px] text-[#e5a15a]">{error}</p> : null}
+      {error ? <p className="text-[14.5px] text-[#e5a15a]">{error}</p> : null}
     </div>
   );
 }

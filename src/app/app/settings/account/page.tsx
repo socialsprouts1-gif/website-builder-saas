@@ -27,7 +27,7 @@ export default async function AccountPage() {
       </Card>
 
       <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">Sign-in</h2>
-      <Card className="space-y-2 text-[13px] text-ink-secondary">
+      <Card className="space-y-2 text-[15px] text-ink-secondary">
         <p>
           Signed in with <span className="text-ink-primary">{providers.join(', ')}</span>.
         </p>

@@ -35,14 +35,14 @@ export function MediaDrop({
         <button
           type="button"
           onClick={() => logoInput.current?.click()}
-          className="lumen-raise rounded-pill border border-hairline px-3.5 py-2 text-[12.5px] text-ink-secondary transition hover:border-accent/45 hover:text-ink-primary"
+          className="lumen-raise rounded-pill border border-hairline px-3.5 py-2 text-[14.5px] text-ink-secondary transition hover:border-accent/45 hover:text-ink-primary"
         >
           ✦ Upload logo
         </button>
         <button
           type="button"
           onClick={() => photoInput.current?.click()}
-          className="lumen-raise rounded-pill border border-hairline px-3.5 py-2 text-[12.5px] text-ink-secondary transition hover:border-accent/45 hover:text-ink-primary"
+          className="lumen-raise rounded-pill border border-hairline px-3.5 py-2 text-[14.5px] text-ink-secondary transition hover:border-accent/45 hover:text-ink-primary"
         >
           🖼 Upload photos
         </button>
@@ -88,7 +88,7 @@ export function MediaDrop({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={item.url} alt={item.label} className="h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full w-full items-center justify-center bg-raised px-1 text-center text-[9.5px] leading-tight text-ink-muted">
+                <span className="flex h-full w-full items-center justify-center bg-raised px-1 text-center text-[11.5px] leading-tight text-ink-muted">
                   {item.error ? 'failed' : 'uploading…'}
                 </span>
               )}
@@ -96,7 +96,7 @@ export function MediaDrop({
                 type="button"
                 onClick={() => onRemove(item.id)}
                 aria-label={`Remove ${item.label}`}
-                className="absolute right-0 top-0 bg-black/65 px-1.5 text-[11px] leading-5 text-white"
+                className="absolute right-0 top-0 bg-black/65 px-1.5 text-[13px] leading-5 text-white"
               >
                 ×
               </button>

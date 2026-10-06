@@ -62,7 +62,7 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
 
         <div className="mx-auto max-w-shell px-6 pt-10">
           <nav aria-label="Breadcrumb">
-            <ol className="flex flex-wrap items-center gap-2 text-[12.5px] text-ink-muted">
+            <ol className="flex flex-wrap items-center gap-2 text-[14.5px] text-ink-muted">
               <li>
                 <Link href="/templates" className="transition hover:text-ink-primary">
                   Templates
@@ -82,8 +82,8 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
               <h1 className="font-display text-[38px] leading-tight text-ink-primary sm:text-[50px]">
                 {blueprint.name}
               </h1>
-              <p className="mt-3 text-[15px] leading-relaxed text-ink-secondary">{blueprint.note}</p>
-              <p className="mt-4 text-[13px] text-ink-muted">
+              <p className="mt-3 text-[17px] leading-relaxed text-ink-secondary">{blueprint.note}</p>
+              <p className="mt-4 text-[15px] text-ink-muted">
                 {card.industryLabel} · <span className="capitalize">{blueprint.style}</span> ·{' '}
                 {card.sections} sections · {card.pages} pages · built around “{blueprint.action}”
               </p>
@@ -99,7 +99,7 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
 
       <section className="mx-auto max-w-shell px-6 pb-16">
         <TemplatePreview id={blueprint.id} pages={visible.map((page) => ({ path: page.path, title: page.title }))} />
-        <p className="mt-3 text-[12.5px] text-ink-muted">
+        <p className="mt-3 text-[14.5px] text-ink-muted">
           A live render of the template, not a screenshot. The business in it is a stand-in — your words and
           your colours replace it, and the structure you see is the structure you get.
         </p>
@@ -108,22 +108,22 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
       <section className="border-t border-hairline">
         <div className="mx-auto grid max-w-shell gap-12 px-6 py-16 lg:grid-cols-2">
           <div>
-            <h2 className="font-display text-[26px] text-ink-primary sm:text-[32px]">What is on each page</h2>
-            <p className="mt-3 text-[14px] leading-relaxed text-ink-secondary">
+            <h2 className="font-display text-[27px] text-ink-primary sm:text-[32px]">What is on each page</h2>
+            <p className="mt-3 text-[16px] leading-relaxed text-ink-secondary">
               This is the part Lumen will not improvise. The model writes your content into these sections;
               it does not get to decide that your clinic does not need a treatments page.
             </p>
             <div className="mt-8 space-y-6">
               {visible.map((page) => (
                 <div key={page.path}>
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+                  <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">
                     {page.title} · {page.sections.length} sections
                   </p>
                   <ol className="mt-2 flex flex-wrap gap-1.5">
                     {page.sections.map((kind, index) => (
                       <li
                         key={`${kind}-${index}`}
-                        className="rounded-pill border border-hairline px-2.5 py-1 text-[11.5px] capitalize text-ink-secondary"
+                        className="rounded-pill border border-hairline px-2.5 py-1 text-[13.5px] capitalize text-ink-secondary"
                       >
                         {kind === 'beforeafter' ? 'before & after' : kind}
                       </li>
@@ -135,12 +135,12 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
           </div>
 
           <div>
-            <h2 className="font-display text-[26px] text-ink-primary sm:text-[32px]">Its design system</h2>
-            <p className="mt-3 text-[14px] leading-relaxed text-ink-secondary">
+            <h2 className="font-display text-[27px] text-ink-primary sm:text-[32px]">Its design system</h2>
+            <p className="mt-3 text-[16px] leading-relaxed text-ink-secondary">
               Decided together rather than picked one at a time, which is the difference between a design
               and a colour scheme. A luxury hotel and a children’s school do not get the same one.
             </p>
-            <dl className="mt-8 divide-y divide-hairline border-y border-hairline text-[13.5px]">
+            <dl className="mt-8 divide-y divide-hairline border-y border-hairline text-[15.5px]">
               {[
                 ['Headings', design.shape.fonts.display.split(',')[0].replace(/"/g, '')],
                 ['Body', design.shape.fonts.body.split(',')[0].replace(/"/g, '')],
@@ -158,12 +158,12 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
               ))}
             </dl>
 
-            <h3 className="mt-10 text-[15px] text-ink-primary">Suits</h3>
+            <h3 className="mt-10 text-[17px] text-ink-primary">Suits</h3>
             <ul className="mt-3 flex flex-wrap gap-1.5">
               {blueprint.businessTypes.map((type) => (
                 <li
                   key={type}
-                  className="rounded-pill border border-hairline px-3 py-1.5 text-[12.5px] text-ink-secondary"
+                  className="rounded-pill border border-hairline px-3 py-1.5 text-[14.5px] text-ink-secondary"
                 >
                   {type}
                 </li>
@@ -176,7 +176,7 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
       {related.length > 0 ? (
         <section className="border-t border-hairline">
           <div className="mx-auto max-w-shell px-6 py-16">
-            <h2 className="font-display text-[22px] text-ink-primary sm:text-[26px]">
+            <h2 className="font-display text-[23px] text-ink-primary sm:text-[27px]">
               Other {card.industryLabel.toLowerCase()} templates
             </h2>
             <ul className="mt-6 flex flex-wrap gap-2">
@@ -184,7 +184,7 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
                 <li key={entry.id}>
                   <Link
                     href={`/templates/${entry.id}`}
-                    className="inline-flex rounded-pill border border-hairline px-3.5 py-1.5 text-[13px] text-ink-secondary transition hover:border-white/25 hover:text-ink-primary"
+                    className="inline-flex rounded-pill border border-hairline px-3.5 py-1.5 text-[15px] text-ink-secondary transition hover:border-white/25 hover:text-ink-primary"
                   >
                     {entry.name} — <span className="ml-1 capitalize text-ink-muted">{entry.style}</span>
                   </Link>

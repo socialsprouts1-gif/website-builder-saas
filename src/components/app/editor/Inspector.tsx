@@ -126,7 +126,7 @@ export function Inspector({
   if (!selection) {
     return (
       <div className="p-4">
-        <p className="rounded-card border border-dashed border-hairline px-4 py-10 text-center text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="rounded-card border border-dashed border-hairline px-4 py-10 text-center text-[14.5px] leading-relaxed text-ink-muted">
           Click anything in the page to edit it, or pick a block on the left.
         </p>
       </div>
@@ -136,11 +136,11 @@ export function Inspector({
   return (
     <div className="space-y-5 p-4">
       <div>
-        <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Selected</p>
-        <p className="mt-1 truncate text-[13px] text-ink-primary">{selection.label}</p>
+        <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">Selected</p>
+        <p className="mt-1 truncate text-[15px] text-ink-primary">{selection.label}</p>
         {/* The tag and the internal id were on this line. Neither is anything
             the owner of a hair salon needs, or can do anything with. */}
-        <p className="mt-0.5 text-[11px] text-ink-muted">{describeKind(selection)}</p>
+        <p className="mt-0.5 text-[13px] text-ink-muted">{describeKind(selection)}</p>
       </div>
 
       {selection.kind === 'text' || selection.kind === 'link' ? (
@@ -197,7 +197,7 @@ export function Inspector({
       ) : null}
 
       <div className="space-y-3 border-t border-hairline pt-4">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Typography</p>
+        <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">Typography</p>
 
         <Field label="Size">
           <Select
@@ -230,7 +230,7 @@ export function Inspector({
         </Field>
 
         <div>
-          <span className="mb-1.5 block text-[13px] text-ink-secondary">Alignment</span>
+          <span className="mb-1.5 block text-[15px] text-ink-secondary">Alignment</span>
           <div className="flex gap-1">
             {ALIGNMENTS.map(([value, label]) => (
               <button
@@ -238,7 +238,7 @@ export function Inspector({
                 type="button"
                 onClick={() => onStyle({ 'text-align': value })}
                 className={cn(
-                  'flex-1 rounded-[8px] border border-hairline px-2 py-1.5 text-[12px] transition',
+                  'flex-1 rounded-[8px] border border-hairline px-2 py-1.5 text-[14px] transition',
                   selection.style.textAlign === value
                     ? 'border-accent/45 bg-accent-soft text-accent'
                     : 'text-ink-secondary hover:text-ink-primary',
@@ -281,7 +281,7 @@ export function Inspector({
                 if (event.key === 'Escape') setAskRewrite(false);
               }}
               placeholder="Optional: shorter, warmer, mention weekend batches…"
-              className="lumen-well w-full rounded-[9px] border border-hairline px-2.5 py-2 text-[12.5px] text-ink-primary outline-none focus:border-accent/50"
+              className="lumen-well w-full rounded-[9px] border border-hairline px-2.5 py-2 text-[14.5px] text-ink-primary outline-none focus:border-accent/50"
             />
             <div className="flex gap-2">
               <Button size="sm" className="flex-1" onClick={() => void rewrite()} disabled={rewriting}>
@@ -296,7 +296,7 @@ export function Inspector({
                 Cancel
               </Button>
             </div>
-            <p className="text-[11px] leading-relaxed text-ink-muted">
+            <p className="text-[14.5px] leading-relaxed text-ink-muted">
               Only this section changes. Saved on its own, so it undoes on its own.
             </p>
           </div>
@@ -313,7 +313,7 @@ export function Inspector({
         )}
       </div>
 
-      {error ? <p className="text-[12px] text-[#e5735a]">{error}</p> : null}
+      {error ? <p className="text-[14px] text-[#e5735a]">{error}</p> : null}
     </div>
   );
 }
@@ -405,10 +405,10 @@ function ColourRow({
 }) {
   return (
     <div>
-      <span className="mb-1.5 block text-[13px] text-ink-secondary">{label}</span>
+      <span className="mb-1.5 block text-[15px] text-ink-secondary">{label}</span>
       <div className="flex flex-wrap gap-1.5">
         {palette.length === 0 ? (
-          <span className="text-[11.5px] text-ink-muted">Loading the page palette…</span>
+          <span className="text-[13.5px] text-ink-muted">Loading the page palette…</span>
         ) : null}
         {palette.map((token) => (
           <button
@@ -426,7 +426,7 @@ function ColourRow({
           type="button"
           title="Clear"
           onClick={() => onPick('')}
-          className="h-7 rounded-[7px] border border-hairline px-2 text-[11px] text-ink-muted transition hover:text-ink-primary"
+          className="h-7 rounded-[7px] border border-hairline px-2 text-[13px] text-ink-muted transition hover:text-ink-primary"
         >
           clear
         </button>

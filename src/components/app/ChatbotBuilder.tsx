@@ -108,7 +108,7 @@ export function ChatbotBuilder({
         <Textarea rows={6} value={faq} onChange={(event) => setFaq(event.target.value)} maxLength={20_000} />
       </Field>
 
-      <label className="flex items-center gap-3 text-[13px] text-ink-secondary">
+      <label className="flex items-center gap-3 text-[15px] text-ink-secondary">
         <input
           type="checkbox"
           checked={isActive}
@@ -123,22 +123,22 @@ export function ChatbotBuilder({
       </Button>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
       {notice ? (
-        <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[13px] text-accent">
+        <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[15px] text-accent">
           {notice}
         </p>
       ) : null}
 
       {snippet ? (
         <div className="space-y-3 rounded-card border border-hairline bg-raised p-4">
-          <p className="text-[13px] text-ink-primary">
+          <p className="text-[15px] text-ink-primary">
             {isActive ? 'It is already on your website' : 'Switch it on to put it on your website'}
           </p>
-          <p className="text-[12.5px] leading-relaxed text-ink-muted">
+          <p className="text-[14.5px] leading-relaxed text-ink-muted">
             {isActive
               ? 'Lumen puts the chat bubble on your site for you — on the preview and on your published address. There is nothing to paste and no code to touch.'
               : 'Tick “Assistant is live on the site” above and save. Lumen adds the chat bubble to your site itself.'}
@@ -149,16 +149,16 @@ export function ChatbotBuilder({
               and pasting a script tag is not something to ask of someone who
               came here to avoid code. */}
           <details className="group">
-            <summary className="cursor-pointer list-none text-[12px] text-ink-muted transition hover:text-ink-secondary">
+            <summary className="cursor-pointer list-none text-[14px] text-ink-muted transition hover:text-ink-secondary">
               <span className="group-open:hidden">Have another website? Add it there too →</span>
               <span className="hidden group-open:inline">Adding it to another website</span>
             </summary>
             <div className="mt-3 space-y-2">
-              <p className="text-[12px] text-ink-muted">
+              <p className="text-[14px] text-ink-muted">
                 Paste this once before the closing &lt;/body&gt; tag of any site you already have —
                 WordPress, Wix, Shopify, anything.
               </p>
-              <pre className="overflow-x-auto rounded-[8px] border border-hairline bg-[var(--bg-base-deep)] p-3 font-mono text-[11.5px] text-ink-secondary">
+              <pre className="overflow-x-auto rounded-[8px] border border-hairline bg-[var(--bg-base-deep)] p-3 font-mono text-[13.5px] text-ink-secondary">
                 {snippet}
               </pre>
               <Button size="sm" variant="secondary" onClick={copySnippet}>

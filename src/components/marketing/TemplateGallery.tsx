@@ -57,7 +57,7 @@ export function TemplateGallery({ templates, signedIn }: { templates: TemplateCa
       </div>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-center text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-center text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
@@ -78,7 +78,7 @@ export function TemplateGallery({ templates, signedIn }: { templates: TemplateCa
                     frameHeight={625}
                   />
                 ) : (
-                  <div className="flex h-[190px] items-center justify-center text-[12px] text-ink-muted">
+                  <div className="flex h-[190px] items-center justify-center text-[14px] text-ink-muted">
                     Preview coming soon
                   </div>
                 )}
@@ -86,7 +86,7 @@ export function TemplateGallery({ templates, signedIn }: { templates: TemplateCa
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-ink-primary">{template.name}</p>
-                  <p className="mt-0.5 line-clamp-2 text-[12.5px] text-ink-muted">
+                  <p className="mt-0.5 line-clamp-2 text-[14.5px] text-ink-muted">
                     {template.description ?? template.category}
                   </p>
                 </div>

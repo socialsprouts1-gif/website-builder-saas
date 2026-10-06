@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <AdminTab href="/admin/errors" label="Errors" />
         </nav>
 
-        <Link href="/app" className="ml-auto text-[13px] text-ink-muted transition hover:text-ink-primary">
+        <Link href="/app" className="ml-auto text-[15px] text-ink-muted transition hover:text-ink-primary">
           ← Back to app
         </Link>
       </header>
@@ -32,7 +32,7 @@ function AdminTab({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="rounded-pill px-3.5 py-1.5 text-[13px] text-ink-secondary transition hover:bg-white/5 hover:text-ink-primary"
+      className="rounded-pill px-3.5 py-1.5 text-[15px] text-ink-secondary transition hover:bg-white/5 hover:text-ink-primary"
     >
       {label}
     </Link>

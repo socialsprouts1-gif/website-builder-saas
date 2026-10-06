@@ -109,7 +109,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-6 sm:py-10">
       <h1 className="font-display text-2xl text-ink-primary">Shop</h1>
-      <p className="mt-1 text-[13.5px] leading-relaxed text-ink-muted">
+      <p className="mt-1 text-[15.5px] leading-relaxed text-ink-muted">
         What you sell, what has been ordered, and what delivery costs. Changes here show on the site
         immediately — nothing to rebuild or republish.
       </p>

@@ -59,13 +59,13 @@ export function CreditMeter({
   return (
     <div className={wrapper(variant)}>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{reading.label}</span>
+        <span className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">{reading.label}</span>
         {counted ? (
-          <span className={cn('text-[12.5px]', empty ? 'text-[#e5735a]' : 'text-ink-primary')}>
+          <span className={cn('text-[14.5px]', empty ? 'text-[#e5735a]' : 'text-ink-primary')}>
             {reading.left} / {reading.outOf}
           </span>
         ) : (
-          <span className="text-[12px] text-accent">Included</span>
+          <span className="text-[14px] text-accent">Included</span>
         )}
       </div>
 
@@ -78,7 +78,7 @@ export function CreditMeter({
         </div>
       ) : null}
 
-      <p className="mt-2 text-[11.5px] leading-relaxed text-ink-muted">
+      <p className="mt-2 text-[14.5px] leading-relaxed text-ink-muted">
         {empty ? (
           <>
             {refills(balance) ? (
@@ -121,10 +121,10 @@ function Shell({
   return (
     <div className={wrapper(variant)}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{label}</span>
-        {value ? <span className="text-[12px]">{value}</span> : null}
+        <span className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">{label}</span>
+        {value ? <span className="text-[14px]">{value}</span> : null}
       </div>
-      <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-muted">{children}</p>
+      <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-muted">{children}</p>
     </div>
   );
 }

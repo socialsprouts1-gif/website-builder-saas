@@ -80,7 +80,7 @@ export default async function LeadsPage({ params }: { params: Promise<{ id: stri
       <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-[28px] leading-tight text-ink-primary">Results</h1>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-secondary">
+          <p className="mt-1.5 text-[15px] leading-relaxed text-ink-secondary">
             Who came to {project.name}, and who got in touch.
           </p>
         </div>
@@ -94,25 +94,25 @@ export default async function LeadsPage({ params }: { params: Promise<{ id: stri
       ) : null}
 
       <div className="mb-8">
-        <h2 className="mb-3 font-display text-[19px] text-ink-primary">Enquiries</h2>
+        <h2 className="mb-3 font-display text-[20px] text-ink-primary">Enquiries</h2>
       </div>
 
       {error ? (
         // The table arrives in migration 0012, and saying which one is the
         // difference between a fixable problem and a broken page.
-        <p className="rounded-card border border-[#e5a15a]/30 bg-[#e5a15a]/10 px-4 py-3.5 text-[13px] leading-relaxed text-[#e5a15a]">
+        <p className="rounded-card border border-[#e5a15a]/30 bg-[#e5a15a]/10 px-4 py-3.5 text-[15px] leading-relaxed text-[#e5a15a]">
           The enquiries table is not in your database yet — it arrives in migration 0012, and the
           traffic and booking tables in 0013. Run supabase/setup.sql and this page fills in.
         </p>
       ) : !project.published_at ? (
-        <p className="rounded-card border border-hairline bg-raised px-4 py-3.5 text-[13px] leading-relaxed text-ink-muted">
+        <p className="rounded-card border border-hairline bg-raised px-4 py-3.5 text-[15px] leading-relaxed text-ink-muted">
           This site is not published yet, so nobody can send you anything. Publish it and the form on
           your contact page starts delivering here.
         </p>
       ) : (leads ?? []).length === 0 ? (
         <div className="rounded-card border border-hairline bg-raised px-4 py-5">
-          <p className="text-[13.5px] text-ink-primary">Nothing yet.</p>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-muted">
+          <p className="text-[15.5px] text-ink-primary">Nothing yet.</p>
+          <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-muted">
             When someone fills in the form on your site, it appears here — name, how to reach them, and
             what they wrote. Try it yourself:{' '}
             <Link
@@ -135,7 +135,7 @@ export default async function LeadsPage({ params }: { params: Promise<{ id: stri
       )}
 
       <div className="mt-10">
-        <h2 className="mb-3 font-display text-[19px] text-ink-primary">Get more of them</h2>
+        <h2 className="mb-3 font-display text-[20px] text-ink-primary">Get more of them</h2>
         <ReachSetup
           projectId={id}
           initial={{

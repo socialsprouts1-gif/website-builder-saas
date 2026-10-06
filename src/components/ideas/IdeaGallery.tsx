@@ -76,8 +76,8 @@ function IdeaCard({
       <div className="space-y-4 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[15px] text-ink-primary">{idea.business}</p>
-            <p className="mt-0.5 text-[12.5px] text-ink-muted">
+            <p className="text-[17px] text-ink-primary">{idea.business}</p>
+            <p className="mt-0.5 text-[14.5px] text-ink-muted">
               {idea.direction.name} — {idea.direction.mood.toLowerCase()}
             </p>
           </div>
@@ -88,7 +88,7 @@ function IdeaCard({
           {idea.sections.map((section) => (
             <li
               key={section}
-              className="rounded-pill border border-hairline px-2.5 py-1 text-[11.5px] text-ink-secondary"
+              className="rounded-pill border border-hairline px-2.5 py-1 text-[13.5px] text-ink-secondary"
             >
               {section}
             </li>
@@ -108,7 +108,7 @@ function IdeaCard({
           {industry ? (
             <Link
               href={`/for/${industry.slug}`}
-              className="text-[13px] text-ink-muted transition hover:text-ink-primary"
+              className="text-[15px] text-ink-muted transition hover:text-ink-primary"
             >
               More on {industry.name.toLowerCase()} →
             </Link>
@@ -117,10 +117,10 @@ function IdeaCard({
 
         {open ? (
           <div className="space-y-3 rounded-[10px] border border-hairline bg-[var(--bg-base-deep)] p-4">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-ink-muted">
+            <p className="text-[13px] uppercase tracking-[0.16em] text-ink-muted">
               What Lumen will be told
             </p>
-            <p className="text-[12.5px] leading-relaxed text-ink-secondary">{prompt}</p>
+            <p className="text-[14.5px] leading-relaxed text-ink-secondary">{prompt}</p>
             <button
               type="button"
               onClick={() => {
@@ -129,11 +129,11 @@ function IdeaCard({
                   setTimeout(() => setCopied(false), 1800);
                 });
               }}
-              className="text-[12px] text-accent transition hover:underline"
+              className="text-[14px] text-accent transition hover:underline"
             >
               {copied ? 'Copied' : 'Copy this prompt'}
             </button>
-            <p className="text-[11.5px] leading-relaxed text-ink-muted">
+            <p className="text-[14px] leading-relaxed text-ink-muted">
               Edit any of it on the next screen — swap the colours, the sections, the tone. This is a
               starting point, not a template you are stuck inside.
             </p>
@@ -182,7 +182,7 @@ function Swatches({ idea }: { idea: Idea }) {
 
 export function IdeaFooterNote() {
   return (
-    <p className="mt-12 text-center text-[13px] text-ink-secondary">
+    <p className="mt-12 text-center text-[15px] text-ink-secondary">
       None of these fit?{' '}
       <Link href="/app/new" className="text-accent hover:underline">
         Describe your business in a sentence

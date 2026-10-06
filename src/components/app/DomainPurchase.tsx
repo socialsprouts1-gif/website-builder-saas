@@ -96,12 +96,12 @@ export function DomainPurchase({
           {searching ? 'Searching…' : 'Search'}
         </Button>
       </div>
-      <p className="text-[12px] text-ink-muted">
+      <p className="text-[14px] text-ink-muted">
         Type the name only — Lumen checks every common ending for you.
       </p>
 
       {offers && free.length === 0 && taken.length > 0 ? (
-        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[13px] text-ink-secondary">
+        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[15px] text-ink-secondary">
           Every ending for that name is taken. Try adding your city or trade — “ironworks-pune”,
           “ironworksgym”.
         </p>
@@ -121,8 +121,8 @@ export function DomainPurchase({
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate font-mono text-[13.5px] text-ink-primary">{offer.domain}</p>
-                  <p className="mt-0.5 text-[11.5px] text-ink-muted">
+                  <p className="truncate font-mono text-[15.5px] text-ink-primary">{offer.domain}</p>
+                  <p className="mt-0.5 text-[13.5px] text-ink-muted">
                     {offer.price === undefined
                       ? 'Available — Vercel would not quote a price'
                       : `$${offer.price.toFixed(2)} for ${offer.years ?? 1} year${(offer.years ?? 1) > 1 ? 's' : ''}, renews yearly`}
@@ -145,7 +145,7 @@ export function DomainPurchase({
               </div>
 
               {confirming?.domain === offer.domain ? (
-                <p className="mt-3 border-t border-accent/20 pt-3 text-[12px] leading-relaxed text-ink-secondary">
+                <p className="mt-3 border-t border-accent/20 pt-3 text-[14px] leading-relaxed text-ink-secondary">
                   This charges <strong className="text-ink-primary">${offer.price?.toFixed(2)}</strong> to
                   the Vercel account you connected, registers{' '}
                   <strong className="text-ink-primary">{offer.domain}</strong> in your name and points it at
@@ -158,13 +158,13 @@ export function DomainPurchase({
       ) : null}
 
       {taken.length > 0 && free.length > 0 ? (
-        <p className="text-[11.5px] text-ink-muted">
+        <p className="text-[13.5px] text-ink-muted">
           Taken: {taken.map((offer) => offer.domain).join(', ')}
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}

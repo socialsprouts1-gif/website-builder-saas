@@ -13,9 +13,18 @@
   --accent: #d7ff3e;
   --accent-soft: rgba(215, 255, 62, 0.12);
   --accent-ink: #0a0a08;
-  --text-primary: #f5f3ec;
-  --text-secondary: #9c9c93;
-  --text-muted: #6b6b63;
+  --text-primary: #f7f5ef;
+  /*
+   * Lifted from #9c9c93 and #6b6b63.
+   *
+   * A reviewer said the app was hard to read, and the sizes were only half of
+   * it: secondary text sat at about 4.2:1 against this background and muted text
+   * at 2.6, which is below the contrast floor and well below what anybody reads
+   * comfortably on a phone in daylight. These clear 7:1 and 4.5:1 — the same
+   * grey hierarchy, far enough up that it still is one.
+   */
+  --text-secondary: #c3c2b8;
+  --text-muted: #96958c;
   --border-subtle: rgba(255, 255, 255, 0.08);
 
   --glow-cool: rgba(168, 205, 60, 0.15);
@@ -36,6 +45,15 @@ body {
 
 body {
   font-family: var(--font-sans), system-ui, sans-serif;
+  /*
+   * Not 400.
+   *
+   * Light grey text at 400 on a near-black background is the combination that
+   * looks elegant on a designer's monitor and thin on everybody else's phone.
+   * 450 is barely a change in shape and a large one in whether the words hold
+   * together; the font is variable, so it costs nothing to load.
+   */
+  font-weight: 450;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

@@ -71,7 +71,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
         <TopNav signedIn={Boolean(user)} />
 
         <nav aria-label="Breadcrumb" className="mx-auto max-w-shell px-6 pt-10">
-          <ol className="flex flex-wrap items-center gap-2 text-[12.5px] text-ink-muted">
+          <ol className="flex flex-wrap items-center gap-2 text-[14.5px] text-ink-muted">
             <li>
               <Link href="/" className="transition hover:text-ink-primary">
                 Lumen
@@ -92,7 +92,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
           <h1 className="max-w-3xl font-display text-[38px] leading-[1.08] tracking-[-0.02em] text-ink-primary sm:text-[54px]">
             {industry.h1}
           </h1>
-          <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-ink-secondary sm:text-base">
+          <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-ink-secondary sm:text-base">
             {industry.intro}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -101,7 +101,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
               See what it costs
             </ButtonLink>
           </div>
-          <p className="mt-4 text-[12.5px] text-ink-muted">
+          <p className="mt-4 text-[14.5px] text-ink-muted">
             Free to build and look at. No card until you want your own domain.
           </p>
         </section>
@@ -109,7 +109,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
 
       <section className="mx-auto max-w-shell px-6 pb-20">
         <MockFrame idea={idea} />
-        <p className="mt-3 text-[12.5px] text-ink-muted">
+        <p className="mt-3 text-[14.5px] text-ink-muted">
           {idea.business} — {idea.direction.name.toLowerCase()}. This is the design direction the
           prompt asks for, not a stock screenshot.
         </p>
@@ -118,16 +118,16 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
       <section className="border-t border-hairline">
         <div className="mx-auto grid max-w-shell gap-12 px-6 py-16 md:grid-cols-2">
           <div>
-            <h2 className="font-display text-[26px] text-ink-primary sm:text-[32px]">
+            <h2 className="font-display text-[27px] text-ink-primary sm:text-[32px]">
               What the site comes with
             </h2>
-            <p className="mt-3 text-[14.5px] leading-relaxed text-ink-secondary">
+            <p className="mt-3 text-[16.5px] leading-relaxed text-ink-secondary">
               Not a blank theme with sections you fill in later. Lumen writes each of these with real
               content for your business, and you change any of it afterwards by saying so in chat.
             </p>
             <ul className="mt-6 space-y-2.5">
               {idea.sections.map((section) => (
-                <li key={section} className="flex gap-3 text-[14.5px] text-ink-secondary">
+                <li key={section} className="flex gap-3 text-[16.5px] text-ink-secondary">
                   <span aria-hidden className="mt-[7px] h-[5px] w-[5px] shrink-0 rounded-full bg-accent" />
                   {section}
                 </li>
@@ -136,10 +136,10 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
           </div>
 
           <div>
-            <h2 className="font-display text-[26px] text-ink-primary sm:text-[32px]">
+            <h2 className="font-display text-[27px] text-ink-primary sm:text-[32px]">
               The design direction
             </h2>
-            <p className="mt-3 text-[14.5px] leading-relaxed text-ink-secondary">
+            <p className="mt-3 text-[16.5px] leading-relaxed text-ink-secondary">
               {idea.direction.name} — {idea.direction.mood.toLowerCase()}. The palette, the type
               pairing and the amount of motion are decided together, which is the difference between
               a design and a colour scheme.
@@ -161,7 +161,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
                 </span>
               ))}
             </div>
-            <dl className="mt-6 space-y-2 text-[13.5px]">
+            <dl className="mt-6 space-y-2 text-[15.5px]">
               <div className="flex gap-3">
                 <dt className="w-24 shrink-0 text-ink-muted">Navigation</dt>
                 <dd className="text-ink-secondary">{idea.nav.join(' · ')}</dd>
@@ -181,14 +181,14 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
 
       <section className="border-t border-hairline">
         <div className="mx-auto max-w-shell px-6 py-16">
-          <h2 className="font-display text-[26px] text-ink-primary sm:text-[32px]">
+          <h2 className="font-display text-[27px] text-ink-primary sm:text-[32px]">
             Questions {industry.name.toLowerCase()} ask
           </h2>
           <div className="mt-8 divide-y divide-hairline border-y border-hairline">
             {industry.faqs.map((faq) => (
               <div key={faq.question} className="py-6">
-                <h3 className="text-[15.5px] text-ink-primary">{faq.question}</h3>
-                <p className="mt-2 max-w-3xl text-[14.5px] leading-relaxed text-ink-secondary">
+                <h3 className="text-[17.5px] text-ink-primary">{faq.question}</h3>
+                <p className="mt-2 max-w-3xl text-[16.5px] leading-relaxed text-ink-secondary">
                   {faq.answer}
                 </p>
               </div>
@@ -199,7 +199,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
 
       <section className="border-t border-hairline">
         <div className="mx-auto max-w-shell px-6 py-16">
-          <h2 className="font-display text-[22px] text-ink-primary sm:text-[26px]">
+          <h2 className="font-display text-[23px] text-ink-primary sm:text-[27px]">
             Not quite your trade?
           </h2>
           <ul className="mt-6 flex flex-wrap gap-2">
@@ -207,14 +207,14 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
               <li key={entry.slug}>
                 <Link
                   href={`/for/${entry.slug}`}
-                  className="inline-flex rounded-pill border border-hairline px-3.5 py-1.5 text-[13px] text-ink-secondary transition hover:border-white/25 hover:text-ink-primary"
+                  className="inline-flex rounded-pill border border-hairline px-3.5 py-1.5 text-[15px] text-ink-secondary transition hover:border-white/25 hover:text-ink-primary"
                 >
                   {entry.name}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-[13.5px] text-ink-secondary">
+          <p className="mt-6 text-[15.5px] text-ink-secondary">
             None of these?{' '}
             <Link href="/app/new" className="text-accent hover:underline">
               Describe your business in a sentence

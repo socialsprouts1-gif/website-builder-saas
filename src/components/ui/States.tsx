@@ -34,16 +34,16 @@ export function EmptyState({
         className,
       )}
     >
-      <p className="text-[14px] text-ink-primary">{title}</p>
+      <p className="text-[16px] text-ink-primary">{title}</p>
       {message ? (
-        <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed text-ink-muted">{message}</p>
+        <p className="mx-auto mt-1.5 max-w-sm text-[15px] leading-relaxed text-ink-muted">{message}</p>
       ) : null}
       {action ? (
         <div className="mt-4 flex justify-center">
           {isLink(action) ? (
             <Link
               href={action.href}
-              className="rounded-pill bg-accent px-4 py-2 text-[13.5px] text-accent-ink transition hover:opacity-90"
+              className="rounded-pill bg-accent px-4 py-2 text-[15.5px] text-accent-ink transition hover:opacity-90"
             >
               {action.label}
             </Link>
@@ -74,10 +74,10 @@ export function NoResults({
 }) {
   return (
     <div className={cn('rounded-card border border-hairline px-5 py-10 text-center', className)}>
-      <p className="text-[14px] text-ink-primary">
+      <p className="text-[16px] text-ink-primary">
         {query ? <>Nothing matches “{query}”.</> : 'Nothing matches that.'}
       </p>
-      <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed text-ink-muted">
+      <p className="mx-auto mt-1.5 max-w-sm text-[15px] leading-relaxed text-ink-muted">
         Check the spelling, or try a shorter word.
       </p>
       {onClear ? <div className="mt-4 flex justify-center">{onClear}</div> : null}
@@ -96,7 +96,7 @@ export function LoadingState({
   return (
     <div className={cn('flex items-center justify-center gap-2.5 px-5 py-10', className)} role="status">
       <span aria-hidden className="h-1.5 w-1.5 animate-pulse-dot rounded-pill bg-accent" />
-      <span className="text-[13px] text-ink-muted">{label}</span>
+      <span className="text-[15px] text-ink-muted">{label}</span>
     </div>
   );
 }
@@ -139,7 +139,7 @@ export function ErrorState({
       )}
       role="alert"
     >
-      <p className="text-[13px] leading-relaxed text-[#e5735a]">{message}</p>
+      <p className="text-[15px] leading-relaxed text-[#e5735a]">{message}</p>
       {retry ? <div className="mt-3">{retry}</div> : null}
     </div>
   );
@@ -156,7 +156,7 @@ export function SuccessState({
   return (
     <p
       className={cn(
-        'rounded-card border border-accent/30 bg-accent-soft px-4 py-3 text-[13px] leading-relaxed text-ink-primary',
+        'rounded-card border border-accent/30 bg-accent-soft px-4 py-3 text-[15px] leading-relaxed text-ink-primary',
         className,
       )}
       role="status"

@@ -116,7 +116,7 @@ export function TemplateInterview({ template }: { template: SetupTemplate }) {
   }
 
   const problem = error ? (
-    <p className="rounded-card border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+    <p className="rounded-card border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
       {error}
     </p>
   ) : null;
@@ -124,7 +124,7 @@ export function TemplateInterview({ template }: { template: SetupTemplate }) {
   if (questions) {
     return (
       <div className="space-y-5">
-        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="rounded-[10px] border border-hairline bg-raised px-4 py-3 text-[14.5px] leading-relaxed text-ink-muted">
           <span className="text-ink-secondary">{template.name}, for:</span> {prompt.trim()}
         </p>
         <InterviewStep
@@ -177,7 +177,7 @@ export function TemplateInterview({ template }: { template: SetupTemplate }) {
         placeholder={placeholderFor(template)}
         aria-label="What the business is, and where"
         className={cn(
-          'w-full resize-y rounded-[10px] border border-hairline bg-[var(--bg-base-deep)] px-3.5 py-3 text-[14px]',
+          'w-full resize-y rounded-[10px] border border-hairline bg-[var(--bg-base-deep)] px-3.5 py-3 text-[16px]',
           'leading-relaxed text-ink-primary outline-none placeholder:text-ink-muted focus-visible:border-white/30',
         )}
       />

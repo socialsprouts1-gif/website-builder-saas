@@ -147,6 +147,16 @@ export const env = {
     } as Record<string, string | undefined>,
   },
 
+  /**
+   * Transactional email. Unset on a deployment that has not connected a
+   * provider, which is a feature nobody gets rather than a crash.
+   */
+  email: {
+    apiKey: read('RESEND_API_KEY'),
+    /** Must be an address on a domain verified with the provider. */
+    from: read('EMAIL_FROM') ?? 'Lumen <hello@lumensite.in>',
+  },
+
   encryptionKey: read('LUMEN_ENCRYPTION_KEY'),
 
   /**

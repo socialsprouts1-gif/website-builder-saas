@@ -128,14 +128,14 @@ export function GoogleImport() {
           {looking ? 'Looking…' : 'Find my business'}
         </Button>
       </div>
-      <p className="text-[12px] leading-relaxed text-ink-muted">
+      <p className="text-[14px] leading-relaxed text-ink-muted">
         On your Google listing press <strong className="text-ink-secondary">Share</strong> and copy the link.
         Typing the business name and town works too. Lumen reads your name, address, hours, photographs and
         reviews off the listing and writes the site from those — nothing to fill in.
       </p>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-3 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
@@ -144,13 +144,13 @@ export function GoogleImport() {
         <div className="lumen-panel space-y-5 rounded-card border border-accent/25 bg-raised p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">Is this you?</p>
-              <p className="mt-1 font-display text-[22px] leading-tight text-ink-primary">
+              <p className="text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">Is this you?</p>
+              <p className="mt-1 font-display text-[23px] leading-tight text-ink-primary">
                 {value('name') || place.name}
               </p>
               {/* Everything found, on one line — a summary to glance at rather
                   than four boxes to read through. */}
-              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">
+              <p className="mt-1 text-[14.5px] leading-relaxed text-ink-muted">
                 {[
                   place.category,
                   value('address') || null,
@@ -166,7 +166,7 @@ export function GoogleImport() {
               {place.services && place.services.length > 0 ? (
                 // Shown, because this is the part that decides whether the site
                 // is about this business or about a business like it.
-                <p className="mt-1.5 text-[12px] leading-relaxed text-ink-secondary">
+                <p className="mt-1.5 text-[14px] leading-relaxed text-ink-secondary">
                   {place.services.slice(0, 6).join(' · ')}
                   {place.services.length > 6 ? ' …' : ''}
                 </p>
@@ -183,10 +183,10 @@ export function GoogleImport() {
             // Said out loud, because a thin listing that looks fine produces a
             // website about nothing and no clue as to why.
             <div className="rounded-[10px] border border-[#e5a15a]/30 bg-[#e5a15a]/10 px-3.5 py-3">
-              <p className="text-[12.5px] leading-relaxed text-[#e5a15a]">
+              <p className="text-[14.5px] leading-relaxed text-[#e5a15a]">
                 Google gave up very little for this link. {place.note}
               </p>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
+              <p className="mt-1.5 text-[14px] leading-relaxed text-ink-muted">
                 Build it anyway and the site will be about your business but short on detail — or press{' '}
                 <strong className="text-ink-secondary">Something wrong? Fix it</strong> and type your address
                 and phone number first. Adding your own photos afterwards makes the biggest difference.
@@ -196,7 +196,7 @@ export function GoogleImport() {
 
           {place.photos.length > 0 ? (
             <div>
-              <p className="mb-2 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+              <p className="mb-2 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
                 {place.photos.length} photos — these go straight into the site
               </p>
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -216,12 +216,12 @@ export function GoogleImport() {
 
           {place.reviews.length > 0 ? (
             <div>
-              <p className="mb-2 text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+              <p className="mb-2 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
                 {place.reviews.length} reviews — quoted on the site, with names
               </p>
               <ul className="space-y-2">
                 {place.reviews.slice(0, 2).map((review) => (
-                  <li key={`${review.author}-${review.relativeTime}`} className="text-[12.5px] text-ink-secondary">
+                  <li key={`${review.author}-${review.relativeTime}`} className="text-[14.5px] text-ink-secondary">
                     <span className="text-accent">{'★'.repeat(Math.max(1, Math.round(review.rating)))}</span>{' '}
                     <span className="text-ink-muted">{review.author}</span> — “
                     {review.text.slice(0, 120)}
@@ -239,7 +239,7 @@ export function GoogleImport() {
             <button
               type="button"
               onClick={() => setFixing((open) => !open)}
-              className="text-[12.5px] text-ink-muted transition hover:text-ink-primary"
+              className="text-[14.5px] text-ink-muted transition hover:text-ink-primary"
               aria-expanded={fixing}
             >
               {fixing ? 'Hide corrections' : 'Something wrong? Fix it'}
@@ -247,7 +247,7 @@ export function GoogleImport() {
             <button
               type="button"
               onClick={() => setPlace(null)}
-              className="text-[12.5px] text-ink-muted transition hover:text-ink-primary"
+              className="text-[14.5px] text-ink-muted transition hover:text-ink-primary"
             >
               Not my business
             </button>
@@ -256,7 +256,7 @@ export function GoogleImport() {
                 href={place.mapsUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="ml-auto text-[12px] text-accent hover:underline"
+                className="ml-auto text-[14px] text-accent hover:underline"
               >
                 Check on Google ↗
               </a>
@@ -293,7 +293,7 @@ export function GoogleImport() {
             </div>
           ) : null}
 
-          <p className="text-[11.5px] leading-relaxed text-ink-muted">
+          <p className="text-[14.5px] leading-relaxed text-ink-muted">
             Photos and reviews come from your Google listing and are copied into your site, credited to their
             authors. Use photos you have the right to publish — customer-contributed images belong to whoever
             took them.
@@ -327,15 +327,15 @@ function Fix({
   return (
     <label className="block min-w-0">
       <span className="flex items-baseline justify-between gap-2">
-        <span className="text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">{label}</span>
-        {!found && !value ? <span className="text-[10.5px] text-ink-muted">not found</span> : null}
+        <span className="text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">{label}</span>
+        {!found && !value ? <span className="text-[12.5px] text-ink-muted">not found</span> : null}
       </span>
       <input
         value={value ?? found ?? ''}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         spellCheck={false}
-        className="lumen-well mt-1.5 w-full rounded-[9px] border border-hairline px-2.5 py-1.5 text-[12.5px] text-ink-primary outline-none focus:border-accent/50"
+        className="lumen-well mt-1.5 w-full rounded-[9px] border border-hairline px-2.5 py-1.5 text-[14.5px] text-ink-primary outline-none focus:border-accent/50"
       />
     </label>
   );

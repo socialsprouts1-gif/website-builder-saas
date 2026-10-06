@@ -130,7 +130,7 @@ export function PlanPicker({
 
   if (!billingConfigured) {
     return (
-      <p className="rounded-card border border-hairline bg-raised px-4 py-3 text-[13px] text-ink-muted">
+      <p className="rounded-card border border-hairline bg-raised px-4 py-3 text-[15px] text-ink-muted">
         Payments are not switched on yet. Add the Razorpay key ID, key secret, webhook secret and a plan
         ID for each plan to the environment.
       </p>
@@ -157,7 +157,7 @@ export function PlanPicker({
                 onClick={() => setPeriod(option)}
                 aria-pressed={period === option}
                 className={cn(
-                  'rounded-pill px-4 py-1.5 text-[12.5px] capitalize transition',
+                  'rounded-pill px-4 py-1.5 text-[14.5px] capitalize transition',
                   period === option ? 'bg-accent text-accent-ink' : 'text-ink-muted hover:text-ink-secondary',
                 )}
               >
@@ -183,32 +183,32 @@ export function PlanPicker({
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-display text-[19px] text-ink-primary">{plan.name}</p>
+                  <p className="font-display text-[20px] text-ink-primary">{plan.name}</p>
                   {current ? <Badge tone="accent">Your plan</Badge> : null}
                 </div>
                 {offer?.introPricePaise ? (
                   <>
                     <p className="mt-1.5 flex flex-wrap items-baseline gap-2">
-                      <span className="font-display text-[17px] leading-none text-ink-muted line-through">
+                      <span className="font-display text-[18.5px] leading-none text-ink-muted line-through">
                         {formatMoney(plan.pricePaise, currency)}
                       </span>
-                      <span className="font-display text-[26px] leading-none text-ink-primary">
+                      <span className="font-display text-[27px] leading-none text-ink-primary">
                         {formatMoney(offer.introPricePaise, currency)}
                       </span>
                     </p>
-                    <p className="mt-1.5 text-[12px] text-accent">{introLabel(plan, currency)}</p>
+                    <p className="mt-1.5 text-[14px] text-accent">{introLabel(plan, currency)}</p>
                   </>
                 ) : (
                   <>
-                    <p className="mt-1.5 font-display text-[26px] leading-none text-ink-primary">
+                    <p className="mt-1.5 font-display text-[27px] leading-none text-ink-primary">
                       {priceLabel(plan, currency)}
                     </p>
-                    {saving ? <p className="mt-1.5 text-[12px] text-accent">{saving}</p> : null}
+                    {saving ? <p className="mt-1.5 text-[14px] text-accent">{saving}</p> : null}
                   </>
                 )}
-                <p className="mt-2 text-[12.5px] leading-relaxed text-ink-secondary">{plan.note}</p>
+                <p className="mt-2 text-[14.5px] leading-relaxed text-ink-secondary">{plan.note}</p>
 
-                <ul className="mt-4 flex-1 space-y-2 text-[12.5px] leading-relaxed text-ink-secondary">
+                <ul className="mt-4 flex-1 space-y-2 text-[14.5px] leading-relaxed text-ink-secondary">
                   {plan.highlights.map((line) => (
                     <li key={line} className="flex gap-2">
                       <span className="text-accent">✓</span>
@@ -223,7 +223,7 @@ export function PlanPicker({
                       <span>
                         {FEATURES[feature].label}
                         {FEATURES[feature].soon ? (
-                          <span className="ml-1.5 rounded-pill border border-hairline px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.1em] text-ink-muted">
+                          <span className="ml-1.5 rounded-pill border border-hairline px-1.5 py-0.5 text-[11.5px] uppercase tracking-[0.1em] text-ink-muted">
                             Coming
                           </span>
                         ) : null}
@@ -251,7 +251,7 @@ export function PlanPicker({
                           : `Choose ${plan.name}`}
                     </Button>
                   ) : (
-                    <p className="rounded-[10px] border border-dashed border-hairline px-3 py-2.5 text-center text-[12px] text-ink-muted">
+                    <p className="rounded-[10px] border border-dashed border-hairline px-3 py-2.5 text-center text-[14px] text-ink-muted">
                       Not set up in Razorpay yet
                     </p>
                   )}
@@ -275,7 +275,7 @@ export function PlanPicker({
           </Field>
         ) : null}
 
-        <p className="text-center text-[12px] leading-relaxed text-ink-muted">
+        <p className="text-center text-[14px] leading-relaxed text-ink-muted">
           {currency === 'USD'
             ? 'Dollar amounts are approximate — every charge is made in Indian rupees through Razorpay. '
             : ''}
@@ -283,12 +283,12 @@ export function PlanPicker({
         </p>
 
         {error ? (
-          <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
+          <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[15px] text-[#e5735a]">
             {error}
           </p>
         ) : null}
         {notice ? (
-          <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[13px] text-accent">
+          <p className="rounded-[10px] border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[15px] text-accent">
             {notice}
           </p>
         ) : null}

@@ -58,7 +58,7 @@ export default async function TemplatesPage() {
           <h1 className="mx-auto max-w-3xl font-display text-[40px] leading-tight text-ink-primary sm:text-[56px]">
             Start from something <em className="italic text-accent">finished.</em>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-secondary">
+          <p className="mx-auto mt-4 max-w-2xl text-[17px] leading-relaxed text-ink-secondary">
             {cards.length} templates across {industries.length} industries. Each one decides the sections,
             the pages and the design system — {Math.round(
               cards.reduce((total, card) => total + card.sections, 0) / cards.length,
@@ -75,10 +75,10 @@ export default async function TemplatesPage() {
       {shared.length > 0 ? (
         <section className="border-t border-hairline">
           <div className="mx-auto max-w-shell px-5 py-16 sm:px-6">
-            <h2 className="font-display text-[26px] text-ink-primary sm:text-[32px]">
+            <h2 className="font-display text-[27px] text-ink-primary sm:text-[32px]">
               Sites other people published
             </h2>
-            <p className="mt-3 max-w-2xl text-[14px] text-ink-secondary">
+            <p className="mt-3 max-w-2xl text-[16px] text-ink-secondary">
               Finished Lumen sites shared as starting points. Copying one gives you the project, not just
               the structure.
             </p>

@@ -110,7 +110,7 @@ export function EditorWorkspace({
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline px-3 py-2.5 sm:px-4">
         <div className="w-36 sm:w-44">
-          <Select value={page} onChange={(event) => setPage(event.target.value)} className="py-1.5 text-[12.5px]">
+          <Select value={page} onChange={(event) => setPage(event.target.value)} className="py-1.5 text-[14.5px]">
             {pages.map((item) => (
               <option key={item} value={item}>
                 {pageLabel(item)}
@@ -126,7 +126,7 @@ export function EditorWorkspace({
               type="button"
               onClick={() => setViewport(item)}
               className={cn(
-                'rounded-pill px-2.5 py-1 text-[11px] uppercase tracking-[0.1em] transition',
+                'rounded-pill px-2.5 py-1 text-[13px] uppercase tracking-[0.1em] transition',
                 viewport === item ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:text-ink-primary',
               )}
             >
@@ -139,7 +139,7 @@ export function EditorWorkspace({
           {pending.length > 0 ? (
             <Badge tone="accent">{pending.length} unsaved</Badge>
           ) : notice ? (
-            <span className="text-[12px] text-accent">{notice}</span>
+            <span className="text-[14px] text-accent">{notice}</span>
           ) : null}
           <Button size="sm" variant="secondary" onClick={discard} disabled={saving || pending.length === 0}>
             Discard
@@ -165,7 +165,7 @@ export function EditorWorkspace({
               type="button"
               onClick={() => setPane(item.id)}
               className={cn(
-                'flex-1 rounded-pill px-2 py-2 text-[12.5px] transition',
+                'flex-1 rounded-pill px-2 py-2 text-[14.5px] transition',
                 pane === item.id ? 'bg-accent text-accent-ink' : 'text-ink-secondary',
               )}
             >
@@ -189,7 +189,7 @@ export function EditorWorkspace({
                 type="button"
                 onClick={() => setRail(item)}
                 className={cn(
-                  'flex-1 rounded-[8px] px-2 py-1.5 text-[11.5px] capitalize transition',
+                  'flex-1 rounded-[8px] px-2 py-1.5 text-[13.5px] capitalize transition',
                   rail === item
                     ? 'bg-accent-soft text-accent'
                     : 'text-ink-muted hover:text-ink-primary',
@@ -290,10 +290,10 @@ export function EditorWorkspace({
 
           {pending.length > 0 ? (
             <div className="border-t border-hairline p-4">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Unsaved</p>
+              <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">Unsaved</p>
               <ul className="mt-2 space-y-1">
                 {pending.map((edit, index) => (
-                  <li key={index} className="truncate text-[11.5px] text-ink-secondary">
+                  <li key={index} className="truncate text-[13.5px] text-ink-secondary">
                     {describeEdit(edit)}
                   </li>
                 ))}
@@ -302,7 +302,7 @@ export function EditorWorkspace({
           ) : null}
 
           {error ? (
-            <p className="mx-4 mb-4 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[12px] text-[#e5735a]">
+            <p className="mx-4 mb-4 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3 py-2 text-[14px] text-[#e5735a]">
               {error}
             </p>
           ) : null}

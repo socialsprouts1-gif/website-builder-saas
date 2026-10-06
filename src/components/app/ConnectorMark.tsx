@@ -69,7 +69,7 @@ export function ConnectorMark({
           {drawn}
         </svg>
       ) : (
-        <span className="font-display text-[15px] leading-none">{name.slice(0, 1)}</span>
+        <span className="font-display text-[17px] leading-none">{name.slice(0, 1)}</span>
       )}
 
       {connected ? (

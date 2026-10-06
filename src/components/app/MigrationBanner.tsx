@@ -29,23 +29,23 @@ export function MigrationBanner({ missing }: { missing: MissingFeature[] }) {
     <div className="border-b border-[#c46026]/30 bg-[#c46026]/10 px-5 py-4 sm:px-6">
       <div className="mx-auto max-w-5xl space-y-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-[#e5a06a]">
+          <p className="text-[13px] uppercase tracking-[0.16em] text-[#e5a06a]">
             {missing.length === 1 ? 'One feature is switched off' : `${missing.length} features are switched off`}
           </p>
-          <p className="text-[12.5px] text-ink-muted">
+          <p className="text-[14.5px] text-ink-muted">
             {files.length === 1 ? '1 migration has not been run' : `${files.length} migrations have not been run`}
           </p>
         </div>
 
         <ul className="space-y-1.5">
           {missing.map((feature) => (
-            <li key={feature.id} className="text-[13.5px] leading-relaxed text-ink-secondary">
+            <li key={feature.id} className="text-[15.5px] leading-relaxed text-ink-secondary">
               <span className="text-ink-primary">{feature.label}</span> — {feature.consequence}
             </li>
           ))}
         </ul>
 
-        <p className="text-[13px] leading-relaxed text-ink-secondary">
+        <p className="text-[15px] leading-relaxed text-ink-secondary">
           One file fixes all of it, and it is safe to run again if you already have:{' '}
           <a href={SQL_FILE} target="_blank" rel="noreferrer noopener" className="text-accent hover:underline">
             supabase/setup.sql

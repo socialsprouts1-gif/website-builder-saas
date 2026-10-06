@@ -57,11 +57,11 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="space-y-4">
-        <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3.5 text-[13.5px] leading-relaxed text-ink-primary">
+        <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3.5 text-[15.5px] leading-relaxed text-ink-primary">
           If there is an account for <strong>{email.trim()}</strong>, a link to set a new password is
           on its way. It expires in an hour.
         </p>
-        <p className="text-[13px] leading-relaxed text-ink-muted">
+        <p className="text-[15px] leading-relaxed text-ink-muted">
           Nothing arrived? Check the spam folder, and check the address above is the one you signed
           up with. You can{' '}
           <button
@@ -73,7 +73,7 @@ export function ForgotPasswordForm() {
           </button>
           .
         </p>
-        <p className="text-center text-[13px] text-ink-muted">
+        <p className="text-center text-[15px] text-ink-muted">
           <Link href="/login" className="text-accent transition hover:underline">
             Back to log in
           </Link>
@@ -84,7 +84,7 @@ export function ForgotPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-[13.5px] leading-relaxed text-ink-secondary">
+      <p className="text-[15.5px] leading-relaxed text-ink-secondary">
         Type the email address on your account and we will send a link to set a new password.
       </p>
 
@@ -101,7 +101,7 @@ export function ForgotPasswordForm() {
       </Field>
 
       {error ? (
-        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[13px] text-[#e5735a]">
+        <p className="rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-3.5 py-2.5 text-[15px] text-[#e5735a]">
           {error}
         </p>
       ) : null}
@@ -110,7 +110,7 @@ export function ForgotPasswordForm() {
         {busy ? 'Sending…' : 'Send the link'}
       </Button>
 
-      <p className="text-center text-[13px] text-ink-muted">
+      <p className="text-center text-[15px] text-ink-muted">
         Remembered it?{' '}
         <Link href="/login" className="text-accent transition hover:underline">
           Log in

@@ -41,7 +41,7 @@ export function TemplatePreview({
               onClick={() => setDevice(option)}
               aria-pressed={device === option}
               className={cn(
-                'rounded-pill px-3.5 py-1.5 text-[12.5px] transition',
+                'rounded-pill px-3.5 py-1.5 text-[14.5px] transition',
                 device === option ? 'bg-white/10 text-ink-primary' : 'text-ink-muted hover:text-ink-secondary',
               )}
             >
@@ -58,7 +58,7 @@ export function TemplatePreview({
               onClick={() => setPath(page.path)}
               aria-pressed={path === page.path}
               className={cn(
-                'rounded-pill border px-3 py-1.5 text-[12px] transition',
+                'rounded-pill border px-3 py-1.5 text-[14px] transition',
                 path === page.path
                   ? 'border-accent/60 bg-accent-soft text-ink-primary'
                   : 'border-hairline text-ink-secondary hover:border-white/25',
@@ -73,7 +73,7 @@ export function TemplatePreview({
           href={`/api/blueprints/${id}/${path}`}
           target="_blank"
           rel="noreferrer noopener"
-          className="ml-auto text-[12.5px] text-accent hover:underline"
+          className="ml-auto text-[14.5px] text-accent hover:underline"
         >
           Open full size ↗
         </a>

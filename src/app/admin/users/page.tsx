@@ -22,7 +22,7 @@ export default async function AdminUsersPage() {
 
       <UserTable users={users} currentUserId={admin.id} />
 
-      <p className="mt-6 text-[12.5px] leading-relaxed text-ink-muted">
+      <p className="mt-6 text-[14.5px] leading-relaxed text-ink-muted">
         Extending free access sets the account back to trialing and pushes its end date out from now.
         Ending access stops generation immediately; the account keeps its sites and can subscribe to
         get them back.

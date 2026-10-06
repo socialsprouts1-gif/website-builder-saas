@@ -37,7 +37,7 @@ export default async function BillingPage() {
             <p className="font-display text-2xl text-ink-primary">
               {state.entitled ? priceLabel(state.plan) : 'Free'}
             </p>
-            <p className="mt-1 text-[13px] text-ink-secondary">
+            <p className="mt-1 text-[15px] text-ink-secondary">
               {state.entitled
                 ? `Lumen ${state.plan.name} · billed ${state.plan.period === 'yearly' ? 'yearly' : 'monthly'} in INR`
                 : 'Lumen · no card on file'}
@@ -49,7 +49,7 @@ export default async function BillingPage() {
         </div>
 
         {/* Honest, always-visible renewal state — no hidden charge dates. */}
-        <p className="text-[13px] text-ink-secondary">
+        <p className="text-[15px] text-ink-secondary">
           {state.subscription?.cancelled_at
             ? `Cancelled. ${state.plan.name} runs until ${formatDate(
                 state.subscription.current_period_end,
@@ -74,8 +74,8 @@ export default async function BillingPage() {
       <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">Invoices</h2>
       {invoices && invoices.length > 0 ? (
         <div className="overflow-hidden rounded-card border border-hairline">
-          <table className="w-full text-left text-[13px]">
-            <thead className="bg-raised text-[11px] uppercase tracking-[0.12em] text-ink-muted">
+          <table className="w-full text-left text-[15px]">
+            <thead className="bg-raised text-[13px] uppercase tracking-[0.12em] text-ink-muted">
               <tr>
                 <th className="px-4 py-3 font-normal">Date</th>
                 <th className="px-4 py-3 font-normal">Amount</th>
@@ -104,7 +104,7 @@ export default async function BillingPage() {
           </table>
         </div>
       ) : (
-        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[13px] text-ink-muted">
+        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[15px] text-ink-muted">
           No invoices yet. They appear here after your first charge.
         </p>
       )}

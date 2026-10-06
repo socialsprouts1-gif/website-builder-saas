@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/components/ui/cn';
+import { NotifyWhenReady } from '@/components/app/NotifyWhenReady';
 
 export type BuildStageId = 'brief' | 'design' | 'code' | 'persist' | 'done';
 
@@ -22,12 +23,59 @@ const STEPS: { id: BuildStageId; label: string; detail: string }[] = [
   { id: 'persist', label: 'Saving version one', detail: 'So you can always come back to it.' },
 ];
 
+/**
+ * A number that keeps moving between the server's updates.
+ *
+ * The server's percentage is honest and it is also lumpy: reading the brief is
+ * one model call that can take twenty seconds, during which the bar sits at 8
+ * and the whole thing reads as hung. A reviewer watched exactly that and said
+ * so.
+ *
+ * So the bar creeps. It approaches the next stage's floor without ever
+ * reaching it, slowing as it gets there — which is true, in the only sense a
+ * progress bar is ever true: work is happening and it is nearer than it was.
+ * It can never pass the next real milestone, and a server update always wins,
+ * so it never has to go backwards.
+ */
+const NEXT_FLOOR: Record<BuildStageId, number> = {
+  brief: 20,
+  design: 30,
+  code: 92,
+  persist: 100,
+  done: 100,
+};
+
+function useCreepingPercent(reported: number, stage: BuildStageId): number {
+  const [shown, setShown] = useState(reported);
+
+  useEffect(() => {
+    setShown((current) => Math.max(current, reported));
+  }, [reported]);
+
+  useEffect(() => {
+    const ceiling = (NEXT_FLOOR[stage] ?? 100) - 1;
+    const timer = setInterval(() => {
+      setShown((current) => {
+        if (current >= ceiling) return current;
+        // Halve the remaining distance every few seconds: fast while there is
+        // a long way to go, almost still when there is not.
+        const step = Math.max(0.15, (ceiling - current) * 0.06);
+        return Math.min(ceiling, current + step);
+      });
+    }, 900);
+    return () => clearInterval(timer);
+  }, [stage]);
+
+  return Math.min(100, Math.round(Math.max(shown, reported)));
+}
+
 export function BuildingStage({
   stage,
   message,
   files,
   percent,
   startedAt,
+  written,
 }: {
   stage: BuildStageId;
   message: string | null;
@@ -36,7 +84,10 @@ export function BuildingStage({
   percent: number;
   /** When the build began, from the job row. */
   startedAt?: string | null;
+  /** Pages written and pages planned, once the plan has landed. */
+  written?: { saved: number; expected: number };
 }) {
+  const shownPercent = useCreepingPercent(percent, stage);
   const activeIndex = STEPS.findIndex((step) => step.id === stage);
   // 'persist' and 'done' both sit past the last visible step.
   const reached = activeIndex === -1 ? STEPS.length : activeIndex;
@@ -49,19 +100,19 @@ export function BuildingStage({
 
       <div className="w-full max-w-sm lg:max-w-md">
         <div className="flex items-baseline justify-between gap-4">
-          <p className="font-display text-[22px] leading-tight text-ink-primary">
+          <p className="font-display text-[28px] leading-tight text-ink-primary">
             {message ?? 'Building your site…'}
           </p>
           <p
-            className="shrink-0 font-display text-[26px] leading-none text-accent tabular-nums"
-            aria-label={`${percent} percent complete`}
+            className="shrink-0 font-display text-[40px] leading-none text-accent tabular-nums"
+            aria-label={`${shownPercent} percent complete`}
           >
-            {percent}%
+            {shownPercent}%
           </p>
         </div>
-        <Elapsed startedAt={startedAt} />
+        <Elapsed startedAt={startedAt} written={written} />
 
-        <ProgressBar percent={percent} />
+        <ProgressBar percent={shownPercent} />
 
         <ol className="mt-6 space-y-1">
           {STEPS.map((step, index) => (
@@ -75,6 +126,8 @@ export function BuildingStage({
         </ol>
 
         <FileTicker files={files} />
+
+        <NotifyWhenReady />
       </div>
     </div>
   );
@@ -102,10 +155,16 @@ function BuildScene({ stage }: { stage: BuildStageId }) {
   const lit = LIT[stage] ?? 1;
 
   return (
-    <div className="relative shrink-0" aria-hidden>
+    // Clipped, and smaller on a phone. The slabs are rotated in 3D, so they
+    // paint wider than the box that holds them — unclipped, the scene pushed
+    // the whole screen sideways on anything narrow.
+    <div className="relative w-full max-w-[320px] shrink-0 overflow-hidden" aria-hidden>
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/[0.07] blur-[70px]" />
 
-      <div className="relative h-[320px] w-[320px]" style={{ perspective: '1000px' }}>
+      <div
+        className="relative mx-auto h-[220px] w-[220px] sm:h-[320px] sm:w-[320px]"
+        style={{ perspective: '1000px' }}
+      >
         <div className="absolute inset-0 animate-orbit" style={{ transformStyle: 'preserve-3d' }}>
           {/* The plate the stack builds on, so the lowest slab has a floor. */}
           <div
@@ -176,14 +235,14 @@ function Step({
       <div className="min-w-0">
         <p
           className={cn(
-            'text-[13px] leading-tight transition-colors',
+            'text-[16px] font-semibold leading-tight transition-colors',
             state === 'pending' ? 'text-ink-muted' : 'text-ink-primary',
           )}
         >
           {label}
         </p>
         {state === 'active' ? (
-          <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-muted">{detail}</p>
+          <p className="mt-1 text-[14.5px] leading-relaxed text-ink-secondary">{detail}</p>
         ) : null}
       </div>
     </li>
@@ -193,7 +252,7 @@ function Step({
 function Marker({ state }: { state: 'done' | 'active' | 'pending' }) {
   if (state === 'done') {
     return (
-      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-pill bg-accent text-[9px] font-bold text-accent-ink">
+      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-pill bg-accent text-[11px] font-bold text-accent-ink">
         ✓
       </span>
     );
@@ -236,7 +295,7 @@ function FileTicker({ files }: { files: string[] }) {
 
   return (
     <div className="mt-5 border-t border-hairline pt-4">
-      <p className="text-[10.5px] uppercase tracking-[0.16em] text-ink-muted">
+      <p className="text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">
         Written · {files.length}
       </p>
       <ul className="mt-2 space-y-1">
@@ -244,7 +303,7 @@ function FileTicker({ files }: { files: string[] }) {
           <li
             key={file}
             className={cn(
-              'truncate font-mono text-[11.5px] transition-opacity',
+              'truncate font-mono text-[13.5px] transition-opacity',
               index === 0 ? 'text-accent' : 'text-ink-muted opacity-60',
             )}
           >
@@ -261,7 +320,13 @@ function FileTicker({ files }: { files: string[] }) {
  * from when this tab opened. The build outlives the page, so a timer that
  * resets on every visit was reporting the wrong thing entirely.
  */
-function Elapsed({ startedAt }: { startedAt?: string | null }) {
+function Elapsed({
+  startedAt,
+  written,
+}: {
+  startedAt?: string | null;
+  written?: { saved: number; expected: number };
+}) {
   const start = useMemo(() => {
     const parsed = startedAt ? Date.parse(startedAt) : Number.NaN;
     // A clock skewed ahead of the server would otherwise show a negative age.
@@ -276,8 +341,17 @@ function Elapsed({ startedAt }: { startedAt?: string | null }) {
   }, []);
 
   const seconds = Math.max(0, Math.floor((now - start) / 1000));
+
+  // Once the plan has landed there is a real count to give, and a real count
+  // beats a percentage: "page 4 of 14" is a thing somebody can picture.
+  const pages =
+    written && written.expected > 0
+      ? `Page ${Math.min(written.saved + 1, written.expected)} of ${written.expected}`
+      : null;
+
   return (
-    <p className="mt-1.5 text-[12px] text-ink-muted">
+    <p className="mt-2 text-[15px] font-medium text-ink-secondary">
+      {pages ? <span className="text-ink-primary">{pages} · </span> : null}
       {seconds < 60 ? `${seconds}s elapsed` : `${Math.floor(seconds / 60)}m ${seconds % 60}s elapsed`}
       {seconds > 90 ? ' — a detailed site takes a little longer.' : ''}
     </p>

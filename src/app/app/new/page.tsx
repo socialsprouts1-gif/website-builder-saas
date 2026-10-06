@@ -64,11 +64,11 @@ export default async function NewSitePage({
         // account needs to know before it spends anything: what it has, what a
         // site costs, and that running out is not the end of the account.
         <div className="mb-8 rounded-card border border-accent/25 bg-accent-soft/30 p-5">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-accent">Welcome</p>
-          <p className="mt-1.5 font-display text-[19px] leading-tight text-ink-primary">
+          <p className="text-[13px] uppercase tracking-[0.16em] text-accent">Welcome</p>
+          <p className="mt-1.5 font-display text-[20px] leading-tight text-ink-primary">
             You have enough to build {Math.floor(FREE_CREDITS / CREDIT_COST.generation)} whole sites, free
           </p>
-          <ul className="mt-3 space-y-1.5 text-[13px] leading-relaxed text-ink-secondary">
+          <ul className="mt-3 space-y-1.5 text-[15px] leading-relaxed text-ink-secondary">
             <li>
               <span className="text-ink-primary">{FREE_CREDITS} credits, once</span>, with no card and no
               expiry. A whole site costs {CREDIT_COST.generation} — every page and section inside it is
@@ -96,7 +96,7 @@ export default async function NewSitePage({
 
       {blueprint ? (
         <div className="mb-9">
-          <Link href="/templates" className="text-[12.5px] text-ink-muted transition hover:text-ink-primary">
+          <Link href="/templates" className="text-[14.5px] text-ink-muted transition hover:text-ink-primary">
             ← All templates
           </Link>
           <Badge tone="accent" className="mb-5 mt-4">
@@ -120,7 +120,7 @@ export default async function NewSitePage({
               className="aspect-[16/9]"
             />
           </div>
-          <p className="mt-2 text-[13px] text-ink-muted">
+          <p className="mt-2 text-[15px] text-ink-muted">
             <Link href={`/templates/${blueprint.id}`} className="text-accent hover:underline">
               See it full size
             </Link>{' '}
@@ -140,14 +140,14 @@ export default async function NewSitePage({
         <p className="mx-auto mt-3 max-w-md text-sm text-ink-secondary">
           Describe it, upload a screenshot, or say it out loud. Same generator, three ways in.
         </p>
-        <p className="mt-3 text-[13px] text-ink-muted">
+        <p className="mt-3 text-[15px] text-ink-muted">
           Already on Google?{' '}
           <Link href="/app/google" className="text-accent hover:underline">
             Build from your listing
           </Link>{' '}
           — name, hours, photos and reviews, already filled in.
         </p>
-        <p className="mt-2 text-[13px] text-ink-muted">
+        <p className="mt-2 text-[15px] text-ink-muted">
           Or{' '}
           <Link href="/templates" className="text-accent hover:underline">
             start from a template
@@ -162,7 +162,7 @@ export default async function NewSitePage({
           it waits until the brief and the questions are answered — the plan is
           worth more to somebody who can see the site they are about to get. */}
       {noKeyAtAll ? (
-        <div className="mb-6 rounded-card border border-accent/30 bg-accent-soft px-5 py-4 text-[13px] text-ink-secondary">
+        <div className="mb-6 rounded-card border border-accent/30 bg-accent-soft px-5 py-4 text-[15px] text-ink-secondary">
           No OpenAI key is configured yet.{' '}
           <Link href="/app/settings/api-keys" className="text-accent hover:underline">
             Add your key
