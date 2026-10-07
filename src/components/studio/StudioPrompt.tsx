@@ -93,7 +93,18 @@ export function StudioPrompt({ signedIn = true }: { signedIn?: boolean }) {
         </div>
         <p className="mt-2 text-[15.5px] leading-relaxed text-ink-secondary">
           Choose what you are making, choose its colours, and describe the business. Lumen builds
-          the pages, writes the words and puts a scene on them you can turn with your finger.
+          the pages, writes the words, photographs your products as cut-outs, and arranges them in a
+          scene that moves as you scroll through it.
+        </p>
+        {/* Said before they press it, not after. A 3D build photographs every
+            product in the scene, and those are the slowest calls Lumen makes —
+            somebody who was expecting the usual minute needs to know that the
+            extra wait is the part that makes it look like the thing they
+            asked for. */}
+        <p className="mt-2 text-[14.5px] leading-relaxed text-ink-muted">
+          A 3D build takes longer than an ordinary one — usually three to six minutes — because the
+          products in the scene are photographed rather than drawn. Your site appears as soon as the
+          pages are written, and the scene fills in as each shot is made.
         </p>
 
         {/* 1 — what */}

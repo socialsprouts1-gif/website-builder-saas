@@ -22,19 +22,20 @@
 
 import type { Section, SectionItem } from './sections';
 import { escapeHtml, safeHref } from './html';
+import { FLOAT_SCRIPT, floatCss, floatLayers, renderFloatScene } from './scene-float';
 
 /**
  * The scene forms. Each is a different arrangement of the same primitives —
  * panels, a solid, a floor, a horizon — because five names for one illustration
  * would be the cardboard version of this feature.
  */
-export const SCENE3D_FORMS = ['product', 'carousel', 'showroom', 'world', 'device'] as const;
+export const SCENE3D_FORMS = ['float', 'product', 'carousel', 'showroom', 'world', 'device'] as const;
 export type Scene3dForm = (typeof SCENE3D_FORMS)[number];
 
 export function scene3dForm(wanted: string | undefined): Scene3dForm {
   return (SCENE3D_FORMS as readonly string[]).includes(wanted ?? '')
     ? (wanted as Scene3dForm)
-    : 'product';
+    : 'float';
 }
 
 /** How many panels each ring form draws, so the geometry below can be exact. */
@@ -205,7 +206,23 @@ const HINTS = ['Drag to turn it', 'Scroll to move through it', 'Tap a point to l
  * does.
  */
 export function renderScene3d(section: Section): string {
+  /**
+   * Photographs beat geometry, whatever the blueprint asked for.
+   *
+   * A blueprint names a form months before it knows whether this particular
+   * build ended up with pictures. When there are pictures the floating scene is
+   * always the better answer — it is the one that reads as three-dimensional —
+   * so the named form is really a fallback for the case where there are none.
+   */
+  const layers = floatLayers(section);
+  if (layers.length > 0) return renderFloatScene(section, layers);
+
   const form = scene3dForm(section.layout);
+  if (form === 'float') return renderGeometric(section, 'product');
+  return renderGeometric(section, form);
+}
+
+function renderGeometric(section: Section, form: Scene3dForm): string {
   const tone =
     section.tone === 'surface' ? ' section--surface' : section.tone === 'alt' ? ' section--alt' : '';
 
@@ -258,7 +275,7 @@ export function renderScene3d(section: Section): string {
  * a page with no rules for it.
  */
 export function scene3dCss(): string {
-  return `
+  return floatCss() + `
 /* ----------------------------------------------------------------- 3D scenes */
 .s3d__layout { display: grid; gap: 2.5rem; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); align-items: center; }
 @media (max-width: 900px) { .s3d__layout { grid-template-columns: minmax(0, 1fr); } }
@@ -500,7 +517,8 @@ export function scene3dCss(): string {
  * moment somebody touches it — a scene that keeps turning while you are trying
  * to look at one side of it is worse than one that never turns.
  */
-export const SCENE3D_SCRIPT = `(function () {
+export const SCENE3D_SCRIPT = FLOAT_SCRIPT + `
+(function () {
   var stages = document.querySelectorAll('[data-s3d]');
   if (!stages.length) return;
   var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

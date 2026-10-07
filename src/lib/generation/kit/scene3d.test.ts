@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SCENE3D_FORMS, SCENE3D_SCRIPT, renderScene3d, scene3dCss, scene3dForm } from './scene3d';
+import { floatLayers } from './scene-float';
 import { SECTION_KINDS, renderSection, type Section } from './sections';
 import { LAYOUTS } from './layouts';
 
@@ -27,16 +28,57 @@ describe('the 3D section', () => {
     expect(renderSection(section())).toContain('data-section="scene3d"');
   });
 
-  it('draws every form, and falls back rather than drawing nothing', () => {
+  it('draws every geometric form, and falls back rather than drawing nothing', () => {
     for (const form of SCENE3D_FORMS) {
+      if (form === 'float') continue; // photographs, covered below
       const html = renderScene3d(section({ layout: form }));
       expect(html, form).toContain(`data-s3d="${form}"`);
       expect(html, form).toContain('s3d__world');
     }
     // A layout name from a blueprint that was renamed, or from nowhere.
-    expect(scene3dForm('nonsense')).toBe('product');
-    expect(scene3dForm(undefined)).toBe('product');
-    expect(renderScene3d(section({ layout: 'nonsense' }))).toContain('data-s3d="product"');
+    expect(scene3dForm('nonsense')).toBe('float');
+    expect(scene3dForm(undefined)).toBe('float');
+  });
+
+  /**
+   * The point of the rewrite. Cut-out photographs at different depths are what
+   * reads as three-dimensional; cubes read as a diagram of three dimensions.
+   * So pictures always win, whatever form the blueprint named months earlier.
+   */
+  it('prefers photographs over geometry whenever it has them', () => {
+    const withImages = section({
+      layout: 'world',
+      image: 'https://cdn.example.com/jar-hero.png',
+      items: [
+        { title: 'Brass clasp', image: 'https://cdn.example.com/jar-2.png' },
+        { title: 'Lining', image: 'https://cdn.example.com/jar-3.png' },
+      ],
+    });
+    const html = renderScene3d(withImages);
+    expect(html).toContain('data-s3d="float"');
+    expect(html).not.toContain('s3d__world');
+    expect(html).toContain('jar-hero.png');
+
+    // The hero is the section's own image, nearest the lens.
+    const layers = floatLayers(withImages);
+    expect(layers[0].src).toContain('jar-hero.png');
+    expect(layers[0].depth).toBe(1);
+    // And everything behind it is further away than the one in front.
+    for (let index = 1; index < layers.length; index += 1) {
+      expect(layers[index].depth).toBeLessThan(layers[index - 1].depth);
+    }
+  });
+
+  /** A scheme of the model's choosing never reaches a src. */
+  it('refuses an image URL it did not put there', () => {
+    const html = renderScene3d(
+      section({ image: 'javascript:alert(1)', items: [{ title: 'x', image: 'data:text/html,<script>' }] }),
+    );
+    expect(html).not.toContain('javascript:');
+    expect(html).not.toContain('data:text/html');
+    // Nothing safe to place, so it falls back to geometry rather than to a
+    // section with a broken picture in it.
+    expect(html).toContain('s3d__world');
   });
 
   /** Every form the layout table offers has to be a form the renderer draws. */

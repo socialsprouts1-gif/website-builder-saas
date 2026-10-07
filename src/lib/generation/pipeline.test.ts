@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextStep, pagesToWrite, SECTION_CONCURRENCY, fileLabel, type BuildState } from './pipeline';
+import { nextStep, pagesToWrite, SECTION_CONCURRENCY, fileLabel, hasScene, type BuildState } from './pipeline';
 import { VERTICALS, DEFAULT_VERTICAL, verticalBySlug } from './verticals';
 import type { Section, SectionKind } from './kit/sections';
 
@@ -219,5 +219,71 @@ describe('nextStep with a shop to photograph', () => {
   it('waits for every page before it photographs anything', () => {
     expect(nextStep(base({ queue: [{ page: 'about.html', index: 0, kind: 'hero' }] }))).toBe('section');
     expect(nextStep(base({ published: false }))).toBe('publish');
+  });
+});
+
+/**
+ * A 3D build, which has one more step than any other and must not loop on it.
+ *
+ * The scene step is where the photographs that make a scene three-dimensional
+ * are taken. It runs after everything is written and saved, replaces the
+ * sections it photographed, and drops the pages carrying them from
+ * `savedPages` so they are rendered again with the pictures in. That last part
+ * is what makes it dangerous: a step that un-saves a page and can be chosen
+ * again is a build that never finishes, which this project has already had
+ * once, for two hours.
+ */
+describe('a 3D build', () => {
+  const scene = { kind: 'scene3d' } as Section;
+  const plain = { kind: 'hero' } as Section;
+
+  function run(sections: Record<string, Section>) {
+    let state: BuildState = {
+      plan: {} as never,
+      sections,
+      queue: [],
+      published: true,
+      savedPages: ['index.html', 'product.html'],
+    };
+    const steps: string[] = [];
+    let step = nextStep(state);
+
+    for (let guard = 0; step && guard < 50; guard += 1) {
+      steps.push(step);
+      if (step === 'scene') {
+        // What the real step does: photograph, replace, un-save those pages.
+        state = { ...state, scened: true, savedPages: ['product.html'] };
+      } else if (step === 'publish') {
+        state = { ...state, published: true, savedPages: ['index.html', 'product.html'] };
+      } else {
+        break;
+      }
+      step = nextStep(state);
+    }
+
+    return { steps, finished: step === null };
+  }
+
+  it('photographs the scene, re-saves the page, and stops', () => {
+    const { steps, finished } = run({ 'index.html#0': plain, 'index.html#1': scene });
+    expect(steps).toEqual(['scene', 'publish']);
+    expect(finished).toBe(true);
+  });
+
+  it('never asks for the scene step twice', () => {
+    const { steps } = run({ 'index.html#1': scene });
+    expect(steps.filter((step) => step === 'scene')).toHaveLength(1);
+  });
+
+  it('leaves a site with no scene exactly as it was', () => {
+    const { steps, finished } = run({ 'index.html#0': plain });
+    expect(steps).toEqual([]);
+    expect(finished).toBe(true);
+  });
+
+  it('knows a scene when it has one', () => {
+    expect(hasScene({ sections: { a: scene, b: plain } })).toBe(true);
+    expect(hasScene({ sections: { b: plain } })).toBe(false);
+    expect(hasScene({})).toBe(false);
   });
 });

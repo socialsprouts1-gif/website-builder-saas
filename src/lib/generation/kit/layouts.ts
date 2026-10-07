@@ -37,7 +37,7 @@ export const LAYOUTS = {
   beforeafter: ['pairs', 'stack'],
   // Scene forms rather than arrangements of text: which 3D thing is in the
   // stage. `scene3d.ts` holds the geometry for each.
-  scene3d: ['product', 'carousel', 'showroom', 'world', 'device'],
+  scene3d: ['float', 'product', 'carousel', 'showroom', 'world', 'device'],
 } as const satisfies Record<SectionKind, readonly string[]>;
 
 export type LayoutFor<K extends SectionKind> = (typeof LAYOUTS)[K][number];

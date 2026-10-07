@@ -31,6 +31,7 @@ import { createVersion, getCurrentFiles } from './storage';
 import { shopSection, type ShopSlot } from '@/lib/shop/inject';
 import { seedShop } from '@/lib/shop/seed';
 import { photographCatalogue } from '@/lib/shop/photograph';
+import { photographScene, placeShots } from './scene-shots';
 import type {
   DesignSystem,
   GenerationEvent,
@@ -153,9 +154,19 @@ export interface BuildState {
    * slowest part of a build and nobody should wait on it to see their site.
    */
   photographed?: boolean;
+  /**
+   * Whether the 3D scenes have had their photographs made.
+   *
+   * The slowest step in any build, and on a 3D site the one that decides
+   * whether the result is the thing that was asked for. The scene can place
+   * objects at six depths with blur, parallax and shadow; if the objects are
+   * grey rectangles it still looks like a diagram. So this runs, and the pages
+   * carrying a scene are re-rendered afterwards with the pictures in them.
+   */
+  scened?: boolean;
 }
 
-export type BuildStep = 'plan' | 'section' | 'publish' | 'photos';
+export type BuildStep = 'plan' | 'section' | 'publish' | 'photos' | 'scene';
 
 export interface StepOutcome {
   state: BuildState;
@@ -206,10 +217,25 @@ export function nextStep(state: BuildState): BuildStep | null {
 
   if (queue.length === 0) {
     if (unsaved || !state.published) return 'publish';
-    // Everything is written and saved. A shop still needs its photographs.
+    // Everything is written and saved. A 3D site still needs the photographs
+    // its scenes are made of — and it needs them before it can be called
+    // finished, because without them the scene falls back to geometry and the
+    // whole reason somebody chose a 3D template is missing.
+    if (hasScene(state) && !state.scened) return 'scene';
+    // A shop still needs its catalogue photographed.
     return state.plan.shop && !state.photographed ? 'photos' : null;
   }
   return unsaved ? 'publish' : 'section';
+}
+
+/** Whether this build wrote a 3D scene that photographs would transform. */
+export function hasScene(state: BuildState): boolean {
+  return Object.values(state.sections ?? {}).some((section) => section.kind === 'scene3d');
+}
+
+/** The sections that are scenes, with the key they are stored under. */
+export function sceneEntries(state: BuildState): [string, Section][] {
+  return Object.entries(state.sections ?? {}).filter(([, section]) => section.kind === 'scene3d');
 }
 
 /** What to call a file on screen. Nobody wants to read `styles.css`. */
@@ -547,6 +573,70 @@ export async function runBuildStep(
         next === 'publish'
           ? 'Saving what is written so far…'
           : `Writing ${pageLabel(rest[0]?.page ?? '')}…`,
+    };
+  }
+
+  if (step === 'scene') {
+    /**
+     * The photographs the 3D scenes are made of.
+     *
+     * Deliberately before the build calls itself finished, and deliberately
+     * the slow part. A scene is only three-dimensional because the things in
+     * it are real cut-out photographs at different depths; generated after the
+     * fact, or skipped for speed, it falls back to geometry and the person who
+     * chose a 3D template gets a diagram.
+     *
+     * Each scene is photographed from its own copy, so the pictures are of the
+     * things that section's own words talk about. The pages carrying them are
+     * then dropped from `savedPages`, which sends the build back through
+     * `publish` and re-renders exactly those pages with the pictures in.
+     */
+    const scenes = sceneEntries(state);
+    const updated: Record<string, Section> = { ...(state.sections ?? {}) };
+    const touched = new Set<string>();
+    let made = 0;
+
+    for (const [key, scene] of scenes) {
+      const page = key.slice(0, key.lastIndexOf('#'));
+      const shots = await photographScene({
+        projectId: input.projectId,
+        userId: input.userId,
+        business: plan.businessName,
+        kind: verticalOf(state).label,
+        section: scene,
+        onProgress: (done, total) => {
+          say?.(`Photographing the scene — ${done} of ${total}…`);
+          emitFile(`scene photograph ${done} of ${total}`);
+        },
+      });
+
+      if (shots.length === 0) continue;
+      updated[key] = placeShots(scene, shots);
+      touched.add(page);
+      made += shots.length;
+    }
+
+    const nextState: BuildState = {
+      ...state,
+      sections: updated,
+      scened: true,
+      // Only the pages that actually changed are re-rendered. Clearing the lot
+      // would rewrite every page in the site to put a picture on one of them.
+      savedPages: (state.savedPages ?? []).filter((page) => !touched.has(page)),
+    };
+
+    emitFile(`${made} scene photographs`);
+
+    const next = nextStep(nextState);
+    return {
+      state: nextState,
+      next,
+      stage: next ? 'persist' : 'done',
+      message:
+        made > 0
+          ? `Made ${made} photograph${made === 1 ? '' : 's'} for the 3D scenes. Placing them…`
+          : 'Finishing the 3D scenes…',
+      published: true,
     };
   }
 
