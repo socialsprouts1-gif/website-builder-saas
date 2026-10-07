@@ -1,133 +1,77 @@
-import { Card, SectionHeader } from '@/components/ui/Card';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { SectionHeader } from '@/components/ui/Card';
+import { Stat } from '@/components/admin/Stat';
+import { overviewCounts, revenueSnapshot } from '@/lib/admin-metrics';
+import { adminStats } from '@/lib/admin';
 import { formatInr } from '@/lib/razorpay';
-import { planByKey } from '@/lib/plans';
 
 export const metadata = { title: 'Admin' };
 export const dynamic = 'force-dynamic';
 
+/**
+ * The way in, and nothing else.
+ *
+ * This page used to be all of it — revenue, thirty days of model spend broken
+ * down per model, and the moderation queue, on one request. Everything it
+ * showed now has a screen of its own, so what is left is the headline number
+ * from each and a way through to the page that explains it. Nothing here is a
+ * thing you read; it is a thing you click.
+ */
 export default async function AdminPage() {
-  const supabase = createAdminClient();
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-  const [subscriptions, usage, projects, flagged] = await Promise.all([
-    supabase.from('subscriptions').select('status, cancelled_at, created_at, plan'),
-    supabase
-      .from('usage_events')
-      .select('model, key_source, cost_usd, event_type, created_at')
-      .gte('created_at', thirtyDaysAgo)
-      .limit(5000),
-    supabase.from('projects').select('id, status').eq('is_template', false),
-    supabase
-      .from('flagged_content')
-      .select('id, project_id, reason, detail, created_at')
-      .eq('resolved', false)
-      .order('created_at', { ascending: false })
-      .limit(20),
+  const [revenue, counts, stats] = await Promise.all([
+    revenueSnapshot(),
+    overviewCounts(),
+    adminStats(),
   ]);
-
-  const rows = subscriptions.data ?? [];
-  const active = rows.filter((row) => row.status === 'active').length;
-  const trialing = rows.filter((row) => row.status === 'trialing').length;
-  const cancelled = rows.filter((row) => Boolean(row.cancelled_at)).length;
-  // Summed from what each subscriber is actually on. Multiplying a count by
-  // one price was right when there was one price; with two tiers and two
-  // billing periods it would quietly overstate or understate every month.
-  const mrrPaise = rows
-    .filter((row) => row.status === 'active')
-    .reduce((total, row) => total + (planByKey(row.plan)?.perMonthPaise ?? 0), 0);
-  const churnRate = rows.length > 0 ? (cancelled / rows.length) * 100 : 0;
-
-  const events = usage.data ?? [];
-  const spendByModel = new Map<string, { cost: number; calls: number }>();
-  let platformSpend = 0;
-  let byokSpend = 0;
-
-  for (const event of events) {
-    const key = event.model ?? 'unknown';
-    const entry = spendByModel.get(key) ?? { cost: 0, calls: 0 };
-    entry.cost += Number(event.cost_usd ?? 0);
-    entry.calls += 1;
-    spendByModel.set(key, entry);
-    if (event.key_source === 'platform') platformSpend += Number(event.cost_usd ?? 0);
-    else byokSpend += Number(event.cost_usd ?? 0);
-  }
-
-  const modelRows = [...spendByModel.entries()].sort((a, b) => b[1].cost - a[1].cost);
-  const projectRows = projects.data ?? [];
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-8 sm:px-6 sm:py-10">
-      <SectionHeader title="Operations" description="Revenue, model spend and anything needing a look." />
+      <SectionHeader title="Overview" description="Where everything stands. Open a card for the detail." />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="MRR" value={formatInr(mrrPaise)} detail={`${active} active`} />
-        <Stat label="On trial" value={String(trialing)} detail="not yet paying" />
-        <Stat label="Churn" value={`${churnRate.toFixed(1)}%`} detail={`${cancelled} cancelled`} />
-        <Stat label="Sites built" value={String(projectRows.filter((row) => row.status === 'ready').length)} detail={`${projectRows.length} total`} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Stat
+          label="MRR"
+          value={formatInr(revenue.mrrPaise)}
+          detail={`${revenue.active} active · ${revenue.trialing} on trial`}
+          href="/admin/revenue"
+        />
+        <Stat
+          label="Churn"
+          value={`${revenue.churnRate.toFixed(1)}%`}
+          detail={`${revenue.cancelled} cancelled`}
+          href="/admin/revenue"
+        />
+        <Stat
+          label="Accounts"
+          value={String(stats.users)}
+          detail={`${stats.projects} site${stats.projects === 1 ? '' : 's'} built`}
+          href="/admin/users"
+        />
+        <Stat
+          label="Sites live"
+          value={String(counts.sitesReady)}
+          detail={`of ${counts.sitesTotal} started`}
+          href="/admin/users"
+        />
+        <Stat
+          label="Flagged"
+          value={String(counts.flagged)}
+          detail={counts.flagged > 0 ? 'waiting on you' : 'nothing waiting'}
+          href="/admin/flagged"
+          tone={counts.flagged > 0 ? 'alert' : undefined}
+        />
+        <Stat
+          label="Errors"
+          value={String(counts.unresolvedErrors)}
+          detail="recorded in total"
+          href="/admin/errors"
+          tone={counts.unresolvedErrors > 0 ? 'alert' : undefined}
+        />
       </div>
 
-      <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">Model spend · last 30 days</h2>
-      <div className="mb-4 grid gap-4 sm:grid-cols-2">
-        <Stat label="On Lumen's key" value={`$${platformSpend.toFixed(2)}`} detail="this is your cost" />
-        <Stat label="On users' own keys" value={`$${byokSpend.toFixed(2)}`} detail="billed to them, not you" />
-      </div>
-
-      {modelRows.length === 0 ? (
-        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[15px] text-ink-muted">
-          No usage recorded in the last 30 days.
-        </p>
-      ) : (
-        // A table of five columns cannot become a phone-width table, so it
-        // scrolls sideways inside its own box rather than squeezing every
-        // column to two characters or pushing the page wider than the screen.
-        <div className="overflow-x-auto rounded-card border border-hairline">
-          <table className="w-full min-w-[520px] text-left text-[15px]">
-            <thead className="bg-raised text-[13px] uppercase tracking-[0.12em] text-ink-muted">
-              <tr>
-                <th className="px-4 py-3 font-normal">Model</th>
-                <th className="px-4 py-3 font-normal">Calls</th>
-                <th className="px-4 py-3 font-normal">Est. cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {modelRows.map(([model, entry]) => (
-                <tr key={model} className="border-t border-hairline text-ink-secondary">
-                  <td className="px-4 py-3 font-mono text-[14px]">{model}</td>
-                  <td className="px-4 py-3">{entry.calls}</td>
-                  <td className="px-4 py-3">${entry.cost.toFixed(4)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">Flagged content</h2>
-      {(flagged.data ?? []).length === 0 ? (
-        <p className="rounded-card border border-dashed border-hairline px-4 py-8 text-center text-[15px] text-ink-muted">
-          Nothing flagged. Review this before anything reaches the public showcase.
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {(flagged.data ?? []).map((row) => (
-            <li key={row.id} className="rounded-card border border-hairline bg-raised px-4 py-3 text-[15px]">
-              <p className="text-ink-primary">{row.reason}</p>
-              <p className="mt-1 text-[14px] text-ink-muted">{row.detail ?? row.project_id}</p>
-            </li>
-          ))}
-        </ul>
-      )}
+      <p className="mt-8 text-[14.5px] leading-relaxed text-ink-muted">
+        Model spend is on its own page — it reads thirty days of usage events and is the slowest
+        thing here, so it is not loaded until you ask for it.
+      </p>
     </div>
-  );
-}
-
-function Stat({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <Card className="space-y-1">
-      <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">{label}</p>
-      <p className="font-display text-2xl text-ink-primary">{value}</p>
-      <p className="text-[14px] text-ink-muted">{detail}</p>
-    </Card>
   );
 }

@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LEGAL_DOCUMENTS } from '@/lib/legal';
@@ -92,5 +92,53 @@ describe('the legal pages', () => {
     const document = LEGAL_DOCUMENTS.find((candidate) => candidate.slug === slug);
     expect(document, slug).toBeDefined();
     expect(document?.title).toBe(title);
+  });
+});
+
+/**
+ * The admin panel's sections, and its navigation, which must be the same set.
+ *
+ * This split happened because everything lived on one page: revenue, thirty
+ * days of model spend and the moderation queue were all rendered by /admin,
+ * so the only way to any of them was to open a page that loaded all three.
+ * Now each is its own screen — and the failure that replaces it is a screen
+ * nobody can reach, because the nav was not told about it.
+ */
+describe('the admin panel', () => {
+  const layout = readFileSync(join(app, 'admin/layout.tsx'), 'utf8');
+  const linked = [...layout.matchAll(/AdminTab href="([^"]+)"/g)].map((match) => match[1]);
+
+  it('links every section it has', () => {
+    // The glob already carries the admin/ prefix; joining it on again gave
+    // /admin/admin and a test that failed for its own reasons.
+    const sections = globSync('admin/**/page.tsx', { cwd: app })
+      .map((path) => `/${path.replace(/\\/g, '/').replace(/\/?page\.tsx$/, '')}`);
+
+    expect(sections.length).toBeGreaterThanOrEqual(6);
+    for (const section of sections) {
+      expect(linked, `${section} exists but nothing links to it`).toContain(section);
+    }
+  });
+
+  it('links nothing that is not there', () => {
+    for (const href of linked) {
+      expect(routeExists(href), `the nav offers ${href}, which does not exist`).toBe(true);
+    }
+  });
+
+  /**
+   * The point of the split. A reader should not have to open one page to get
+   * to a different one, so the overview is an index — and an index that is
+   * still rendering every table it used to is not an index.
+   */
+  it('keeps the overview an index rather than the whole panel', () => {
+    const overview = readFileSync(join(app, 'admin/page.tsx'), 'utf8');
+    // No tables on it, and every card is a way through to somewhere.
+    expect(overview).not.toContain('<table');
+    expect(overview).not.toContain('AdminTable');
+    const cards = [...overview.matchAll(/<Stat\b/g)].length;
+    const links = [...overview.matchAll(/href="\/admin/g)].length;
+    expect(cards).toBeGreaterThanOrEqual(4);
+    expect(links, 'every number on the overview should lead somewhere').toBe(cards);
   });
 });

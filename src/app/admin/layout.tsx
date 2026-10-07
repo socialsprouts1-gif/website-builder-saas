@@ -13,8 +13,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Logo href="/admin" />
         <Badge tone="warning">Internal</Badge>
 
-        <nav className="flex gap-1">
+        {/* Every section is reachable from here. The Operations page used to
+            hold revenue, model spend and moderation at once, which meant the
+            only way to any of them was to open a page that loaded all three. */}
+        <nav className="flex flex-wrap gap-1">
           <AdminTab href="/admin" label="Overview" />
+          <AdminTab href="/admin/revenue" label="Revenue" />
+          <AdminTab href="/admin/spend" label="Model spend" />
+          <AdminTab href="/admin/flagged" label="Flagged" />
           <AdminTab href="/admin/users" label="Users" />
           <AdminTab href="/admin/errors" label="Errors" />
         </nav>
