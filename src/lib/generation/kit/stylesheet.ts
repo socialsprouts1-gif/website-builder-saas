@@ -1,6 +1,8 @@
 import type { DesignTokens } from './tokens';
 import { premiumCss } from './premium';
 import { scene3dCss } from './scene3d';
+import { turntableCss } from './turntable';
+import { dimensionalCss } from './dimensional';
 import { DEFAULT_TEMPLATE, type Template } from './templates';
 
 /**
@@ -19,7 +21,18 @@ const DENSITY = {
   airy: { section: '7.5rem', gap: '2.25rem' },
 } as const;
 
-export function renderStylesheet(tokens: DesignTokens, template: Template = DEFAULT_TEMPLATE): string {
+/**
+ * `dimensional` adds the whole-site 3D treatment: reveals on every band,
+ * parallax between them, grain, kinetic type, depth on the cards. It is a
+ * different design language rather than a better default — a plumber's site
+ * put through a scrollytelling treatment is a worse plumber's site — so only a
+ * site built from a 3D blueprint gets it.
+ */
+export function renderStylesheet(
+  tokens: DesignTokens,
+  template: Template = DEFAULT_TEMPLATE,
+  dimensional = false,
+): string {
   const { palette: p, fonts } = tokens;
   const density = DENSITY[tokens.density];
 
@@ -295,6 +308,8 @@ ${textureCss(tokens)}
 }
 ${premiumCss(template.motion, template.depth)}
 ${scene3dCss()}
+${turntableCss()}
+${dimensional ? dimensionalCss() : ''}
 `;
 }
 

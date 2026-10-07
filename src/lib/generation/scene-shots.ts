@@ -37,6 +37,59 @@ import type { Section } from './kit/sections';
 /** How many go in a scene. Six is what `PLACES` in the float scene can hold. */
 export const MAX_SCENE_SHOTS = 6;
 
+/**
+ * The angles a turntable is photographed at.
+ *
+ * Thirty degrees apart, named as compass-style bearings rather than as degrees
+ * because "rotated 150 degrees" means very little to an image model and "seen
+ * from behind and to the left" means a great deal. The subject description is
+ * identical in all twelve, which is what gives the sequence any chance of
+ * reading as one object rather than twelve similar ones.
+ */
+const TURN_ANGLES = [
+  'from directly in front',
+  'turned 30 degrees to the left',
+  'turned 60 degrees to the left',
+  'from its left-hand side, at 90 degrees',
+  'turned 120 degrees, mostly from behind on the left',
+  'turned 150 degrees, almost from directly behind',
+  'from directly behind',
+  'turned 150 degrees the other way, almost from behind on the right',
+  'turned 120 degrees the other way, mostly from behind on the right',
+  'from its right-hand side, at 90 degrees',
+  'turned 60 degrees to the right',
+  'turned 30 degrees to the right',
+];
+
+/**
+ * One object, photographed all the way round.
+ *
+ * Every prompt carries the same subject, the same lighting and the same
+ * framing, and differs only in the bearing. That is as close to a turntable as
+ * a text-to-image model gets: the frames are consistent rather than identical,
+ * which at thirty degrees apart reads as a hand-turned object with some life
+ * in it rather than as a rendered sequence. It would not survive being scrubbed
+ * at sixty frames a second, which is why the stage is paced to the scroll.
+ */
+export function turnBriefs(params: {
+  subject: string;
+  business: string;
+  kind: string;
+  detail?: string;
+}): { subject: string; prompt: string }[] {
+  const locked = `${params.subject}, made by ${params.business}, ${params.kind}`.trim();
+  const detail = (params.detail ?? '').slice(0, 180);
+
+  return TURN_ANGLES.map((angle, index) => ({
+    // Numbered, so placing them back in order is not guesswork.
+    subject: `${params.subject} · frame ${index + 1}`,
+    prompt:
+      `The exact same single object in all images: ${locked}. ${detail} ` +
+      `This photograph shows it ${angle}. ` +
+      `The object is centred, fills the same amount of the frame every time, and is photographed from the same height with the same lens. ${LIGHT}`,
+  }));
+}
+
 /** In flight at once. The image endpoint is the slowest thing in a build. */
 const CONCURRENCY = 3;
 
@@ -107,7 +160,17 @@ export async function photographScene(params: {
   section: Section;
   onProgress?: (done: number, total: number) => void;
 }): Promise<SceneShot[]> {
-  const briefs = shotBriefs(params);
+  // A turntable is the same machinery with a different list of prompts: one
+  // object all the way round, rather than several objects once each.
+  const briefs =
+    params.section.kind === 'turntable'
+      ? turnBriefs({
+          subject: params.section.heading ?? `the main product of ${params.business}`,
+          business: params.business,
+          kind: params.kind,
+          detail: params.section.body ?? params.section.subheading,
+        })
+      : shotBriefs(params);
   if (briefs.length === 0) return [];
 
   let apiKey: string;
@@ -196,6 +259,33 @@ export async function photographScene(params: {
  * out of the section. An item that already has a picture keeps it: an uploaded
  * photograph of the real product always beats a generated one.
  */
+export function placeTurn(section: Section, shots: SceneShot[]): Section {
+  if (shots.length === 0) return section;
+
+  /**
+   * Back into turn order, by the number in the subject.
+   *
+   * Order is the whole content of a turntable: frame 7 after frame 6 is a
+   * rotation, and the same twelve pictures in any other order is a flicker.
+   * The batches settle out of order and some of them fail, so the index is
+   * read back off the subject rather than trusted to the array.
+   */
+  const ordered = [...shots].sort((left, right) => frameNumber(left) - frameNumber(right));
+
+  return {
+    ...section,
+    image: ordered[0].url,
+    // Every frame after the first rides on an item, which is where the
+    // renderer looks for them.
+    items: ordered.slice(1).map((shot) => ({ image: shot.url })),
+  };
+}
+
+function frameNumber(shot: SceneShot): number {
+  const match = shot.subject.match(/frame (\d+)$/);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+}
+
 export function placeShots(section: Section, shots: SceneShot[]): Section {
   if (shots.length === 0) return section;
 

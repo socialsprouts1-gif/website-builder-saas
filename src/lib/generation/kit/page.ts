@@ -2,6 +2,8 @@ import type { DesignTokens } from './tokens';
 import { escapeHtml, renderSection, safeHref, type Section } from './sections';
 import { PREMIUM_SCRIPT } from './premium';
 import { SCENE3D_SCRIPT } from './scene3d';
+import { TURNTABLE_SCRIPT } from './turntable';
+import { DIMENSIONAL_SCRIPT, depthFor } from './dimensional';
 
 /**
  * Assembling sections into a page.
@@ -43,6 +45,11 @@ export interface SiteSpec {
   /** Attribution lines, such as a link back to a Google listing. */
   footerNote?: string;
   tokens: DesignTokens;
+  /**
+   * Whether this is a 3D site, and so gets the whole-site treatment: parallax
+   * between the bands, reveals on everything, grain, kinetic type.
+   */
+  dimensional?: boolean;
 }
 
 /**
@@ -50,13 +57,19 @@ export interface SiteSpec {
  * and never behind the hero. Left to the model this came out as either one flat
  * colour or a stripe per section.
  */
-export function assignTones(sections: Section[]): Section[] {
+export function assignTones(sections: Section[], dimensional = false): Section[] {
   let index = 0;
   return sections.map((section) => {
-    if (section.kind === 'hero') return { ...section, tone: 'base' };
+    const depth = dimensional ? depthFor(section.kind, index) : null;
+    const withDepth = depth === null ? {} : { depth };
+    if (section.kind === 'hero') return { ...section, ...withDepth, tone: 'base' };
     const tone = index % 2 === 0 ? 'base' : 'alt';
     index += 1;
-    return { ...section, tone: section.kind === 'cta' ? 'surface' : (tone as Section['tone']) };
+    return {
+      ...section,
+      ...withDepth,
+      tone: section.kind === 'cta' ? 'surface' : (tone as Section['tone']),
+    };
   });
 }
 
@@ -112,7 +125,7 @@ export function renderPage(site: SiteSpec, page: PageSpec): string {
   const banner = page.sections.filter((section) => section.kind === 'announcement');
   const body = page.sections.filter((section) => section.kind !== 'announcement');
 
-  const rendered = assignTones(body).map(renderSection);
+  const rendered = assignTones(body, site.dimensional).map(renderSection);
   const at = page.extra
     ? Math.min(Math.max(page.extraAfter ?? rendered.length, 0), rendered.length)
     : rendered.length;
@@ -274,4 +287,6 @@ export const SITE_SCRIPT = `(function () {
 })();
 ${PREMIUM_SCRIPT}
 ${SCENE3D_SCRIPT}
+${TURNTABLE_SCRIPT}
+${DIMENSIONAL_SCRIPT}
 `;

@@ -158,11 +158,58 @@ export function verticalFor(slug: string | null | undefined, hint: string): Vert
   return (slug ? verticalBySlug(slug) : undefined) ?? (hint.trim() ? matchVertical(hint) : DEFAULT_VERTICAL);
 }
 
+/**
+ * What to offer next on a 3D site.
+ *
+ * A 3D site asked "what now?" and was told to add a prices table, which is a
+ * true answer to the wrong question. Somebody who chose 3D Studio wants to
+ * know what else can be made out of depth — another angle on the product,
+ * a scene on a page that has not got one, a walkthrough — and the generic
+ * list never mentions any of it.
+ *
+ * Offered before the ordinary ideas and never instead of a missing page,
+ * because a broken link in the navigation still matters more than a second
+ * scene.
+ */
+const DIMENSIONAL_IDEAS: SectionIdea[] = [
+  {
+    kind: 'turntable',
+    label: 'A product you can turn',
+    hint: 'Photographed all the way round, turned by scrolling',
+    prompt:
+      'Add a turntable section to the home page: one product photographed at twelve angles, which the reader turns by scrolling. ' +
+      'Match the existing page structure and styling exactly.',
+  },
+  {
+    kind: 'scene3d',
+    label: 'A 3D scene on another page',
+    hint: 'Your products floating at different depths',
+    prompt:
+      'Add a 3D scene section to a page that does not have one, with the products floating at different depths. ' +
+      'Match the existing page structure and styling exactly.',
+  },
+  {
+    kind: 'gallery',
+    label: 'More product shots',
+    hint: 'Fresh cut-outs for the scenes',
+    prompt:
+      'Photograph more products for this site as cut-outs on transparent backgrounds, lit the same way as the existing ones, and place them in the 3D scenes.',
+  },
+  {
+    kind: 'beforeafter',
+    label: 'A walkthrough',
+    hint: 'A sequence the reader moves through',
+    prompt:
+      'Add a step-by-step walkthrough section to the home page where each step is revealed as the reader scrolls to it, with a photograph beside each. ' +
+      'Match the existing page structure and styling exactly.',
+  },
+];
+
 const MAX_SUGGESTIONS = 6;
 
 export function suggestNext(
   files: SiteFileLike[],
-  options: { verticalSlug?: string | null; hint?: string } = {},
+  options: { verticalSlug?: string | null; hint?: string; dimensional?: boolean } = {},
 ): BuildSuggestion[] {
   const pages = files.filter((file) => file.path.toLowerCase().endsWith('.html'));
   if (pages.length === 0) return [];
@@ -195,7 +242,11 @@ export function suggestNext(
     });
   }
 
-  for (const idea of SECTION_IDEAS) {
+  // A 3D site's own ideas first, so "what next?" answers in the language of
+  // the thing that was built rather than in the language of a plumber's site.
+  const ideas = options.dimensional ? [...DIMENSIONAL_IDEAS, ...SECTION_IDEAS] : SECTION_IDEAS;
+
+  for (const idea of ideas) {
     if (out.length >= MAX_SUGGESTIONS) break;
     if (idea.only && !idea.only.includes(vertical.slug)) continue;
     if (present.has(idea.kind)) continue;

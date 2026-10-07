@@ -25,13 +25,13 @@ import { renderPage, SITE_SCRIPT, type SiteSpec } from './kit/page';
 import { hasContent, parseSection } from './kit/parse';
 import type { Section, SectionKind } from './kit/sections';
 import { DEFAULT_VERTICAL, VERTICALS, matchVertical, type Vertical } from './verticals';
-import { blueprintById, blueprintDesign, blueprintVertical } from '@/lib/templates';
+import { blueprintById, blueprintDesign, blueprintIsThreeD, blueprintVertical } from '@/lib/templates';
 import { pageLabel } from '@/lib/pages';
 import { createVersion, getCurrentFiles } from './storage';
 import { shopSection, type ShopSlot } from '@/lib/shop/inject';
 import { seedShop } from '@/lib/shop/seed';
 import { photographCatalogue } from '@/lib/shop/photograph';
-import { photographScene, placeShots } from './scene-shots';
+import { photographScene, placeShots, placeTurn } from './scene-shots';
 import type {
   DesignSystem,
   GenerationEvent,
@@ -229,13 +229,17 @@ export function nextStep(state: BuildState): BuildStep | null {
 }
 
 /** Whether this build wrote a 3D scene that photographs would transform. */
+const PHOTOGRAPHED_KINDS = new Set(['scene3d', 'turntable']);
+
 export function hasScene(state: BuildState): boolean {
-  return Object.values(state.sections ?? {}).some((section) => section.kind === 'scene3d');
+  return Object.values(state.sections ?? {}).some((section) => PHOTOGRAPHED_KINDS.has(section.kind));
 }
 
 /** The sections that are scenes, with the key they are stored under. */
 export function sceneEntries(state: BuildState): [string, Section][] {
-  return Object.entries(state.sections ?? {}).filter(([, section]) => section.kind === 'scene3d');
+  return Object.entries(state.sections ?? {}).filter(([, section]) =>
+    PHOTOGRAPHED_KINDS.has(section.kind),
+  );
 }
 
 /** What to call a file on screen. Nobody wants to read `styles.css`. */
@@ -611,7 +615,7 @@ export async function runBuildStep(
       });
 
       if (shots.length === 0) continue;
-      updated[key] = placeShots(scene, shots);
+      updated[key] = scene.kind === 'turntable' ? placeTurn(scene, shots) : placeShots(scene, shots);
       touched.add(page);
       made += shots.length;
     }
@@ -728,6 +732,17 @@ async function saveSite(
 ): Promise<{ versionId: string; pages: string[] }> {
   const written = pagesToWrite(vertical, sections);
 
+  /**
+   * Whether this site gets the whole-site 3D treatment.
+   *
+   * Read off the blueprint rather than off whether a scene happens to be on
+   * the page: the treatment is parallax, reveals, grain and kinetic type
+   * across every band, and a site that has one of those on its home page and
+   * none on its contact page is the "only one part of it is 3D" complaint
+   * that produced it.
+   */
+  const dimensional = blueprintIsThreeD(blueprintById(plan.blueprintId) ?? ({ features: [] } as never));
+
   const site: SiteSpec = {
     businessName: plan.businessName,
     tagline: plan.tagline,
@@ -739,12 +754,13 @@ async function saveSite(
       .map((page) => ({ path: page.path, title: page.title })),
     contact: plan.contact,
     tokens: plan.tokens,
+    dimensional,
   };
 
   const template = designOf(plan);
 
   const files: SiteFile[] = [
-    { path: 'styles.css', content: renderStylesheet(plan.tokens, template) },
+    { path: 'styles.css', content: renderStylesheet(plan.tokens, template, dimensional) },
     { path: 'script.js', content: SITE_SCRIPT },
   ];
 

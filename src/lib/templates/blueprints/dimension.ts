@@ -32,7 +32,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     paletteBrief:
       'Deep indigo to near-black, with a cold electric blue that only appears on the work itself. No green.',
     layouts: {
-      scene3d: 'carousel',
+      scene3d: 'float',
       hero: 'editorial',
       gallery: 'mosaic',
       features: 'bento',
@@ -41,7 +41,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     },
     seoDescription: 'An interactive 3D portfolio: selected work, in depth, with the story behind each piece.',
     pages: [
-      home('hero', 'scene3d', 'about', 'gallery', 'features', 'split', 'logos', 'testimonials', 'cta'),
+      home('hero', 'scene3d', 'about', 'turntable', 'gallery', 'features', 'split', 'logos', 'testimonials', 'cta'),
       page('work.html', 'Work', 'hero', 'scene3d', 'gallery', 'split', 'beforeafter', 'cta'),
       page('about.html', 'About', 'hero', 'about', 'stats', 'steps', 'logos', 'cta'),
       CONTACT,
@@ -63,7 +63,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     paletteBrief:
       'Warm champagne and bone on charcoal, with a brushed-gold accent. Expensive and quiet.',
     layouts: {
-      scene3d: 'product',
+      scene3d: 'float',
       hero: 'centre',
       features: 'checks',
       split: 'points',
@@ -72,8 +72,8 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     },
     seoDescription: 'See it from every angle, in 3D, before you buy.',
     pages: [
-      home('hero', 'scene3d', 'split', 'features', 'gallery', 'stats', 'testimonials', 'pricing', 'faq', 'cta'),
-      page('product.html', 'The product', 'hero', 'scene3d', 'features', 'split', 'beforeafter', 'pricing', 'faq', 'cta'),
+      home('hero', 'scene3d', 'turntable', 'split', 'features', 'gallery', 'stats', 'testimonials', 'pricing', 'faq', 'cta'),
+      page('product.html', 'The product', 'hero', 'turntable', 'features', 'split', 'beforeafter', 'pricing', 'faq', 'cta'),
       CONTACT,
     ],
   },
@@ -93,7 +93,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     paletteBrief:
       'Near-black, hot violet and a magenta edge light. Loud, saturated, nothing like a corporate site.',
     layouts: {
-      scene3d: 'world',
+      scene3d: 'float',
       hero: 'fullbleed',
       features: 'bento',
       steps: 'numbered',
@@ -103,7 +103,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     seoDescription: 'The world, the characters and the release date — in an interactive 3D landing page.',
     pages: [
       home('announcement', 'hero', 'scene3d', 'features', 'gallery', 'split', 'stats', 'steps', 'testimonials', 'faq', 'cta'),
-      page('world.html', 'The world', 'hero', 'scene3d', 'split', 'gallery', 'team', 'faq', 'cta'),
+      page('world.html', 'The world', 'hero', 'scene3d', 'turntable', 'split', 'gallery', 'team', 'faq', 'cta'),
       CONTACT,
     ],
   },
@@ -123,7 +123,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     paletteBrief:
       'Gallery white and pale concrete, with one deep oxblood accent. Light, airy, almost no colour.',
     layouts: {
-      scene3d: 'showroom',
+      scene3d: 'float',
       hero: 'split',
       gallery: 'grid',
       services: 'index',
@@ -133,7 +133,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     seoDescription: 'Walk the showroom in 3D, then come and see it in person.',
     pages: [
       home('hero', 'scene3d', 'about', 'services', 'gallery', 'split', 'features', 'testimonials', 'hours', 'cta'),
-      page('collection.html', 'Collection', 'hero', 'scene3d', 'gallery', 'services', 'logos', 'faq', 'cta'),
+      page('collection.html', 'Collection', 'hero', 'scene3d', 'turntable', 'gallery', 'services', 'logos', 'faq', 'cta'),
       VISIT,
     ],
   },
@@ -153,7 +153,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     paletteBrief:
       'Slate and graphite with a cool cyan accent and a thin coral highlight. Technical, not neon.',
     layouts: {
-      scene3d: 'device',
+      scene3d: 'float',
       hero: 'split',
       features: 'bento',
       split: 'points',
@@ -164,7 +164,7 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     seoDescription: 'See the product work, in 3D, before you book a demo.',
     pages: [
       home('hero', 'scene3d', 'split', 'features', 'logos', 'steps', 'testimonials', 'pricing', 'faq', 'cta'),
-      page('product.html', 'Product', 'hero', 'scene3d', 'features', 'split', 'faq', 'cta'),
+      page('product.html', 'Product', 'hero', 'turntable', 'features', 'split', 'faq', 'cta'),
       page('pricing.html', 'Pricing', 'hero', 'pricing', 'faq', 'cta'),
       CONTACT,
     ],

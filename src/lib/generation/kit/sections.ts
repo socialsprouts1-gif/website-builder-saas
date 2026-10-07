@@ -39,6 +39,9 @@ export const SECTION_KINDS = [
   // of objects in a space rather than a set of cards, and the geometry that
   // arranges them lives in its own module.
   'scene3d',
+  // The product you turn by scrolling. Its content is one object photographed
+  // at a dozen angles, which is not something any other kind can hold.
+  'turntable',
 ] as const;
 
 export type SectionKind = (typeof SECTION_KINDS)[number];
@@ -65,6 +68,14 @@ export interface Section {
   /** Alternating band background, chosen by the assembler not the model. */
   tone?: 'base' | 'surface' | 'alt';
   /**
+   * How far this band moves against the page, on a 3D site.
+   *
+   * Set by the assembler, never by the model, and only on a site built from a
+   * 3D blueprint. Absent everywhere else, which is what keeps an ordinary
+   * site's markup identical to what it has always been.
+   */
+  depth?: number;
+  /**
    * How this kind is arranged, chosen by the template rather than the model.
    *
    * The old two-value `layout` is gone: a hero could be split or centred and
@@ -77,6 +88,18 @@ export interface Section {
 import { layoutFor } from './layouts';
 import { escapeHtml, safeHref } from './html';
 import { renderScene3d } from './scene3d';
+import { MIN_TURNTABLE_FRAMES, renderTurntable, turntableFrames } from './turntable';
+
+/**
+ * A turntable needs frames. Below three it is not a rotation, so it falls back
+ * to the floating scene — which handles one picture perfectly well — rather
+ * than rendering a dial with nothing to turn.
+ */
+function renderTurntableSection(section: Section): string {
+  const frames = turntableFrames(section);
+  if (frames.length < MIN_TURNTABLE_FRAMES) return renderScene3d(section);
+  return renderTurntable(section, frames);
+}
 
 export { escapeHtml, safeHref };
 
@@ -133,8 +156,15 @@ function toneClass(section: Section): string {
   return '';
 }
 
+/** The parallax attribute, on a 3D site only. */
+function depthAttribute(section: Section): string {
+  return typeof section.depth === 'number'
+    ? ` data-depth style="--depth:${section.depth}"`
+    : '';
+}
+
 function wrap(section: Section, inner: string, extraClass = ''): string {
-  return `<section id="${escapeHtml(section.id)}" class="section${toneClass(section)}${extraClass}" data-section="${section.kind}" data-lumen-id="${escapeHtml(section.id)}">
+  return `<section id="${escapeHtml(section.id)}" class="section${toneClass(section)}${extraClass}" data-section="${section.kind}" data-lumen-id="${escapeHtml(section.id)}"${depthAttribute(section)}>
   <div class="shell">${inner}</div>
 </section>`;
 }
@@ -804,6 +834,7 @@ const RENDERERS: Record<SectionKind, (section: Section) => string> = {
   contact: renderContact,
   cta: renderCta,
   scene3d: renderScene3d,
+  turntable: renderTurntableSection,
 };
 
 export function renderSection(section: Section): string {
