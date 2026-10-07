@@ -36,19 +36,30 @@ describe('the plans', () => {
   });
 
   /**
-   * 3D sites do not exist yet. Listing them on the premium card is a promise
-   * about the roadmap, and somebody paying ₹2,000 this month must not believe
-   * they are paying for something that is there today.
+   * The rule, not the instance. Nothing is marked `soon` today — 3D was, and
+   * the mark came off when the scenes started rendering — but the moment
+   * anything is again, the card has to say so rather than quietly selling a
+   * roadmap to somebody paying ₹2,000 this month.
    */
   it('mark what is not built yet as not built yet', () => {
-    const unbuilt = Object.values(FEATURES).filter((feature) => feature.soon);
-    expect(unbuilt.length).toBeGreaterThan(0);
-    for (const feature of unbuilt) {
+    for (const feature of Object.values(FEATURES).filter((entry) => entry.soon)) {
       for (const plan of PLANS) {
         const line = plan.features.find((entry) => entry.includes(feature.label));
         if (line) expect(line.toLowerCase()).toContain('coming');
       }
     }
+  });
+
+  /**
+   * The other half of the same rule. 3D does exist now, and a card that still
+   * said "coming soon" beside it would be turning away the people the Premium
+   * plan is for.
+   */
+  it('do not call a built feature coming soon', () => {
+    const premium = PLANS.find((plan) => plan.name === 'Premium')!;
+    const line = premium.features.find((entry) => entry.includes(FEATURES.three_d.label));
+    expect(line).toBeTruthy();
+    expect(line!.toLowerCase()).not.toContain('coming');
   });
 
   /**

@@ -44,7 +44,10 @@ export type BlueprintFeature =
   | 'multipage'
   | 'enquiries'
   | 'courses'
-  | 'rooms';
+  | 'rooms'
+  // The site is built around an interactive 3D scene. The one feature that is
+  // also an entitlement: it is what makes a blueprint Premium-only.
+  | 'three_d';
 
 export interface BlueprintPage {
   path: string;
@@ -85,6 +88,11 @@ export interface Blueprint {
   action: string;
   /** The default meta description, before the business is known. */
   seoDescription: string;
+}
+
+/** Whether this blueprint builds a 3D site, and so needs the Premium plan. */
+export function blueprintIsThreeD(blueprint: Blueprint): boolean {
+  return blueprint.features.includes('three_d');
 }
 
 /** Every section this blueprint draws, across every page. */

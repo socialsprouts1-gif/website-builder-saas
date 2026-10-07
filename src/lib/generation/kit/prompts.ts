@@ -87,6 +87,8 @@ const SECTION_BRIEF: Record<SectionKind, string> = {
   beforeafter:
     'items: 3 real results. title is what the customer came in for, body one sentence on what changed, meta how long it took or what it cost. Leave image and href empty — the photographs are attached later. Claim no result the brief does not support.',
   cta: 'A closing band. heading is a direct invitation, subheading one line, primaryCta the action. No items.',
+  scene3d:
+    'The interactive 3D part of the page. The scene itself is built for you — do not describe shapes, lighting, cameras or materials, and never write that something "rotates" or "floats", because the reader can already see that it does. heading names what is in the scene ("The 2026 collection, from every angle"). body is one or two sentences on why looking at it this way helps someone decide. items: 3 to 5 points on the thing in the scene — title is the part or feature being pointed at in two or three words, body one sentence of real specifics, meta an optional number, size, price or material. primaryCta is the action it leads to.',
 };
 
 export const SECTION_SYSTEM = `You write the content of one section of a small business website. You do not write HTML — the section is rendered from your JSON by a fixed component library.

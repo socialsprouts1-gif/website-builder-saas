@@ -35,6 +35,10 @@ export const SECTION_KINDS = [
   'logos',
   'split',
   'beforeafter',
+  // The 3D section. Not a variation on any of the above: the content is a set
+  // of objects in a space rather than a set of cards, and the geometry that
+  // arranges them lives in its own module.
+  'scene3d',
 ] as const;
 
 export type SectionKind = (typeof SECTION_KINDS)[number];
@@ -71,29 +75,12 @@ export interface Section {
 }
 
 import { layoutFor } from './layouts';
+import { escapeHtml, safeHref } from './html';
+import { renderScene3d } from './scene3d';
 
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+export { escapeHtml, safeHref };
 
-/**
- * Only links we are willing to put in someone's website. A javascript: or
- * data: URL in a generated page is a stored cross-site scripting hole, and the
- * content it came from was written by a language model from a stranger's prompt.
- */
-export function safeHref(value: string | undefined): string {
-  const text = (value ?? '').trim();
-  if (!text) return '#';
-  if (/^(https?:\/\/|mailto:|tel:|#|\/|\.\/)/i.test(text)) return escapeHtml(text);
-  // A bare page name like "about.html" is fine; anything with a scheme is not.
-  if (/^[\w.-]+\.html(#[\w-]+)?$/i.test(text)) return escapeHtml(text);
-  return '#';
-}
+
 
 /** Images must be real URLs we put there, never a scheme of the model's choosing. */
 function safeSrc(value: string | undefined): string | null {
@@ -816,6 +803,7 @@ const RENDERERS: Record<SectionKind, (section: Section) => string> = {
   hours: renderRows,
   contact: renderContact,
   cta: renderCta,
+  scene3d: renderScene3d,
 };
 
 export function renderSection(section: Section): string {

@@ -3,8 +3,11 @@ import { join } from 'node:path';
 import { globSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { FEATURES, planFor } from '@/lib/plans';
+import { blueprintById, blueprintIsThreeD } from '@/lib/templates';
 import {
   STUDIO_CATEGORIES,
+  STUDIO_KINDS,
+  STUDIO_PALETTES,
   STUDIO_CONTROLS,
   STUDIO_EDITOR_PANELS,
   STUDIO_EXAMPLES,
@@ -94,30 +97,84 @@ describe('what the page promises', () => {
   });
 
   /**
-   * The one that matters. 3D Studio does not exist: it is marked `soon` in the
-   * plan catalogue, and a showcase this convincing is exactly the thing that
-   * would quietly start reading as a shipped feature. Every screen has to say
-   * otherwise, in its own words, where somebody will see it.
+   * The one that matters, now pointing the other way.
+   *
+   * Studio spent a release as a convincing showcase for something that did not
+   * exist, and every screen had to say so. It exists: the blueprints build,
+   * the scenes render, Build posts to the same endpoint as everything else. So
+   * the risk has inverted — a screen still saying "in development" is now
+   * turning away the people the Premium plan is for, and a stale sentence in
+   * one of eight components is exactly the kind of thing nobody re-reads.
    */
-  it('says on every screen that it is not built yet', () => {
-    expect(FEATURES.three_d.soon).toBe(true);
+  it('no longer says the feature is unbuilt', () => {
+    expect(FEATURES.three_d.soon).toBeFalsy();
+    expect(text).not.toMatch(/in development|still being built|not built yet|coming soon/i);
+    // "opens to Premium first" was the queue copy, and it reads as a wait list.
+    expect(text).not.toMatch(/opens to Premium (accounts )?first/i);
+  });
+
+  /**
+   * And every screen still has to say which plan it is on. A feature that
+   * silently 403s at the last press is worse than one that never offered.
+   */
+  it('says on every screen which plan it is on', () => {
     for (const path of sources) {
       const source = readFileSync(join(process.cwd(), path), 'utf8');
-      // Either the status badge, or the component is a part with no copy of
-      // its own — a scene, a grid — that the page around it labels.
-      const says = /STUDIO_STATUS|being built|in development|opens to Premium|still being built/i.test(
-        source,
-      );
+      const says = /STUDIO_STATUS|Premium/i.test(source);
+      // A part with no copy of its own — a scene, a grid — is labelled by the
+      // page around it rather than labelling itself.
       const silent = !/<h1|<h2|font-display text-\[3/.test(source);
-      expect(says || silent, `${path} describes the feature without saying it is unbuilt`).toBe(true);
+      expect(says || silent, `${path} describes the feature without naming the plan`).toBe(true);
     }
   });
 
-  it('never claims Premium includes it today', () => {
-    expect(planFor('premium', 'monthly')!.features).toContain('three_d');
-    // "included", "available now", "you can" — the words that would make the
-    // promise read as a shipped feature.
-    expect(text).not.toMatch(/3D Studio is (included|available|live)/i);
+  /**
+   * Every kind offered has to be a blueprint that exists. This is the join
+   * between the screen and the thing it builds, and it is one string: a
+   * renamed blueprint would otherwise leave a card that 500s on Build.
+   */
+  it('offers only kinds that are real blueprints, and all of them 3D', () => {
+    expect(STUDIO_KINDS.length).toBeGreaterThanOrEqual(5);
+    for (const kind of STUDIO_KINDS) {
+      const blueprint = blueprintById(kind.id);
+      expect(blueprint, kind.id).toBeTruthy();
+      // And every one of them must actually be gated, or Studio is a way to
+      // get a Premium feature by walking in through a different door.
+      expect(blueprintIsThreeD(blueprint!), kind.id).toBe(true);
+    }
+  });
+
+  /** A 3D blueprint has to put a 3D section on the page it promises one on. */
+  it('puts a scene on every 3D blueprint', () => {
+    for (const kind of STUDIO_KINDS) {
+      const blueprint = blueprintById(kind.id)!;
+      const home = blueprint.pages.find((page) => page.path === 'index.html')!;
+      expect(home.sections, kind.id).toContain('scene3d');
+    }
+  });
+
+  /**
+   * The complaint that started this: everything Lumen drew in 3D was the same
+   * electric lime, so five different businesses previewed as five copies of
+   * Lumen. Lime is one option among several now, and nothing may hard-code it.
+   */
+  it('does not draw everything in one colour', () => {
+    const palettes = new Set(STUDIO_PALETTES.map((entry) => entry.tint.join()));
+    expect(palettes.size).toBe(STUDIO_PALETTES.length);
+    expect(STUDIO_PALETTES.length).toBeGreaterThanOrEqual(6);
+    expect(new Set(STUDIO_KINDS.map((entry) => entry.tint.join())).size).toBe(STUDIO_KINDS.length);
+    expect(new Set(STUDIO_CATEGORIES.map((entry) => entry.tint.join())).size).toBe(
+      STUDIO_CATEGORIES.length,
+    );
+
+    // Lumen's own accent, written into a scene by hand. Allowed once in the
+    // Scene component's own default and nowhere else — every other scene takes
+    // the colour of the thing it is illustrating.
+    const hardCoded = sources.filter((path) => {
+      if (path.endsWith('Scene.tsx')) return false;
+      return /#d7ff3e/i.test(readFileSync(join(process.cwd(), path), 'utf8'));
+    });
+    expect(hardCoded, 'screens hard-coding the lime accent').toEqual([]);
   });
 
   it('does not load a 3D engine onto a marketing page', () => {

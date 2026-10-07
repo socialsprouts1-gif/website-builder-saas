@@ -42,7 +42,7 @@ export default function StudioPage() {
 
       <StudioCategories />
       <StudioExamples />
-      <StudioPrompt />
+      <StudioPrompt signedIn={false} />
       <StudioEditor />
       <StudioProcess />
       <StudioShowcase />
@@ -50,11 +50,11 @@ export default function StudioPage() {
       <section className="mx-auto max-w-shell px-6 pb-24">
         <div className="rounded-card border border-accent/30 bg-accent-soft/25 p-8 text-center sm:p-12">
           <p className="font-display text-[32px] leading-tight text-ink-primary sm:text-[40px]">
-            Studio opens to Premium first
+            3D Studio is on Premium
           </p>
           <p className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-ink-secondary">
-            It is being built now. Premium accounts get it the day it ships, at no extra cost — and
-            everything Lumen already does is there today, on every plan.
+            Every 3D website Lumen builds is included in Premium, with no limit on how many and
+            nothing extra to pay. Everything else Lumen does is on every plan, including the free one.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <ButtonLink href="/pricing" size="lg">

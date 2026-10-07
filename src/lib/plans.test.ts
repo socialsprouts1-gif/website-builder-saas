@@ -121,10 +121,27 @@ describe('what a plan unlocks', () => {
    * may behave as though they do, and the label has to say so.
    */
   it('refuses a feature that is only a promise', () => {
-    expect(FEATURES.three_d.soon).toBe(true);
-    expect(planAllows('premium', 'three_d')).toBe(false);
-    expect(availableFeatures(planFor('premium', 'monthly')!)).not.toContain('three_d');
-    expect(planFor('premium', 'monthly')!.features).toContain('three_d');
+    // Nothing is a promise today. The rule still has to hold for the next one.
+    for (const [key, feature] of Object.entries(FEATURES)) {
+      if (!feature.soon) continue;
+      expect(planAllows('premium', key as Feature)).toBe(false);
+      expect(availableFeatures(planFor('premium', 'monthly')!)).not.toContain(key);
+    }
+  });
+
+  /**
+   * 3D is the one feature the Premium price is actually defended by, so the
+   * entitlement is checked from both ends: Premium and the founder's own
+   * account build 3D sites, and nobody else does.
+   */
+  it('puts 3D websites behind Premium, and lets admin through', () => {
+    expect(FEATURES.three_d.soon).toBeFalsy();
+    expect(planAllows('premium', 'three_d')).toBe(true);
+    expect(planAllows('admin', 'three_d')).toBe(true);
+    expect(planAllows('pro', 'three_d')).toBe(false);
+    expect(planAllows('free', 'three_d')).toBe(false);
+    expect(availableFeatures(planFor('premium', 'monthly')!)).toContain('three_d');
+    expect(tierFor('three_d')).toBe('premium');
   });
 
   it('counts only real features as what a plan is worth today', () => {

@@ -17,7 +17,7 @@ import { applyAnswers, whatsappFromAnswers } from '@/lib/generation/interview';
 import { normaliseWhatsApp } from '@/lib/whatsapp';
 import { OWN_MATERIAL_MARK } from '@/lib/generation/prompts';
 import { lookupPlace } from '@/lib/google/places';
-import { blueprintById, blueprintCard, blueprintSellsThings } from '@/lib/templates';
+import { blueprintById, blueprintCard, blueprintIsThreeD, blueprintSellsThings } from '@/lib/templates';
 import { matchVertical } from '@/lib/generation/verticals';
 import { missingFeatures } from '@/lib/supabase/features';
 import { seedFromPlace } from '@/lib/google/seed';
@@ -84,6 +84,18 @@ export async function POST(request: NextRequest) {
     // structure of the site hangs off this, so a typo has to degrade to the old
     // behaviour rather than to a site with no pages.
     const blueprint = blueprintById(body.blueprint);
+
+    // 3D is where the Premium plan earns its price, so this is the refusal
+    // that matters most. It is deliberately the last gate rather than the
+    // first: somebody on the free plan writes their brief, picks what they
+    // want built and answers every question, and only the Build press stops
+    // them — with the plan, and with everything they typed still on screen.
+    // Admin accounts are never a tier anybody bought and go straight through.
+    if (blueprint && blueprintIsThreeD(blueprint) && !planAllows(allowance.tier, 'three_d')) {
+      return planRequired(
+        `3D websites are built in Lumen 3D Studio, which is on the Premium plan. Your brief is safe — upgrade and "${blueprint.name}" builds straight away.`,
+      );
+    }
 
     // The WhatsApp number is a setting rather than a sentence. Folding it only
     // into the brief would put it in the page's copy and nowhere the product

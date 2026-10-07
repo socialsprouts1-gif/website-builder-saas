@@ -17,12 +17,12 @@ export function StudioShowcase() {
           {SHOWCASE_TITLE}
         </h2>
         <p className="mt-4 text-[18px] leading-snug text-ink-secondary">{SHOWCASE_BLURB}</p>
-        {/* Said here as well as at the top. Somebody who lands on this section
-            from a shared link sees eight finished-looking projects and nothing
-            else, which is exactly how a roadmap starts reading as a catalogue. */}
+{/* Said here as well as at the top. Somebody who lands on this
+            section from a shared link sees eight finished-looking projects and
+            nothing else, and the plan it needs is the one thing they cannot
+            work out from the pictures. */}
         <p className="mt-3 text-[14.5px] text-ink-muted">
-          Eight directions Studio is being built to make. It is in development, and opens to Premium
-          accounts first.
+          Eight directions Studio builds in. 3D websites are on the Premium plan.
         </p>
       </div>
 

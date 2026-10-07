@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/Button';
 import { Scene } from '@/components/studio/Scene';
 import { cn } from '@/components/ui/cn';
 import {
@@ -63,6 +64,14 @@ export function StudioHero() {
         <p className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-ink-secondary">
           {STUDIO_BLURB}
         </p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <ButtonLink href="#build" size="lg">
+            Build a 3D website →
+          </ButtonLink>
+          <ButtonLink href="/pricing" size="lg" variant="secondary">
+            See Premium
+          </ButtonLink>
+        </div>
       </div>
 
       <div
@@ -91,7 +100,7 @@ export function StudioHero() {
             transformStyle: 'preserve-3d',
           }}
         >
-          <Scene shape="orbit" className="h-[300px] sm:h-[460px]" tint={['#d7ff3e', '#4f6616']} />
+          <Scene shape="orbit" className="h-[300px] sm:h-[460px]" tint={['#8fb4ff', '#2b3f93']} />
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-5 sm:p-7">
             <div className="max-w-xs">

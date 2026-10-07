@@ -5,6 +5,7 @@ import { CARE_BLUEPRINTS } from './blueprints/care';
 import { PROPERTY_BLUEPRINTS } from './blueprints/property';
 import { COMMERCE_BLUEPRINTS } from './blueprints/commerce';
 import { KNOWLEDGE_BLUEPRINTS } from './blueprints/knowledge';
+import { DIMENSION_BLUEPRINTS } from './blueprints/dimension';
 import { TEMPLATE_INDUSTRIES } from './industries';
 import { sectionCount, type Blueprint, type BlueprintFeature, type BlueprintStyle } from './types';
 
@@ -17,6 +18,7 @@ export const BLUEPRINTS: Blueprint[] = [
   ...COMMERCE_BLUEPRINTS,
   ...PROPERTY_BLUEPRINTS,
   ...KNOWLEDGE_BLUEPRINTS,
+  ...DIMENSION_BLUEPRINTS,
 ];
 
 export const blueprintById = (id: string | null | undefined): Blueprint | undefined =>

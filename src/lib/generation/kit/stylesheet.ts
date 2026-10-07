@@ -1,5 +1,6 @@
 import type { DesignTokens } from './tokens';
 import { premiumCss } from './premium';
+import { scene3dCss } from './scene3d';
 import { DEFAULT_TEMPLATE, type Template } from './templates';
 
 /**
@@ -293,6 +294,7 @@ ${textureCss(tokens)}
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 ${premiumCss(template.motion, template.depth)}
+${scene3dCss()}
 `;
 }
 

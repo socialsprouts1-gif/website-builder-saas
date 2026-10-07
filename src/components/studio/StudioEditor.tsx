@@ -55,7 +55,7 @@ export function StudioEditor() {
 
           <div>
             <div className="relative">
-              <Scene shape="product" className="h-[260px] sm:h-[360px]" tint={['#d7ff3e', '#4f6616']} />
+              <Scene shape="product" className="h-[260px] sm:h-[360px]" tint={['#ffd9a0', '#8f6228']} />
               <span className="absolute left-4 top-4 rounded-pill border border-white/15 bg-black/55 px-3 py-1 text-[13px] font-medium text-ink-primary">
                 {panel}
               </span>
@@ -96,7 +96,8 @@ export function StudioEditor() {
       </div>
 
       <p className="mt-4 text-center text-[14px] text-ink-muted">
-        A preview of the interface. The panels switch; the renderer behind them is what is being built.
+        The editor as it will look. The panels switch here; the full set of controls lands with the
+        next Studio release — what Build makes today is the finished, interactive site itself.
       </p>
     </section>
   );

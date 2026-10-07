@@ -1,6 +1,7 @@
 import type { DesignTokens } from './tokens';
 import { escapeHtml, renderSection, safeHref, type Section } from './sections';
 import { PREMIUM_SCRIPT } from './premium';
+import { SCENE3D_SCRIPT } from './scene3d';
 
 /**
  * Assembling sections into a page.
@@ -217,7 +218,12 @@ export const SITE_SCRIPT = `(function () {
       if (payload.name) lines.push('Name: ' + payload.name);
       if (payload.contact) lines.push('Contact: ' + payload.contact);
       if (payload.message) lines.push(payload.message);
-      var summary = (booking ? 'Booking request' : 'Enquiry') + ' from your website\n' + lines.join('\n');
+      // Escaped twice on purpose. This file is a template literal, so a single
+      // backslash-n here is a real newline in the emitted script.js — which
+      // ends a single-quoted string mid-line and makes the whole file fail to
+      // parse. Every site shipped that way: no mobile menu, no enquiry form,
+      // no WhatsApp handoff, because script.js never ran at all.
+      var summary = (booking ? 'Booking request' : 'Enquiry') + ' from your website\\n' + lines.join('\\n');
 
       // Nowhere to send it — a preview, or a site exported elsewhere. Saying
       // "we will be in touch" would be a lie, so it says what to do instead.
@@ -267,4 +273,5 @@ export const SITE_SCRIPT = `(function () {
   });
 })();
 ${PREMIUM_SCRIPT}
+${SCENE3D_SCRIPT}
 `;

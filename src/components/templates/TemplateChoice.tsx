@@ -60,7 +60,18 @@ export function TemplateChoice({
                     {active ? '✓' : ''}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[16px] text-ink-primary">{card.name}</span>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-[16px] text-ink-primary">{card.name}</span>
+                      {/* Said on the card rather than only at Build. The wall
+                          still comes at Build — that is the rule — but being
+                          told which plan a template needs before choosing it
+                          is not a wall, it is the price on the label. */}
+                      {card.features.includes('three_d') ? (
+                        <span className="rounded-pill border border-accent/45 bg-accent-soft px-2 py-0.5 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-accent">
+                          3D · Premium
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="mt-0.5 block text-[13.5px] capitalize text-ink-muted">
                       {card.style} · {card.sections} sections · {card.pages} pages
                     </span>

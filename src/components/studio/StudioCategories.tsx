@@ -22,7 +22,7 @@ export function StudioCategories() {
       <Heading
         eyebrow="What it builds"
         title="Eight kinds of experience"
-        blurb="Pick a starting point and Lumen builds the scene, the interactions and the page around it. All eight are in development — this is what they will make."
+        blurb="Pick a starting point and Lumen builds the scene, the interactions and the page around it. Five of them build today from the box below, on the Premium plan; the rest are being drawn."
       />
 
       <div className="mt-10 grid gap-5 lg:grid-cols-[1fr_1.1fr]">
@@ -53,7 +53,7 @@ export function StudioCategories() {
                     live={false}
                     dim
                     className="h-12 w-16 shrink-0 rounded-[8px] border border-hairline"
-                    tint={selected ? ['#d7ff3e', '#4f6616'] : ['#8e8e84', '#3a3a34']}
+                    tint={selected ? category.tint : ['#8e8e84', '#3a3a34']}
                   />
                   {/* flex-1 as well as min-w-0: a flex item without it sizes
                       to its longest line, so `truncate` had nothing to truncate
@@ -78,7 +78,7 @@ export function StudioCategories() {
             key={chosen.id}
             shape={chosen.shape}
             className="h-[280px] sm:h-[420px]"
-            tint={['#d7ff3e', '#4f6616']}
+            tint={chosen.tint}
           />
           <div className="border-t border-hairline p-6">
             <p className="font-display text-[24px] leading-tight text-ink-primary">{chosen.label}</p>

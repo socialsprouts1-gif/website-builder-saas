@@ -219,16 +219,20 @@ export function paidPlans(period: BillingPeriod): Plan[] {
 /**
  * What each feature is called, and whether it exists yet.
  *
- * `soon` is the honest half. Lumen does not build 3D sites today; listing it on
- * the premium card is a promise about the roadmap, and a promise has to read as
- * one. Anything marked here is never counted as a reason the plan is worth the
- * money today, and the UI prints the label beside it.
+ * `soon` is the honest half: anything marked here is a promise about the
+ * roadmap rather than a reason the plan is worth the money today, it is never
+ * counted as an available feature, and the UI prints the label beside it.
+ *
+ * Nothing is marked today. 3D websites were, until the 3D blueprints and the
+ * scene renderer landed; the mark came off in the same commit that made them
+ * build, because a feature that works and still says "soon" is the same lie in
+ * the other direction.
  */
 export const FEATURES: Record<Feature, PlanFeature> = {
   custom_domain: { label: 'Your own domain, with HTTPS' },
   gst_invoices: { label: 'GST-compliant invoices' },
   google_import: { label: 'Build from your Google Business listing' },
-  three_d: { label: '3D websites', soon: true },
+  three_d: { label: '3D websites, built in Lumen 3D Studio' },
 };
 
 /** Features that exist today — what a plan is actually worth now. */

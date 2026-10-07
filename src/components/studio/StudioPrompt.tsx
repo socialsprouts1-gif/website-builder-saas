@@ -1,133 +1,209 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/components/ui/cn';
-import { STUDIO_PROMPT_EXAMPLE, STUDIO_QUICK_PROMPTS, STUDIO_STATUS } from '@/lib/studio';
+import { Scene } from '@/components/studio/Scene';
+import { postJson } from '@/components/app/UpgradeDialog';
+import {
+  STUDIO_KINDS,
+  STUDIO_PALETTES,
+  STUDIO_STATUS,
+  studioBrief,
+  type StudioKind,
+  type StudioPalette,
+} from '@/lib/studio';
 
 /**
- * Describe the experience you want, before the thing that builds it exists.
+ * Where a 3D website actually gets built.
  *
- * This is the one place on the page where somebody could reasonably expect a
- * button to do what it says, so the status sits directly above it rather than
- * in a footnote: 3D Studio is in development, and pressing this puts the brief
- * in the queue instead of rendering a scene.
+ * Three decisions and a sentence: what kind of thing, what colour, and what the
+ * business is. The kind is a blueprint id, the colour is an instruction folded
+ * into the brief, and the whole lot goes to `/api/projects` — the same endpoint
+ * every other site on Lumen is built through. There is no second pipeline here,
+ * which is the only reason this works at all.
  *
- * The brief is kept because it is worth more than a mailing list. "Create a
- * futuristic site for a sneaker brand with a model you can rotate" is a product
- * requirement written by the person who would pay for it.
+ * Two things it is careful about.
+ *
+ * The wall comes last. Anyone can choose a kind, choose a palette and write
+ * their whole brief; the plan is only mentioned when Build is pressed and the
+ * server says 403. That is the rule everywhere in Lumen — somebody who has done
+ * the work is being asked to pay for something real, not stopped at the door —
+ * and `postJson` turns that refusal into the upgrade dialog without this
+ * component knowing anything about plans.
+ *
+ * The preview is the choice. Each kind and each palette draws its own scene in
+ * its own colours, so picking "hot violet" shows a violet scene rather than the
+ * same lime one with a different label underneath.
  */
-export function StudioPrompt({ category }: { category?: string }) {
+export function StudioPrompt({ signedIn = true }: { signedIn?: boolean }) {
+  const router = useRouter();
+  const [kind, setKind] = useState<StudioKind>(STUDIO_KINDS[0]);
+  const [palette, setPalette] = useState<StudioPalette>(STUDIO_PALETTES[0]);
   const [brief, setBrief] = useState('');
-  const [email, setEmail] = useState('');
-  const [state, setState] = useState<'idle' | 'sending' | 'saved'>('idle');
+  const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const ready = brief.trim().length >= 10;
+  const ready = brief.trim().length >= 15;
 
-  async function submit() {
-    if (!ready || state === 'sending') return;
-    setState('sending');
-    setError(null);
-    try {
-      const response = await fetch('/api/studio/interest', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          brief: brief.trim(),
-          category: category ?? null,
-          ...(email.trim() ? { email: email.trim() } : {}),
-        }),
-      });
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error ?? 'That did not save. Try again in a moment.');
-      }
-      setState('saved');
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'That did not save.');
-      setState('idle');
+  async function build() {
+    if (!ready || building) return;
+    if (!signedIn) {
+      router.push('/signup?next=/app/studio');
+      return;
     }
-  }
+    setBuilding(true);
+    setError(null);
 
-  if (state === 'saved') {
-    return (
-      <section className="mx-auto max-w-shell px-6 py-16">
-        <div className="mx-auto max-w-2xl rounded-card border border-accent/35 bg-accent-soft/30 p-8 text-center">
-          <Badge tone="accent" className="mb-4">On the list</Badge>
-          <p className="font-display text-[30px] leading-tight text-ink-primary">
-            Your brief is first in the queue
-          </p>
-          <p className="mx-auto mt-3 max-w-md text-[15.5px] leading-relaxed text-ink-secondary">
-            3D Studio opens to Premium accounts first. When it does, this is the brief it starts from —
-            and we will email you the day it is ready.
-          </p>
-        </div>
-      </section>
-    );
+    const { ok, blocked, payload } = await postJson<{
+      projectId?: string;
+      jobId?: string;
+      error?: string;
+    }>('/api/projects', {
+      prompt: studioBrief({ kind, palette, brief }),
+      inputMode: 'prompt',
+      blueprint: kind.id,
+    });
+
+    // Out of credits, or not on Premium. The dialog is already open over the
+    // top of this; everything they typed stays exactly where it is, because
+    // there is nothing to go back to and nothing to retype after upgrading.
+    if (blocked) {
+      setBuilding(false);
+      return;
+    }
+    if (!ok || !payload.projectId) {
+      setError(payload.error ?? 'Could not start the build. Try again in a moment.');
+      setBuilding(false);
+      return;
+    }
+    router.push(`/app/project/${payload.projectId}?job=${payload.jobId}`);
   }
 
   return (
-    <section className="mx-auto max-w-shell px-6 py-16">
-      <div className="mx-auto max-w-3xl rounded-card border border-hairline bg-raised p-6 sm:p-8">
+    <section id="build" className="mx-auto max-w-shell scroll-mt-20 px-6 py-16">
+      <div className="mx-auto max-w-4xl rounded-card border border-hairline bg-raised p-6 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-display text-[26px] leading-tight text-ink-primary">
-            Describe the experience you want to build
+          <p className="font-display text-[28px] leading-tight text-ink-primary sm:text-[32px]">
+            Build a 3D website
           </p>
           <Badge tone="accent">{STUDIO_STATUS}</Badge>
         </div>
-        <p className="mt-2 text-[14.5px] leading-relaxed text-ink-secondary">
-          Studio is still being built, so this does not render a scene today. It puts your brief at the
-          front of the queue for when it opens — and tells us what to build first.
+        <p className="mt-2 text-[15.5px] leading-relaxed text-ink-secondary">
+          Choose what you are making, choose its colours, and describe the business. Lumen builds
+          the pages, writes the words and puts a scene on them you can turn with your finger.
         </p>
 
+        {/* 1 — what */}
+        <p className="mt-7 text-[13px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+          1 · What are you building?
+        </p>
+        <ul className="mt-3 grid min-w-0 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {STUDIO_KINDS.map((entry) => {
+            const selected = entry.id === kind.id;
+            return (
+              <li key={entry.id} className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setKind(entry)}
+                  aria-pressed={selected}
+                  className={cn(
+                    'flex h-full w-full flex-col gap-2.5 rounded-card border p-3 text-left transition',
+                    selected
+                      ? 'border-accent/55 bg-accent-soft'
+                      : 'border-hairline bg-[var(--bg-base-deep)] hover:border-white/20',
+                  )}
+                >
+                  <Scene
+                    shape={entry.shape}
+                    live={selected}
+                    dim={!selected}
+                    tint={selected ? entry.tint : ['#8e8e84', '#3a3a34']}
+                    className="h-20 w-full rounded-[8px] border border-hairline"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-[15.5px] font-semibold text-ink-primary">
+                      {entry.label}
+                    </span>
+                    <span className="mt-1 block text-[14px] leading-relaxed text-ink-muted">
+                      {entry.blurb}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* 2 — colour */}
+        <p className="mt-7 text-[13px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+          2 · What colours?
+        </p>
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {STUDIO_PALETTES.map((entry) => {
+            const selected = entry.id === palette.id;
+            return (
+              <li key={entry.id}>
+                <button
+                  type="button"
+                  onClick={() => setPalette(entry)}
+                  aria-pressed={selected}
+                  className={cn(
+                    'flex items-center gap-2.5 rounded-pill border py-1.5 pl-1.5 pr-3.5 text-[14.5px] transition',
+                    selected
+                      ? 'border-accent/55 bg-accent-soft text-ink-primary'
+                      : 'border-hairline text-ink-secondary hover:border-white/20 hover:text-ink-primary',
+                  )}
+                >
+                  <span
+                    className="h-6 w-6 shrink-0 rounded-full border border-white/15"
+                    style={{ background: `linear-gradient(135deg, ${entry.tint[0]}, ${entry.tint[1]})` }}
+                    aria-hidden
+                  />
+                  {entry.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* 3 — the business */}
+        <p className="mt-7 text-[13px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+          3 · Tell Lumen about it
+        </p>
         <textarea
           value={brief}
           onChange={(event) => setBrief(event.target.value)}
           rows={4}
-          placeholder={STUDIO_PROMPT_EXAMPLE}
-          aria-label="Describe the experience you want to build"
+          placeholder={kind.example}
+          aria-label="Describe the business and what you want built"
           className={cn(
-            'mt-5 w-full resize-y rounded-[12px] border border-hairline bg-[var(--bg-base-deep)] px-4 py-3.5',
+            'mt-3 w-full resize-y rounded-[12px] border border-hairline bg-[var(--bg-base-deep)] px-4 py-3.5',
             'text-[15.5px] leading-relaxed text-ink-primary outline-none',
             'placeholder:text-ink-muted focus-visible:border-accent/45',
           )}
         />
+        <button
+          type="button"
+          onClick={() => setBrief(kind.example)}
+          className="mt-2 text-[14px] text-ink-muted underline underline-offset-4 transition hover:text-ink-primary"
+        >
+          Use the example
+        </button>
 
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {STUDIO_QUICK_PROMPTS.map((quick) => (
-            <li key={quick}>
-              <button
-                type="button"
-                onClick={() => setBrief((current) => (current ? `${current.trim()} ${quick}` : quick))}
-                className="rounded-pill border border-hairline px-3.5 py-1.5 text-[14px] text-ink-secondary transition hover:border-accent/45 hover:text-ink-primary"
-              >
-                + {quick}
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <input
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            type="email"
-            placeholder="Email, to be told when it opens"
-            aria-label="Your email address"
-            className={cn(
-              'min-w-[14rem] flex-1 rounded-pill border border-hairline bg-[var(--bg-base-deep)] px-4 py-2.5',
-              'text-[15px] text-ink-primary outline-none placeholder:text-ink-muted focus-visible:border-accent/45',
-            )}
-          />
-          <Button size="lg" onClick={() => void submit()} disabled={!ready || state === 'sending'}>
-            {state === 'sending' ? 'Saving…' : 'Generate 3D Experience →'}
+        <div className="mt-6 flex flex-wrap items-center gap-4 border-t border-hairline pt-6">
+          <Button size="lg" onClick={() => void build()} disabled={!ready || building}>
+            {building ? 'Starting the build…' : 'Build my 3D website →'}
           </Button>
+          <p className="text-[14.5px] text-ink-secondary">
+            {kind.makes} You can change everything afterwards.
+          </p>
         </div>
 
         {error ? (
-          <p className="mt-3 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-2.5 text-[14.5px] text-[#e5735a]">
+          <p className="mt-4 rounded-[10px] border border-[#e5735a]/30 bg-[#e5735a]/10 px-4 py-2.5 text-[14.5px] text-[#e5735a]">
             {error}
           </p>
         ) : null}

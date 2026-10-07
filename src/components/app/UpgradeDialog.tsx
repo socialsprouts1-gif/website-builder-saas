@@ -65,8 +65,13 @@ export async function postJson<T = Record<string, unknown>>(
  * The project screen is the other: an account out of credits can still read,
  * publish and hand-edit everything it has already built, and a dialog over the
  * top of that would be taking away what it promised to leave alone.
+ *
+ * And 3D Studio is the third, for the same reason as the new-site screen: it
+ * is a brief and three choices, all of which somebody on the free plan is
+ * welcome to make. The refusal comes from the server when they press Build,
+ * and that one still opens this dialog — only the on-arrival nag is suppressed.
  */
-const QUIET = ['/app/new', '/app/project'];
+const QUIET = ['/app/new', '/app/project', '/app/studio'];
 
 export function UpgradeDialog({ blocked = false }: { blocked?: boolean }) {
   const router = useRouter();
@@ -127,9 +132,14 @@ export function UpgradeDialog({ blocked = false }: { blocked?: boolean }) {
           both off the edge is a trap rather than an offer. */}
       <div className="flex max-h-[88dvh] w-full max-w-lg flex-col overflow-hidden rounded-card border border-hairline bg-[var(--surface-raised)] shadow-2xl">
         <div className="shrink-0 border-b border-hairline px-6 py-5">
-          <p className="text-[13px] uppercase tracking-[0.16em] text-accent">Free credits used</p>
+          {/* A specific refusal carries its own sentence — "3D websites are on
+              Premium" — and a header reading "Free credits used" above it would
+              be telling somebody the wrong reason they were stopped. */}
+          <p className="text-[13px] uppercase tracking-[0.16em] text-accent">
+            {message ? 'On a paid plan' : 'Free credits used'}
+          </p>
           <h2 id="upgrade-title" className="mt-1.5 font-display text-[23px] leading-tight text-ink-primary">
-            Choose a plan to keep building
+            {message ? 'Upgrade to build this' : 'Choose a plan to keep building'}
           </h2>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-secondary">
             {message ??

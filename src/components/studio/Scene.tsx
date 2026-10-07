@@ -4,10 +4,12 @@ import type { SceneShape } from '@/lib/studio';
 /**
  * A 3D scene, drawn with CSS.
  *
- * No WebGL and no library. A showcase for a feature that is still being built
- * is not worth half a megabyte of renderer on a marketing page, and a scene
- * that fails to load on a mid-range Android is worse than no scene at all —
- * these are transformed divs, so they cost nothing and cannot fail.
+ * No WebGL and no library. A marketing page is not worth half a megabyte of
+ * renderer, and a scene that fails to load on a mid-range Android is worse than
+ * no scene at all — these are transformed divs, so they cost nothing and cannot
+ * fail. The scenes inside the websites Lumen generates are built the same way,
+ * for the same reasons plus one more: a published site runs under
+ * `script-src 'self'`, where a CDN renderer would simply be blocked.
  *
  * Each shape is a different arrangement of the same primitives: planes, a
  * solid, a horizon, a scatter. Eight categories therefore read as eight kinds

@@ -27,6 +27,7 @@ const FEATURES: { id: BlueprintFeature; label: string }[] = [
   { id: 'rooms', label: 'Rooms' },
   { id: 'landing', label: 'Landing page' },
   { id: 'multipage', label: 'Multi-page' },
+  { id: 'three_d', label: '3D · Premium' },
 ];
 
 /**
