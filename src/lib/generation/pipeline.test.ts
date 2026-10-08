@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextStep, pagesToWrite, SECTION_CONCURRENCY, fileLabel, hasScene, type BuildState } from './pipeline';
+import { nextStep, pagesToWrite, SECTION_CONCURRENCY, fileLabel, hasScene, designOf, type BuildState, type SitePlan } from './pipeline';
 import { VERTICALS, DEFAULT_VERTICAL, verticalBySlug } from './verticals';
 import type { Section, SectionKind } from './kit/sections';
 
@@ -285,5 +285,48 @@ describe('a 3D build', () => {
     expect(hasScene({ sections: { a: scene, b: plain } })).toBe(true);
     expect(hasScene({ sections: { b: plain } })).toBe(false);
     expect(hasScene({})).toBe(false);
+  });
+});
+
+/**
+ * The direction has to reach the thing that draws the page.
+ *
+ * `designOf` is where it lands, and it is the single line that fixes "the same
+ * website every time": a blueprint named its layouts outright, so every 3D
+ * portfolio was drawn with the same hero and the same feature grid for ever.
+ * If the direction stops overriding them the variety becomes decorative — a
+ * different palette on an identical page.
+ */
+describe('the direction reaches the page', () => {
+  const plan = (direction?: SitePlan['direction']): SitePlan =>
+    ({ templateId: 'lumen', blueprintId: 'parallax', direction }) as SitePlan;
+
+  it('overrides the blueprint’s layouts', () => {
+    const fixed = designOf(plan());
+    const steered = designOf(
+      plan({
+        archetype: 'swiss-brutalist',
+        fonts: 'archivo-archivo',
+        hue: 10,
+        recipe: 'gallery',
+        rig: 'pinned',
+        layouts: { hero: 'editorial', features: 'numbered' },
+      }),
+    );
+
+    expect(steered.layouts.hero).toBe('editorial');
+    expect(steered.layouts.features).toBe('numbered');
+    // And it really is a change, not a coincidence.
+    expect([fixed.layouts.hero, fixed.layouts.features]).not.toEqual(['editorial', 'numbered']);
+  });
+
+  it('leaves a build with no direction exactly as it was', () => {
+    expect(designOf(plan()).layouts).toEqual(designOf(plan()).layouts);
+    // Sections the direction says nothing about keep the template's choice.
+    const steered = designOf(plan({
+      archetype: 'a', fonts: 'b', hue: 1, recipe: 'c', rig: 'd',
+      layouts: { hero: 'centre' },
+    }));
+    expect(steered.layouts.gallery).toBe(designOf(plan()).layouts.gallery);
   });
 });

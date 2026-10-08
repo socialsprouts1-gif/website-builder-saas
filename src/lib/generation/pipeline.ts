@@ -33,6 +33,8 @@ import { seedShop } from '@/lib/shop/seed';
 import { photographCatalogue } from '@/lib/shop/photograph';
 import { photographScene, placeShots, placeTurn } from './scene-shots';
 import { buildScene } from './kit/scene-spec';
+import { chooseDirection, seedFrom } from './variety';
+import { recentDirections } from './variety/memory';
 import type {
   DesignSystem,
   GenerationEvent,
@@ -126,6 +128,21 @@ export interface SitePlan {
    * invocations is one design rather than four.
    */
   templateId: string;
+  /**
+   * The direction this site was drawn in, kept so every later step agrees.
+   *
+   * A build is four separate invocations, and the section step has to use the
+   * same layouts the plan step chose — re-rolling would give one site four
+   * different looks.
+   */
+  direction?: {
+    archetype: string;
+    fonts: string;
+    hue: number;
+    recipe: string;
+    rig: string;
+    layouts: Record<string, string>;
+  };
   /**
    * The template this site was built from, when one was chosen.
    *
@@ -278,7 +295,23 @@ export function verticalOf(state: BuildState): Vertical {
  */
 export function designOf(plan: SitePlan): Template {
   const blueprint = blueprintById(plan.blueprintId);
-  return blueprint ? blueprintDesign(blueprint) : templateById(plan.templateId);
+  const base = blueprint ? blueprintDesign(blueprint) : templateById(plan.templateId);
+
+  // The direction's layouts win over the template's.
+  //
+  // This is the line that fixes "the same website every time". A blueprint
+  // named its layouts outright, so every 3D portfolio was drawn with the same
+  // hero, the same feature grid and the same gallery for ever. The direction
+  // is chosen once at plan time and stored, so every later invocation reads
+  // the same answer rather than re-rolling into a fifth look.
+  if (!plan.direction) return base;
+
+  return {
+    ...base,
+    layouts: { ...base.layouts, ...plan.direction.layouts },
+    motion: base.motion,
+    depth: base.depth,
+  };
 }
 
 const VERTICAL_BY_SLUG: Record<string, Vertical> = Object.fromEntries(
@@ -450,6 +483,21 @@ export async function runBuildStep(
       raw = {};
     }
 
+    /**
+     * Which direction this site is taken in.
+     *
+     * Seeded off the project rather than the clock, so a build is repeatable,
+     * and steered away from whatever this account has already been given. This
+     * is the fix for "it generates the same website every time": the old code
+     * fell through to the first candidate template and a 3D blueprint named
+     * its design outright, so only the words ever changed.
+     */
+    const direction = chooseDirection({
+      seed: seedFrom(`${input.projectId}:${blueprint?.id ?? vertical.slug}`),
+      businessType: `${vertical.label} ${input.businessType ?? ''} ${input.prompt.slice(0, 160)}`,
+      recent: await recentDirections(input.userId).catch(() => []),
+    });
+
     const contact = (raw.contact ?? {}) as Record<string, unknown>;
     const str = (value: unknown, fallback = '') =>
       typeof value === 'string' && value.trim() ? value.trim().slice(0, 300) : fallback;
@@ -464,12 +512,17 @@ export async function runBuildStep(
         phone: str(contact.phone) || undefined,
         email: str(contact.email) || undefined,
       },
-      // The model writes the palette; everything else about the look comes
-      // from the template, so a serif display face and a tight grid cannot
-      // end up disagreeing with each other.
+      // The direction decides the palette and the type; the template still
+      // decides the rhythm. The model no longer writes the palette at all —
+      // it wrote a reasonable one every time, and "reasonable every time" is
+      // precisely what made every site look like the last one.
       tokens: {
-        ...normaliseTokens(raw.tokens),
-        fonts: template.shape.fonts,
+        ...normaliseTokens({ palette: direction.palette }),
+        fonts: {
+          display: direction.fonts.display,
+          body: direction.fonts.body,
+          googleHref: direction.fonts.href,
+        },
         radius: template.shape.radius,
         radiusLarge: template.shape.radiusLarge,
         density: template.shape.density,
@@ -479,6 +532,14 @@ export async function runBuildStep(
       shop: Boolean(vertical.shop),
       templateId: template.id,
       blueprintId: blueprint?.id,
+      direction: {
+        archetype: direction.archetype.id,
+        fonts: direction.fonts.id,
+        hue: direction.hue,
+        recipe: direction.recipe,
+        rig: direction.rig,
+        layouts: direction.layouts,
+      },
     };
 
     // A shop, opened with something in it. Done here rather than at the end so
