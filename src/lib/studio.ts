@@ -430,6 +430,16 @@ export const STUDIO_KINDS: StudioKind[] = [
       'A virtual showroom for a furniture shop in Pune. Three pieces standing on the floor, the full collection, our opening hours and how to book a viewing.',
   },
   {
+    id: 'vitrine3d',
+    label: '3D e-commerce',
+    blurb: 'A real shop — catalogue, basket and checkout — with the stock turning above it.',
+    makes: 'A storefront that takes orders, with your products in 3D on the way in.',
+    shape: 'room',
+    tint: ['#e8c98a', '#8a6a2f'],
+    example:
+      'A 3D online store for a jewellery brand in Jaipur. Twelve pieces people can turn and look at closely, a basket, and delivery across India.',
+  },
+  {
     id: 'prism',
     label: '3D product demo',
     blurb: 'The product on a screen, at an angle, taken apart in mid-air.',

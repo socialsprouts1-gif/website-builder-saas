@@ -32,6 +32,7 @@ import { shopSection, type ShopSlot } from '@/lib/shop/inject';
 import { seedShop } from '@/lib/shop/seed';
 import { photographCatalogue } from '@/lib/shop/photograph';
 import { photographScene, placeShots, placeTurn } from './scene-shots';
+import { buildScene } from './kit/scene-spec';
 import type {
   DesignSystem,
   GenerationEvent,
@@ -755,6 +756,20 @@ async function saveSite(
     contact: plan.contact,
     tokens: plan.tokens,
     dimensional,
+    // The WebGL scene, built once for the whole site so the objects travel
+    // across its sections rather than sitting inside one of them.
+    scene: dimensional
+      ? JSON.stringify(
+          buildScene({
+            businessName: plan.businessName,
+            businessType: vertical.label,
+            brief: `${plan.tagline} ${plan.seoDescription}`,
+            accent: plan.tokens.palette.accent,
+            accentSoft: plan.tokens.palette.accentInk,
+            sections: Math.max(...written.map((page) => page.sections.length), 3),
+          }),
+        )
+      : null,
   };
 
   const template = designOf(plan);

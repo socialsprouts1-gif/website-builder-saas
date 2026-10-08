@@ -53,6 +53,42 @@ body::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* ---- the WebGL canvas ------------------------------------------------- */
+/* Fixed, full-viewport and behind the content, which is the whole mechanism:
+   the objects are not inside a section, they are behind all of them and travel
+   as you scroll. Never catches a pointer — every click belongs to the page. */
+.lumen3d__canvas {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0; pointer-events: none;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.lumen3d__canvas.is-ready { opacity: 1; }
+
+/* Content sits above the canvas by default. A band that wants the object in
+   FRONT of its words marks itself, which is the layering the reference site
+   gets from its under layer. No backticks in this file: it is one long
+   template literal, and a backtick in a comment ends it. */
+main > section { position: relative; z-index: 1; }
+main > section.section--under { z-index: 0; }
+
+/* The bands have to let the canvas through.
+   A 3D site whose alternating bands keep their solid backgrounds is a site
+   where the object disappears the moment it crosses a band edge — which is
+   what the first build did, cutting the hero off in a straight line. The
+   rhythm is kept as a tint over the page rather than a sheet on top of it, so
+   the alternation still reads and the object stays visible across it. */
+body { background: var(--bg); }
+main > section { background: transparent; }
+main > section.section--alt {
+  background: color-mix(in srgb, var(--surface-alt, var(--surface)) 55%, transparent);
+}
+main > section.section--surface {
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) { .lumen3d__canvas { display: none; } }
+
 /* ---- reveal ---------------------------------------------------------- */
 /* The initial state is only ever applied by the script. A page whose CSS hides
    its content and whose script failed is a blank page, so the hiding is the

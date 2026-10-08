@@ -1,5 +1,5 @@
 import type { Blueprint } from '../types';
-import { CONTACT, VISIT, home, page } from '../parts';
+import { CONTACT, SHOP_HOME_SLOTS, SHOP_PAGES, VISIT, home, page } from '../parts';
 
 /**
  * The 3D blueprints — Lumen 3D Studio, as five real websites.
@@ -135,6 +135,44 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
       home('hero', 'scene3d', 'about', 'services', 'gallery', 'split', 'features', 'testimonials', 'hours', 'cta'),
       page('collection.html', 'Collection', 'hero', 'scene3d', 'turntable', 'gallery', 'services', 'logos', 'faq', 'cta'),
       VISIT,
+    ],
+  },
+  {
+    id: 'vitrine3d',
+    name: 'Cabinet',
+    industry: 'retail',
+    businessTypes: ['Online store', 'Boutique', 'Jewellery', 'Fragrance'],
+    style: 'premium',
+    note: 'A shop where the stock turns. Catalogue, basket and checkout, with the product in 3D above it.',
+    design: 'atelier',
+    vertical: 'retail',
+    action: 'Buy it',
+    // A real shop: the catalogue, basket and checkout are rendered from the
+    // products in the database, not written as sections. The 3D is what sits
+    // over them rather than a replacement for them.
+    features: ['three_d', 'shop', 'multipage', 'enquiries'],
+    motion: 'subtle',
+    depth: 'dimensional',
+    paletteBrief:
+      'Deep ink and bone with a warm brass accent. Expensive, quiet, and nothing neon.',
+    layouts: {
+      scene3d: 'float',
+      hero: 'centre',
+      features: 'checks',
+      gallery: 'mosaic',
+      split: 'points',
+      cta: 'panel',
+    },
+    seoDescription: 'Browse the collection, turn each piece in 3D, and buy it.',
+    pages: [
+      {
+        ...home('announcement', 'hero', 'scene3d', 'split', 'turntable', 'features', 'gallery', 'testimonials', 'faq', 'cta'),
+        shopBands: SHOP_HOME_SLOTS,
+      },
+      ...SHOP_PAGES,
+      page('about.html', 'Our story', 'hero', 'about', 'steps', 'stats', 'gallery', 'cta'),
+      page('delivery.html', 'Delivery & returns', 'hero', 'split', 'steps', 'faq', 'cta'),
+      CONTACT,
     ],
   },
   {

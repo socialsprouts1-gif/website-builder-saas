@@ -50,6 +50,14 @@ export interface SiteSpec {
    * between the bands, reveals on everything, grain, kinetic type.
    */
   dimensional?: boolean;
+  /**
+   * The WebGL scene, as JSON, when this site has one.
+   *
+   * Carried in an attribute rather than an inline script because a published
+   * site runs under `script-src 'self'` — an inline `<script>` would simply
+   * not execute. The runtime reads it from the DOM.
+   */
+  scene?: string | null;
 }
 
 /**
@@ -136,6 +144,13 @@ export function renderPage(site: SiteSpec, page: PageSpec): string {
   const announcement = banner.slice(0, 1).map(renderSection).join('');
   const fonts = site.tokens.fonts.googleHref;
 
+  // The 3D runtime is one file on Lumen's own origin, identical for every site
+  // and cached across all of them. Same-origin, so `script-src 'self'` allows
+  // it; deferred, so it never blocks the page it decorates.
+  const scene = site.scene
+    ? `<div class="lumen3d" data-lumen-scene="${escapeHtml(site.scene)}" aria-hidden></div>\n<script src="/lumen3d.js" defer></script>`
+    : '';
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -151,7 +166,7 @@ ${fonts ? `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-${announcement}${nav(site, page.path)}
+${scene}${announcement}${nav(site, page.path)}
 <main id="main">
 ${sections}
 </main>
