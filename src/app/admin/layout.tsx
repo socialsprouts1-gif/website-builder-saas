@@ -21,6 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <AdminTab href="/admin/revenue" label="Revenue" />
           <AdminTab href="/admin/spend" label="Model spend" />
           <AdminTab href="/admin/flagged" label="Flagged" />
+          <AdminTab href="/admin/features" label="Features" />
           <AdminTab href="/admin/users" label="Users" />
           <AdminTab href="/admin/errors" label="Errors" />
         </nav>

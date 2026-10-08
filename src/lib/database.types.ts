@@ -267,6 +267,21 @@ export type RateLimitEventRow = {
   created_at: string;
 }
 
+export type FeatureFlagRow = {
+  key: string;
+  enabled: boolean;
+  updated_at: string;
+  updated_by: string | null;
+}
+
+export type UserFeatureRow = {
+  user_id: string;
+  key: string;
+  enabled: boolean;
+  updated_at: string;
+  updated_by: string | null;
+}
+
 export type FlaggedContentRow = {
   id: string;
   project_id: string | null;
@@ -426,6 +441,8 @@ export type Database = {
       templates: Table<TemplateRow>;
       rate_limit_events: Table<RateLimitEventRow>;
       flagged_content: Table<FlaggedContentRow>;
+      feature_flags: Table<FeatureFlagRow>;
+      user_features: Table<UserFeatureRow>;
       leads: Table<LeadRow>;
       error_events: Table<ErrorEventRow>;
       site_visits: Table<SiteVisitRow>;

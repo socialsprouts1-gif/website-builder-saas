@@ -20,6 +20,7 @@ import { lookupPlace } from '@/lib/google/places';
 import { blueprintById, blueprintCard, blueprintIsThreeD, blueprintSellsThings } from '@/lib/templates';
 import { matchVertical } from '@/lib/generation/verticals';
 import { missingFeatures } from '@/lib/supabase/features';
+import { featuresFor } from '@/lib/features.server';
 import { seedFromPlace } from '@/lib/google/seed';
 
 export const runtime = 'nodejs';
@@ -91,10 +92,28 @@ export async function POST(request: NextRequest) {
     // want built and answers every question, and only the Build press stops
     // them — with the plan, and with everything they typed still on screen.
     // Admin accounts are never a tier anybody bought and go straight through.
-    if (blueprint && blueprintIsThreeD(blueprint) && !planAllows(allowance.tier, 'three_d')) {
-      return planRequired(
-        `3D websites are built in Lumen 3D Studio, which is on the Premium plan. Your brief is safe — upgrade and "${blueprint.name}" builds straight away.`,
-      );
+    if (blueprint && blueprintIsThreeD(blueprint)) {
+      // Two gates, and both have to pass. The switch decides whether 3D is
+      // open at all — hiding the sidebar link is not a gate, because the URL
+      // still works and this endpoint is what actually builds the site. The
+      // plan then decides who it is open to.
+      const features = await featuresFor(user.id, { admin: allowance.tier === 'admin' });
+      if (!features.three_d) {
+        return planRequired('3D websites are switched off at the moment. Everything else still builds.');
+      }
+      if (!planAllows(allowance.tier, 'three_d')) {
+        return planRequired(
+          `3D websites are built in Lumen 3D Studio, which is on the Premium plan. Your brief is safe — upgrade and "${blueprint.name}" builds straight away.`,
+        );
+      }
+    }
+
+    // And the same for a Google import, which has a link that can be typed.
+    if (body.inputMode === 'google') {
+      const features = await featuresFor(user.id, { admin: allowance.tier === 'admin' });
+      if (!features.google_import) {
+        return planRequired('Building from a Google listing is switched off at the moment.');
+      }
     }
 
     // The WhatsApp number is a setting rather than a sentence. Folding it only

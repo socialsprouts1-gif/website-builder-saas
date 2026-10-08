@@ -6,7 +6,9 @@ import { StudioEditor } from '@/components/studio/StudioEditor';
 import { Scene } from '@/components/studio/Scene';
 import { requireUser } from '@/lib/auth';
 import { getAllowance } from '@/lib/allowance';
+import { notFound } from 'next/navigation';
 import { planAllows } from '@/lib/plans';
+import { featuresFor } from '@/lib/features.server';
 import {
   STUDIO_BLURB,
   STUDIO_HINTS,
@@ -35,6 +37,12 @@ export const dynamic = 'force-dynamic';
 export default async function AppStudioPage() {
   const user = await requireUser();
   const allowance = await getAllowance(user.id);
+  // Switched off entirely is not the same as not on your plan, and the page
+  // has to say the true one. A typed URL reaches here whatever the sidebar
+  // shows, so this is the gate rather than the link.
+  const features = await featuresFor(user.id, { admin: allowance.tier === 'admin' });
+  if (!features.three_d) notFound();
+
   const included = planAllows(allowance.tier, 'three_d');
 
   return (

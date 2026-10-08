@@ -2,6 +2,7 @@ import { existsSync, globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LEGAL_DOCUMENTS } from '@/lib/legal';
+import { FEATURE_LIST } from '@/lib/features';
 
 /**
  * Every page this product promises somebody, checked as a file on disk.
@@ -140,5 +141,37 @@ describe('the admin panel', () => {
     const links = [...overview.matchAll(/href="\/admin/g)].length;
     expect(cards).toBeGreaterThanOrEqual(4);
     expect(links, 'every number on the overview should lead somewhere').toBe(cards);
+  });
+});
+
+/**
+ * A switch that hides a link has to hide a link that exists.
+ *
+ * `hiddenHrefs` is what the sidebar filters on, and it matches by exact href.
+ * A feature whose href was renamed would quietly stop hiding anything — the
+ * switch would read as working and the link would stay in the sidebar.
+ */
+describe('the feature switches', () => {
+  it('name links that are real routes', () => {
+    for (const feature of FEATURE_LIST) {
+      if (!feature.href) continue;
+      expect(routeExists(feature.href), `${feature.key} points at ${feature.href}`).toBe(true);
+    }
+  });
+
+  /**
+   * The gate that matters. Hiding a sidebar link is not a gate: the URL still
+   * works, and for 3D it is an endpoint that spends real money on image
+   * generation. Both the page and the build endpoint have to check.
+   */
+  it('are enforced on the server, not only in the sidebar', () => {
+    const api = readFileSync(join(app, 'api/projects/route.ts'), 'utf8');
+    expect(api).toContain('featuresFor');
+    expect(api).toMatch(/features\.three_d/);
+    expect(api).toMatch(/features\.google_import/);
+
+    const studio = readFileSync(join(app, 'app/studio/page.tsx'), 'utf8');
+    expect(studio).toContain('featuresFor');
+    expect(studio).toContain('notFound()');
   });
 });

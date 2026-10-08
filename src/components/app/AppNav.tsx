@@ -63,10 +63,20 @@ export function AppNav({
   email,
   isAdmin,
   credits,
+  hidden = [],
 }: {
   email: string;
   isAdmin: boolean;
   credits: CreditSummary | null;
+  /**
+   * Links a switched-off feature takes with it.
+   *
+   * Hidden rather than badged, which is the opposite of how a plan gate works
+   * here: a feature somebody could buy should be visible, because hiding it
+   * hides the reason to upgrade. A feature that is switched off entirely is
+   * not for sale, and a link to it is a dead end.
+   */
+  hidden?: string[];
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -118,7 +128,9 @@ export function AppNav({
         {GROUPS.map((group) => (
           <div key={group.title} className="space-y-1">
             <p className="px-3 pb-1 text-[12.5px] uppercase tracking-[0.16em] text-ink-muted">{group.title}</p>
-            {group.items.map((item) => {
+            {group.items
+              .filter((item) => !hidden.includes(item.href))
+              .map((item) => {
               // Exact for the section roots, so "My sites" does not stay lit
               // on every page under /app and Settings does not light up for
               // its siblings.
@@ -143,7 +155,7 @@ export function AppNav({
                   ) : null}
                 </Link>
               );
-            })}
+              })}
           </div>
         ))}
 

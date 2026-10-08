@@ -2,6 +2,8 @@ import { SectionHeader } from '@/components/ui/Card';
 import { Stat } from '@/components/admin/Stat';
 import { overviewCounts, revenueSnapshot } from '@/lib/admin-metrics';
 import { adminStats } from '@/lib/admin';
+import { FEATURE_LIST } from '@/lib/features';
+import { globalFlags } from '@/lib/features.server';
 import { formatInr } from '@/lib/razorpay';
 
 export const metadata = { title: 'Admin' };
@@ -17,11 +19,17 @@ export const dynamic = 'force-dynamic';
  * thing you read; it is a thing you click.
  */
 export default async function AdminPage() {
-  const [revenue, counts, stats] = await Promise.all([
+  const [revenue, counts, stats, flags] = await Promise.all([
     revenueSnapshot(),
     overviewCounts(),
     adminStats(),
+    globalFlags(),
   ]);
+
+  // Counted off the resolved switches rather than off the stored rows: a
+  // feature that defaults to off and has never been touched is still off, and
+  // a card that said "0 features off" while one was closed would be a lie.
+  const off = FEATURE_LIST.filter((feature) => (flags[feature.key] ?? feature.on) === false).length;
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-8 sm:px-6 sm:py-10">
@@ -58,6 +66,13 @@ export default async function AdminPage() {
           detail={counts.flagged > 0 ? 'waiting on you' : 'nothing waiting'}
           href="/admin/flagged"
           tone={counts.flagged > 0 ? 'alert' : undefined}
+        />
+        <Stat
+          label="Features off"
+          value={String(off)}
+          detail={off > 0 ? 'hidden from everyone' : 'everything is open'}
+          href="/admin/features"
+          tone={off > 0 ? 'alert' : undefined}
         />
         <Stat
           label="Errors"

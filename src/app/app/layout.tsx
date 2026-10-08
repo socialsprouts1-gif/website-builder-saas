@@ -1,4 +1,6 @@
 import { AppNav } from '@/components/app/AppNav';
+import { hiddenHrefs } from '@/lib/features';
+import { featuresFor } from '@/lib/features.server';
 import { ConfirmBanner } from '@/components/app/ConfirmBanner';
 import { MigrationBanner } from '@/components/app/MigrationBanner';
 import { UpgradeDialog } from '@/components/app/UpgradeDialog';
@@ -40,6 +42,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
   const needsConfirming = !user.emailConfirmedAt && !isAdmin;
 
+  // The switches, resolved once for the shell. An admin is exempt: the founder
+  // turning a feature off for the week must not lock themselves out of the
+  // thing they are in the middle of building.
+  const features = await featuresFor(user.id, { admin: isAdmin });
+
   // A fixed-height app frame rather than a document that grows.
   //
   // The workspace asks for the viewport's height, and on a phone it was given
@@ -51,6 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppNav
         email={user.email}
         isAdmin={isAdmin}
+        hidden={hiddenHrefs(features)}
         credits={
           keyStatus
             ? {
