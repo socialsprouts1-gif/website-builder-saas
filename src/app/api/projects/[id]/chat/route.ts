@@ -105,12 +105,33 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           done: true,
         });
 
-        const summary =
+        const updated =
           result.changedPaths.length === 1
             ? `Updated \`${result.changedPaths[0]}\`.`
             : `Updated ${result.changedPaths.length} files: ${result.changedPaths
                 .map((path) => `\`${path}\``)
                 .join(', ')}.`;
+
+        /**
+         * An edit that ignored the uploads is not a success with a footnote.
+         *
+         * "Updated index.html" was said whether or not a single picture had
+         * been placed, so the only way to find out was to look at the site and
+         * see the same empty frames. If any are still missing after the second
+         * pass, the chat says so and says what to do about it.
+         */
+        const summary =
+          result.missingAssets.length === 0
+            ? updated
+            : `${updated} But ${
+                result.missingAssets.length === 1
+                  ? 'one of your pictures is'
+                  : `${result.missingAssets.length} of your pictures are`
+              } still not on the page. Tell me which section ${
+                result.missingAssets.length === 1 ? 'it belongs' : 'they belong'
+              } in — "put these in the gallery", "use this one as the hero" — and I will place ${
+                result.missingAssets.length === 1 ? 'it' : 'them'
+              }.`;
 
         await admin.from('chat_messages').insert({
           project_id: projectId,

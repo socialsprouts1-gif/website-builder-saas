@@ -319,6 +319,14 @@ Rules:
 - To delete a file, emit it with the single line <<<DELETE>>> as its body.
 - Keep every data-lumen-id you find, and add one to any new element.
 
+Pictures:
+- Any https address in the request is already hosted. Use it exactly as written. Never shorten it, never rename it, and never invent a path of your own — there is no other working address for that picture.
+- When the request gives you an address, the picture must end up in the markup. An edit that acknowledges a picture without placing it has not been done.
+- A picture goes in as <div class="media"><img src="THE URL" alt="what it shows" loading="lazy" /></div>.
+- <div class="media media--empty …"></div> is a frame waiting for a picture. Fill one by replacing that whole div with the filled version above, keeping the extra classes it carried, such as media--wide. Those frames are the first place a new picture should go.
+- If there are more pictures than empty frames, put the rest in the gallery or grid they fit best, following the markup already used there.
+- Only the classes already in the stylesheet render. A new class name renders as nothing.
+
 ${CODE_RULES.replace('Output rules — follow exactly:', 'Output envelope — follow exactly:')}`;
 
 export function buildEditPrompt(input: {

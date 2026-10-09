@@ -673,13 +673,21 @@ export function Workspace({
     // Composed once and used for both the bubble and the request, so the
     // history after a reload says exactly what was asked for.
     const composed = withAttachments(trimmed);
+    // Kept so that a failed edit does not cost somebody their uploads: the
+    // chips go back if nothing was saved.
+    const sent = attachments;
     // The steps hang off this id, so they render with the request rather than
     // at the bottom of the log.
     const localId = `local-${Date.now()}`;
 
     setError(null);
     setBusy(true);
+    // The composer empties the moment Send is pressed — the text and the
+    // chips together. Leaving seven file chips sitting there while the edit
+    // ran looked exactly like a message that had not been sent, and the files
+    // are already in the request by this point.
     setInput('');
+    setAttachments([]);
     setProgress('Applying your change…');
     setMessages((current) => [
       ...current,
@@ -755,10 +763,6 @@ export function Workspace({
               },
               ...current,
             ]);
-            // Only once the edit landed: a failed edit keeps the chips, so a
-            // file does not have to be picked and uploaded all over again.
-            setAttachments([]);
-
             // A page the edit created has to reach the picker now. Reloading to
             // find out whether "create the Services page" worked is the same as
             // it not having worked.
@@ -776,6 +780,9 @@ export function Workspace({
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'That edit failed';
       setError(message);
+      // Nothing was saved, so the uploads come back rather than having to be
+      // found and uploaded a second time.
+      setAttachments((current) => (current.length > 0 ? current : sent));
       setMessages((current) => [
         ...current,
         { id: `err-${Date.now()}`, role: 'assistant', content: `I could not apply that: ${message}` },

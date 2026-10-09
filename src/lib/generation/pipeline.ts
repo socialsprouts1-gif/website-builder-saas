@@ -7,6 +7,7 @@ import { callWithRetry } from '@/lib/openai/retry';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { GenerationJobRow } from '@/lib/database.types';
 import { StreamingFileParser, mergeFiles } from './parser';
+import { missingAssets, placementInstruction, requestedAssets } from './assets';
 import {
   EDIT_SYSTEM,
   OWN_MATERIAL_MARK,
@@ -940,6 +941,14 @@ export interface EditResult {
   changedPaths: string[];
   model: string;
   keySource: KeySource;
+  /**
+   * Uploads the request named that are still not on the site.
+   *
+   * Empty on an ordinary edit. Non-empty means the edit saved something but
+   * did not do the one thing that can be checked, and the chat says so rather
+   * than reporting a plain success.
+   */
+  missingAssets: string[];
 }
 
 /**
@@ -994,49 +1003,104 @@ export async function runChatEdit(params: {
     .order('created_at', { ascending: true })
     .limit(20);
 
-  const stream = await callWithRetry(async () => {
-    return client.chat.completions.create({
-    model,
-    stream: true,
-    stream_options: { include_usage: true },
-    messages: [
-      { role: 'system', content: EDIT_SYSTEM },
-      {
-        role: 'user',
-        content: buildEditPrompt({
-          request: params.request,
-          files: existing,
-          design: (project?.design_system as DesignSystem | null) ?? null,
-          history: history ?? [],
-        }),
-      },
-    ],
-    });
-  });
-
-  const parser = new StreamingFileParser(
-    (path) => params.onStep?.({ id: path, label: `Writing ${fileLabel(path)}`, done: false }),
-    (file) => params.onStep?.({ id: file.path, label: `Writing ${fileLabel(file.path)}`, done: true }),
-  );
+  const design = (project?.design_system as DesignSystem | null) ?? null;
   let tokensIn = 0;
   let tokensOut = 0;
 
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content;
-    if (delta) {
-      parser.push(delta);
-      params.onDelta?.(delta);
+  /**
+   * One pass of the editor.
+   *
+   * Pulled out of the flow because it is run twice: once for what was asked,
+   * and once more when the first pass left uploaded pictures unplaced.
+   */
+  async function editPass(request: string, files: SiteFile[]): Promise<SiteFile[]> {
+    const stream = await callWithRetry(async () => {
+      return client.chat.completions.create({
+        model,
+        stream: true,
+        stream_options: { include_usage: true },
+        messages: [
+          { role: 'system', content: EDIT_SYSTEM },
+          {
+            role: 'user',
+            content: buildEditPrompt({ request, files, design, history: history ?? [] }),
+          },
+        ],
+      });
+    });
+
+    const parser = new StreamingFileParser(
+      (path) => params.onStep?.({ id: path, label: `Writing ${fileLabel(path)}`, done: false }),
+      (file) => params.onStep?.({ id: file.path, label: `Writing ${fileLabel(file.path)}`, done: true }),
+    );
+
+    /**
+     * Why the model stopped.
+     *
+     * 'length' means it ran out of room mid-sentence. The parser closes an
+     * unterminated file as if it were finished, so a response cut off halfway
+     * through index.html used to be merged over the real page and saved as a
+     * new version — a half-written site, reported as "Saved — 1 file changed".
+     */
+    let finishReason: string | null = null;
+
+    for await (const chunk of stream) {
+      const choice = chunk.choices[0];
+      const delta = choice?.delta?.content;
+      if (delta) {
+        parser.push(delta);
+        params.onDelta?.(delta);
+      }
+      if (choice?.finish_reason) finishReason = choice.finish_reason;
+      if (chunk.usage) {
+        tokensIn += chunk.usage.prompt_tokens ?? 0;
+        tokensOut += chunk.usage.completion_tokens ?? 0;
+      }
     }
-    if (chunk.usage) {
-      tokensIn += chunk.usage.prompt_tokens ?? 0;
-      tokensOut += chunk.usage.completion_tokens ?? 0;
+
+    const written = parser.finish();
+    if (finishReason === 'length') {
+      throw new Error(
+        'That change was too long to write out in one go, so nothing was saved. Ask for one part of it at a time.',
+      );
     }
+    return written;
   }
 
-  const changed = parser.finish();
+  const changed = await editPass(params.request, existing);
   if (changed.length === 0) throw new Error('No changes came back. Try rephrasing the request.');
 
-  const merged = mergeFiles(existing, changed);
+  let merged = mergeFiles(existing, changed);
+  const changedPaths = new Set(changed.map((file) => file.path));
+
+  /**
+   * The pictures, checked rather than assumed.
+   *
+   * An upload arrives in the request as its own address, so whether it was
+   * used is a fact about the output, not a judgement. When the first pass
+   * ignored some, it is asked once more for exactly those — which is cheaper
+   * than the person noticing, and far cheaper than them not noticing.
+   */
+  let missing = missingAssets(params.request, merged);
+  if (missing.length > 0 && requestedAssets(params.request).length > 0) {
+    params.onStep?.({ id: 'photos', label: 'Placing your pictures', done: false });
+    try {
+      const second = await editPass(placementInstruction(missing), merged);
+      if (second.length > 0) {
+        merged = mergeFiles(merged, second);
+        for (const file of second) changedPaths.add(file.path);
+      }
+    } catch {
+      // A failed second pass must not lose the first one. The edit is saved
+      // either way, and the message says which pictures are still missing.
+    }
+    missing = missingAssets(params.request, merged);
+    params.onStep?.({
+      id: 'photos',
+      label: missing.length === 0 ? 'Pictures placed' : 'Could not place every picture',
+      done: true,
+    });
+  }
   const version = await createVersion({
     projectId: params.projectId,
     files: merged,
@@ -1055,9 +1119,10 @@ export async function runChatEdit(params: {
 
   return {
     versionId: version.id,
-    changedPaths: changed.map((file) => file.path),
+    changedPaths: [...changedPaths],
     model,
     keySource,
+    missingAssets: missing,
   };
 }
 
