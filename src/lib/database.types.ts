@@ -119,6 +119,16 @@ export type ChatbotRow = {
   /** Why the last visitor question could not be answered, for the owner. */
   last_error: string | null;
   last_error_at: string | null;
+  avatar_url: string | null;
+  avatar_preset: string | null;
+  theme: string;
+  faq: string | null;
+  indexed_at: string | null;
+  chunk_count: number;
+  replies_used: number;
+  replies_period: string | null;
+  own_key_cipher: string | null;
+  own_key_hint: string | null;
 }
 
 export type ChatbotDocumentRow = {

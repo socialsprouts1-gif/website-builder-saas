@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { answerVisitorQuestion } from '@/lib/chatbot';
+import { checkAllowance, recordReply } from '@/lib/chatbot-allowance';
 import { chatbotAskSchema } from '@/lib/validation';
 import { RATE_LIMITS, rateLimit } from '@/lib/rate-limit';
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ em
   const admin = createAdminClient();
   const { data: chatbot } = await admin
     .from('chatbots')
-    .select('id, project_id, name, tone, is_active')
+    .select('id, project_id, name, tone, is_active, replies_used, replies_period, own_key_cipher')
     .eq('embed_key', embedKey)
     .maybeSingle();
 
@@ -61,6 +62,23 @@ export async function POST(request: NextRequest, context: { params: Promise<{ em
 
   if (!project) {
     return NextResponse.json({ error: 'This assistant is not available.' }, { status: 404, headers: CORS });
+  }
+
+  /**
+   * Whether this reply is paid for.
+   *
+   * Checked before the model is called rather than after, because the call is
+   * the cost. A site with its own key is never metered — the owner is paying
+   * their provider directly and Lumen has no business counting it.
+   *
+   * 200 rather than 402: this is a visitor on somebody's shop, not a customer
+   * of Lumen's, and a payment error in a chat bubble is a broken website as
+   * far as they are concerned. They get a sentence that points them at the
+   * contact form instead.
+   */
+  const allowance = checkAllowance(chatbot);
+  if (!allowance.allowed) {
+    return NextResponse.json({ answer: allowance.message }, { headers: CORS });
   }
 
   // One conversation row per visitor session, so the owner's log reads as threads.
@@ -122,6 +140,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ em
       .update({ last_error: null, last_error_at: null })
       .eq('id', chatbot.id)
       .not('last_error', 'is', null);
+
+    // Counted only now, after an answer actually came back. Counting before
+    // the call would charge the owner for a provider outage.
+    await recordReply(chatbot);
 
     return NextResponse.json({ answer: result.answer }, { headers: CORS });
   } catch (cause) {

@@ -33,6 +33,7 @@ import { seedShop } from '@/lib/shop/seed';
 import { photographCatalogue } from '@/lib/shop/photograph';
 import { photographScene, placeShots, placeTurn } from './scene-shots';
 import { buildScene } from './kit/scene-spec';
+import { autoIndexChatbot } from '@/lib/chatbot-autoindex';
 import { chooseDirection, seedFrom } from './variety';
 import { recentDirections } from './variety/memory';
 import type {
@@ -182,9 +183,17 @@ export interface BuildState {
    * carrying a scene are re-rendered afterwards with the pictures in them.
    */
   scened?: boolean;
+  /**
+   * Whether the site assistant has been given the pages to answer from.
+   *
+   * Last, because it is worth nothing until the pages exist — and it used to
+   * never happen at all, which put a chat bubble on every generated site whose
+   * only honest answer was that it knew nothing about the business.
+   */
+  indexed?: boolean;
 }
 
-export type BuildStep = 'plan' | 'section' | 'publish' | 'photos' | 'scene';
+export type BuildStep = 'plan' | 'section' | 'publish' | 'photos' | 'scene' | 'index';
 
 export interface StepOutcome {
   state: BuildState;
@@ -241,7 +250,9 @@ export function nextStep(state: BuildState): BuildStep | null {
     // whole reason somebody chose a 3D template is missing.
     if (hasScene(state) && !state.scened) return 'scene';
     // A shop still needs its catalogue photographed.
-    return state.plan.shop && !state.photographed ? 'photos' : null;
+    if (state.plan.shop && !state.photographed) return 'photos';
+    // And the assistant needs the finished pages to answer from.
+    return state.indexed ? null : 'index';
   }
   return unsaved ? 'publish' : 'section';
 }
@@ -702,6 +713,27 @@ export async function runBuildStep(
         made > 0
           ? `Made ${made} photograph${made === 1 ? '' : 's'} for the 3D scenes. Placing them…`
           : 'Finishing the 3D scenes…',
+      published: true,
+    };
+  }
+
+  if (step === 'index') {
+    // The site is written, saved and on screen. This only teaches the chat
+    // bubble that is already on it what the pages say.
+    say?.('Teaching the site assistant about your pages…');
+    const { chunks } = await autoIndexChatbot({
+      projectId: input.projectId,
+      userId: input.userId,
+      businessName: plan.businessName,
+    });
+    if (chunks > 0) emitFile(`site assistant, ${chunks} passages`);
+
+    const nextState: BuildState = { ...state, indexed: true };
+    return {
+      state: nextState,
+      next: nextStep(nextState),
+      stage: 'done',
+      message: 'Your site is ready.',
       published: true,
     };
   }

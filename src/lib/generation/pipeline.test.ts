@@ -45,6 +45,9 @@ function build(pages: Shape) {
       for (const job of batch) sections[`${job.page}#${job.index}`] = {} as never;
       state = { ...state, sections, queue: (state.queue ?? []).filter((e) => !taken.has(e.page)) };
       rounds += 1;
+    } else if (step === 'index') {
+      // Last step of every build: the site assistant is taught the pages.
+      state = { ...state, indexed: true };
     } else if (step === 'publish') {
       const written = [
         ...new Set(Object.keys(state.sections ?? {}).map((key) => key.slice(0, key.lastIndexOf('#')))),
@@ -85,7 +88,9 @@ describe('nextStep', () => {
       savedPages: ['index.html'],
       published: true,
     };
-    expect(nextStep(state)).toBeNull();
+    // One step left: the site assistant is taught the pages that were written.
+    expect(nextStep(state)).toBe('index');
+    expect(nextStep({ ...state, indexed: true })).toBeNull();
   });
 });
 
@@ -205,13 +210,27 @@ describe('nextStep with a shop to photograph', () => {
     expect(nextStep(base({}))).toBe('photos');
   });
 
-  it('is finished once the photographs are done', () => {
-    expect(nextStep(base({ photographed: true }))).toBeNull();
+  it('teaches the assistant once the photographs are done', () => {
+    expect(nextStep(base({ photographed: true }))).toBe('index');
+    expect(nextStep(base({ photographed: true, indexed: true }))).toBeNull();
   });
 
   it('never photographs a business that does not sell anything', () => {
-    expect(nextStep(base({ plan: { shop: false } as never }))).toBeNull();
-    expect(nextStep(base({ plan: {} as never }))).toBeNull();
+    expect(nextStep(base({ plan: { shop: false } as never }))).toBe('index');
+    expect(nextStep(base({ plan: {} as never }))).toBe('index');
+  });
+
+  /**
+   * Every build ends by teaching the assistant, and ends exactly once.
+   *
+   * The bug: indexing only ever ran from the owner pressing Save, so every
+   * generated site carried a chat bubble whose only honest answer was that it
+   * knew nothing about the business. A step that can be chosen twice would be
+   * the other failure — a build that never finishes.
+   */
+  it('indexes every build, once', () => {
+    expect(nextStep(base({ photographed: true }))).toBe('index');
+    expect(nextStep(base({ plan: { shop: false } as never, indexed: true }))).toBeNull();
   });
 
   /** Pages first. A photograph of a product on a site with no Contact page
@@ -253,7 +272,10 @@ describe('a 3D build', () => {
       if (step === 'scene') {
         // What the real step does: photograph, replace, un-save those pages.
         state = { ...state, scened: true, savedPages: ['product.html'] };
-      } else if (step === 'publish') {
+      } else if (step === 'index') {
+      // Last step of every build: the site assistant is taught the pages.
+      state = { ...state, indexed: true };
+    } else if (step === 'publish') {
         state = { ...state, published: true, savedPages: ['index.html', 'product.html'] };
       } else {
         break;
@@ -266,7 +288,8 @@ describe('a 3D build', () => {
 
   it('photographs the scene, re-saves the page, and stops', () => {
     const { steps, finished } = run({ 'index.html#0': plain, 'index.html#1': scene });
-    expect(steps).toEqual(['scene', 'publish']);
+    // …and then the assistant is taught the pages, as on every build.
+    expect(steps).toEqual(['scene', 'publish', 'index']);
     expect(finished).toBe(true);
   });
 
@@ -277,7 +300,7 @@ describe('a 3D build', () => {
 
   it('leaves a site with no scene exactly as it was', () => {
     const { steps, finished } = run({ 'index.html#0': plain });
-    expect(steps).toEqual([]);
+    expect(steps).toEqual(['index']);
     expect(finished).toBe(true);
   });
 
