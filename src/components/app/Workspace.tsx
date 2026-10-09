@@ -1270,20 +1270,35 @@ export function Workspace({
                   </button>
                 ))}
               </div>
+              {/* A button rather than thirteen-pixel grey text.
+                  "open ↗" was the one control on this bar that leaves Lumen
+                  and looks at the actual website, and it was the least
+                  visible thing on it — smaller than the viewport letters and
+                  the same colour as the disabled state. */}
               <a
                 href={`/preview/${projectId}/${page}`}
                 target="_blank"
                 rel="noreferrer"
-                className="hidden text-[13px] text-ink-muted transition hover:text-ink-primary sm:block"
+                title="Open this page in a new tab"
+                className="flex shrink-0 items-center gap-1.5 rounded-pill border border-hairline px-3 py-1.5 text-[13.5px] text-ink-secondary transition hover:border-accent/50 hover:text-accent"
               >
-                open ↗
+                <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                  <path d="M15 3h6v6M10 14L21 3" />
+                </svg>
+                <span>Open site</span>
               </a>
               <button
                 type="button"
                 onClick={() => setNextSteps(true)}
-                className="hidden text-[13px] text-ink-muted transition hover:text-ink-primary sm:block"
+                title="What to build next"
+                className="hidden shrink-0 items-center gap-1.5 rounded-pill border border-hairline px-3 py-1.5 text-[13.5px] text-ink-secondary transition hover:border-accent/50 hover:text-accent sm:flex"
               >
-                what next?
+                <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 16v-4M12 8h.01" />
+                </svg>
+                <span>What next?</span>
               </button>
               <PublishButton
                 projectId={projectId}

@@ -4,6 +4,7 @@ import { featuresFor } from '@/lib/features.server';
 import { ConfirmBanner } from '@/components/app/ConfirmBanner';
 import { MigrationBanner } from '@/components/app/MigrationBanner';
 import { UpgradeDialog } from '@/components/app/UpgradeDialog';
+import { FirstRun } from '@/components/app/FirstRun';
 import { ClaimReferral } from '@/components/app/ClaimReferral';
 import { canAfford, needsUpgrade } from '@/lib/credits';
 import { CREDIT_COST } from '@/lib/env';
@@ -88,6 +89,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           — a build, an edit, a feature that needs a different plan. */}
       <UpgradeDialog blocked={outOfCredits} />
       <ClaimReferral />
+      {/* Five cards explaining what the tool is, on the first visit only.
+          Mounted beside the upgrade dialog rather than on one page, because
+          the first screen somebody lands on is not always /app — a referral
+          link, a confirmation link and a bookmarked project all start
+          somewhere else. */}
+      <FirstRun />
     </div>
   );
 }

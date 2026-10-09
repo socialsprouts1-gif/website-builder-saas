@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { CreditMeter } from '@/components/app/CreditMeter';
+import { FirstRunButton } from '@/components/app/FirstRun';
 import type { CreditBalance } from '@/lib/credits';
 import { planAllows, tierFor, tierName, type Feature } from '@/lib/plans';
 import { cn } from '@/components/ui/cn';
@@ -187,6 +188,13 @@ export function AppNav({
         <p className="truncate px-3 text-[14px] text-ink-muted" title={email}>
           {email}
         </p>
+        {/* The way back to the explanation. It is shown once on the first
+            visit and then never again, which is the right default and the
+            wrong only outcome: somebody who closed it on day one has no way
+            to ask for it back. This is that way. */}
+        <div className="px-3">
+          <FirstRunButton />
+        </div>
         <form action="/auth/signout" method="post">
           <button
             type="submit"

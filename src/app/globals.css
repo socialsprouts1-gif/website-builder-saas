@@ -315,3 +315,14 @@ body {
     animation: none;
   }
 }
+
+/* The dot that points at the next step.
+   A slow pulse rather than a bounce: this sits in the chrome of a tool
+   somebody is working in, and anything faster becomes the thing they are
+   looking at instead of the thing they are building. */
+@keyframes lumen-nudge {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.55; }
+}
+.lumen-nudge { animation: lumen-nudge 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .lumen-nudge { animation: none; } }

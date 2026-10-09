@@ -210,7 +210,10 @@ export function themeCss(theme: ChatTheme, accent: string): string {
     `.lumen-bubble{position:fixed;right:20px;bottom:20px;width:60px;height:60px;border-radius:999px;border:0;cursor:pointer;background:${accent};color:#fff;display:grid;place-items:center;box-shadow:0 12px 34px -6px rgba(0,0,0,.4);z-index:2147483000;transition:transform .25s cubic-bezier(.2,.7,.3,1),box-shadow .25s ease}`,
     `.lumen-bubble:hover{transform:translateY(-3px) scale(1.05)}`,
     `.lumen-bubble svg{width:30px;height:30px}`,
-    `.lumen-bubble[data-open="1"]{transform:scale(.88) rotate(90deg)}`,
+    // Open: it shrinks slightly and shows a cross. It used to rotate 90°
+    // while keeping the speech-bubble mark, which reads as a rendering
+    // fault rather than as "close".
+    `.lumen-bubble[data-open="1"]{transform:scale(.92)}`,
     `.lumen-panel{position:fixed;right:20px;bottom:92px;width:372px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 128px);background:${theme.panel};color:${theme.ink};border-radius:${theme.radius};box-shadow:${theme.shadow};display:flex;flex-direction:column;overflow:hidden;z-index:2147483000;font:15px/1.55 ${theme.font};opacity:0;transform:translateY(14px) scale(.97);pointer-events:none;transition:opacity .28s ease,transform .28s cubic-bezier(.2,.7,.3,1)}`,
     `.lumen-panel[data-open="1"]{opacity:1;transform:none;pointer-events:auto}`,
     `.lumen-head{display:flex;align-items:center;gap:11px;padding:15px 17px;background:${headBg};color:${headInk};border-bottom:1px solid ${theme.line}}`,
@@ -243,6 +246,15 @@ export function themeCss(theme: ChatTheme, accent: string): string {
     `.lumen-send:hover:not(:disabled){transform:scale(1.07)}`,
     `.lumen-send:disabled{opacity:.4;cursor:not-allowed}`,
     `.lumen-send svg{width:19px;height:19px}`,
+    `.lumen-mic{border:1px solid ${theme.line};background:transparent;color:${theme.inkMuted};border-radius:999px;width:42px;height:42px;flex:0 0 auto;cursor:pointer;display:grid;place-items:center;transition:color .2s,border-color .2s,background .2s}`,
+    `.lumen-mic:hover:not(:disabled){border-color:${accent};color:${accent}}`,
+    `.lumen-mic svg{width:18px;height:18px}`,
+    `.lumen-mic:disabled{opacity:.5;cursor:progress}`,
+    `.lumen-mic[data-live]{background:${accent};color:#fff;border-color:${accent};animation:lumen-live 1.8s ease-in-out infinite}`,
+    `@keyframes lumen-live{0%,100%{box-shadow:0 0 0 0 ${accent}66}50%{box-shadow:0 0 0 9px ${accent}00}}`,
+    // The panel says it is listening, so somebody who looked away knows the
+    // microphone is still open.
+    `.lumen-panel[data-voice] .lumen-head{box-shadow:inset 0 -2px 0 0 ${accent}}`,
     `.lumen-foot{padding:0 16px 11px;font-size:11.5px;color:${theme.inkMuted};text-align:center}`,
     `@media (max-width:420px){.lumen-panel{right:12px;left:12px;width:auto;bottom:86px;height:calc(100vh - 110px)}}`,
     `@media (prefers-reduced-motion:reduce){.lumen-panel,.lumen-msg,.lumen-bubble,.lumen-typing i,.lumen-dot{animation:none!important;transition:none!important}}`,

@@ -129,6 +129,8 @@ export type ChatbotRow = {
   replies_period: string | null;
   own_key_cipher: string | null;
   own_key_hint: string | null;
+  voice_enabled: boolean;
+  voice_id: string;
 }
 
 export type ChatbotDocumentRow = {

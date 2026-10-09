@@ -176,6 +176,16 @@ export const chatbotConfigSchema = z.object({
   tone: z.enum(['friendly', 'professional', 'concise']),
   faq: z.string().max(20_000).optional(),
   isActive: z.boolean().optional(),
+  theme: z.string().max(40).optional(),
+  avatarPreset: z.string().max(40).optional(),
+  // An uploaded picture. Only a URL Lumen itself issued, checked on the
+  // server — a data: or javascript: URL here would end up in an <img> on
+  // somebody else's website.
+  avatarUrl: z.string().url().max(600).nullable().optional(),
+  voiceEnabled: z.boolean().optional(),
+  voiceId: z.string().max(40).optional(),
+  // The owner's own LLM key. Sent once and never read back.
+  ownKey: z.string().trim().max(400).nullable().optional(),
 });
 
 export const chatbotAskSchema = z.object({

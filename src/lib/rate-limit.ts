@@ -72,4 +72,8 @@ export const RATE_LIMITS = {
   chatEdit: { limit: 60, windowSeconds: 60 * 60 },
   transcription: { limit: 60, windowSeconds: 60 * 60 },
   chatbotPublic: { limit: 30, windowSeconds: 60 },
+  // Far tighter than text. A realtime session is minutes of audio against a
+  // provider that bills by the second, so a scraped embed key must not be
+  // turnable into an unlimited supply of them.
+  chatbotVoice: { limit: 6, windowSeconds: 300 },
 } as const;

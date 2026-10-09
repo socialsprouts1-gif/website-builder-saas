@@ -1,6 +1,9 @@
 import { notFound } from 'next/navigation';
 import { Card, SectionHeader } from '@/components/ui/Card';
 import { ChatbotBuilder } from '@/components/app/ChatbotBuilder';
+import { ChatbotAppearance } from '@/components/app/ChatbotAppearance';
+import { FREE_REPLIES, periodKey } from '@/lib/chatbot-allowance';
+import { buildPalette, type RecipeName } from '@/lib/generation/variety/colour';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { requestOrigin } from '@/lib/request-origin';
@@ -26,7 +29,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
 
   const { data: chatbot } = await supabase
     .from('chatbots')
-    .select('id, name, greeting, tone, embed_key, is_active')
+    .select('id, name, greeting, tone, embed_key, is_active, theme, avatar_url, avatar_preset, voice_enabled, voice_id, own_key_hint, replies_used, replies_period, indexed_at, chunk_count')
     .eq('project_id', id)
     .maybeSingle();
 
@@ -50,6 +53,26 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
     : { data: null };
 
   const conversations = chatbot ? await loadConversations(chatbot.id) : [];
+
+  /**
+   * The site's own accent, so the theme previews show what a visitor will
+   * actually see rather than Lumen's colours on somebody else's brand.
+   *
+   * Rebuilt from the direction the site was generated in rather than read out
+   * of its stylesheet: the direction is two numbers on the project row, and
+   * parsing a hex out of a CSS file would mean fetching the whole site from
+   * storage to render a settings page.
+   */
+  const { data: withDirection } = await supabase
+    .from('projects')
+    .select('direction')
+    .eq('id', id)
+    .maybeSingle();
+  const direction = withDirection?.direction as { hue?: number; recipe?: string } | null;
+  const accent =
+    typeof direction?.hue === 'number'
+      ? buildPalette(direction.hue, (direction.recipe ?? 'midnight') as RecipeName).accent
+      : '#15150f';
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8 sm:px-6 sm:py-10">
@@ -96,6 +119,38 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
           />
         </Card>
       )}
+
+      {/* Everything somebody comes back for once the assistant exists: how it
+          looks, how it sounds, and whose key pays for it. */}
+      {project.status === 'ready' && chatbot ? (
+        <div className="mt-10">
+          <ChatbotAppearance
+            projectId={project.id}
+            accent={accent}
+            config={{
+              name: chatbot.name,
+              greeting: chatbot.greeting,
+              tone: chatbot.tone,
+              faq: faqDocument?.content ?? '',
+              isActive: chatbot.is_active,
+            }}
+            initial={{
+              theme: chatbot.theme ?? 'clean',
+              avatarPreset: chatbot.avatar_preset ?? null,
+              avatarUrl: chatbot.avatar_url ?? null,
+              voiceEnabled: Boolean(chatbot.voice_enabled),
+              voiceId: chatbot.voice_id ?? 'alloy',
+              ownKeyHint: chatbot.own_key_hint ?? null,
+              // A counter from a month that has rolled over reads as zero,
+              // the same comparison the server makes when it decides.
+              repliesUsed: chatbot.replies_period === periodKey() ? (chatbot.replies_used ?? 0) : 0,
+              freeReplies: FREE_REPLIES,
+              indexedAt: chatbot.indexed_at ?? null,
+              chunkCount: chatbot.chunk_count ?? 0,
+            }}
+          />
+        </div>
+      ) : null}
 
       <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">What visitors are asking</h2>
       {conversations.length === 0 ? (
