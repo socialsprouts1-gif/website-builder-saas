@@ -1,5 +1,7 @@
 import { after, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isCustomHost } from '@/lib/domains';
+import { env } from '@/lib/env';
 import { getCurrentFiles } from '@/lib/generation/storage';
 import { pendingPage } from '@/lib/generation/kit/placeholder';
 import { absolutise, decorate, loadSiteExtras } from '@/lib/site-extras';
@@ -68,9 +70,26 @@ export async function GET(
 
   if (!project) return new Response('Not found', { status: 404 });
 
-  // Every link the page makes to itself hangs off this, so it holds whether the
-  // address was typed with a trailing slash or without one.
-  const base = `/s/${encodeURIComponent(slug)}/`;
+  /**
+   * Every link the page makes to itself hangs off this, so it holds whether
+   * the address was typed with a trailing slash or without one.
+   *
+   * On the owner's own domain their site is the whole of it, so the middleware
+   * that routed the request here says so and the base is the root. Without
+   * that, a visitor on ummclothing.in who clicks "Shop" lands on
+   * ummclothing.in/s/umm-clothing/shop.html — which works, and looks like the
+   * domain did not really connect.
+   */
+  const onOwnDomain =
+    request.headers.get('x-lumen-site-base') === '/' &&
+    // The header is set by the middleware, which only runs for a host that is
+    // not ours. Checking the host again here means a visitor who sends the
+    // header by hand to lumensite.in changes nothing.
+    isCustomHost(
+      request.headers.get('x-forwarded-host') ?? request.headers.get('host'),
+      env.canonicalOrigin,
+    ) !== null;
+  const base = onOwnDomain ? '/' : `/s/${encodeURIComponent(slug)}/`;
 
   // The origin is read from the request rather than from configuration: the
   // same app answers on a preview URL and on its own domain, and a sitemap

@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { sqlSection } from './sql-section';
 
 const sql = readFileSync(join(process.cwd(), 'supabase/setup.sql'), 'utf8');
-const grants = sql.slice(sql.indexOf('create table if not exists public.credit_grants'));
+const grants = sqlSection(sql, 'credit_grants');
 
 /**
  * Credits given by hand are money. The table they live in is the one place

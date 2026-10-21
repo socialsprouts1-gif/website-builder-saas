@@ -106,6 +106,20 @@ export type ChatMessageRow = {
   created_at: string;
 }
 
+/** One hostname that answers with a published site. */
+export type CustomDomainRow = {
+  id: string;
+  project_id: string;
+  user_id: string;
+  hostname: string;
+  /** The domain the owner typed; an apex and its www share one. */
+  root: string;
+  verified: boolean;
+  verified_at: string | null;
+  last_error: string | null;
+  created_at: string;
+};
+
 export type ChatbotRow = {
   id: string;
   project_id: string;
@@ -437,6 +451,7 @@ export type Database = {
       project_versions: Table<ProjectVersionRow>;
       generation_jobs: Table<GenerationJobRow>;
       chat_messages: Table<ChatMessageRow>;
+      custom_domains: Table<CustomDomainRow>;
       chatbots: Table<ChatbotRow>;
       chatbot_documents: Table<ChatbotDocumentRow>;
       chatbot_embeddings: Table<ChatbotEmbeddingRow>;

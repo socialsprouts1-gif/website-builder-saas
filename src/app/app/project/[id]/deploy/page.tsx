@@ -64,18 +64,23 @@ export default async function DeployPage({ params }: { params: Promise<{ id: str
         </p>
       ) : (
         <>
+          {/* Above the deploy panel, because it no longer depends on it. A
+              domain used to be the last step of a Vercel deployment; it is now
+              the second step of publishing, which is the order people ask for
+              it in. */}
+          <h2 className="mb-3 font-display text-xl text-ink-primary">Your own domain</h2>
+          <DomainPanel
+            projectId={project.id}
+            published={Boolean(project.published_at && project.public_slug)}
+            initialDomain={project.custom_domain}
+          />
+
+          <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">Host it yourself</h2>
           <DeployPanel
             projectId={project.id}
             defaultName={project.slug}
             vercelConnected={Boolean(vercel.credentials?.access_token)}
             githubConnected={Boolean(github.credentials?.access_token)}
-          />
-
-          <h2 className="mb-3 mt-10 font-display text-xl text-ink-primary">Your own domain</h2>
-          <DomainPanel
-            projectId={project.id}
-            deployed={Boolean(project.vercel_project_id)}
-            initialDomain={project.custom_domain}
           />
         </>
       )}

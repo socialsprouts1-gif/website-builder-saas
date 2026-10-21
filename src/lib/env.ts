@@ -174,6 +174,23 @@ export const env = {
   /** Google Places (New). Used to read a business's own listing. */
   googlePlacesKey: read('GOOGLE_PLACES_API_KEY'),
 
+  /**
+   * Lumen's own Vercel project, used to hold customers' domains.
+   *
+   * A shop owner who connects ummclothing.in is not connecting it to their
+   * own hosting — they have none. The domain is attached to the deployment
+   * that is already serving Lumen, which is what gets it a certificate, and
+   * the request is then routed to their published site by its hostname.
+   *
+   * Without these three the feature is off rather than broken: the panel says
+   * what is missing instead of failing at the registrar step.
+   */
+  platformVercel: {
+    token: read('VERCEL_TOKEN'),
+    projectId: read('VERCEL_PROJECT_ID'),
+    teamId: read('VERCEL_TEAM_ID'),
+  },
+
   connectors: {
     github: { id: read('GITHUB_CLIENT_ID'), secret: read('GITHUB_CLIENT_SECRET') },
     google: { id: read('GOOGLE_CLIENT_ID'), secret: read('GOOGLE_CLIENT_SECRET') },
@@ -187,6 +204,11 @@ export const env = {
 export const isSupabaseConfigured = Boolean(env.supabase.url && env.supabase.anonKey);
 export const isBillingConfigured = Boolean(env.razorpay.keyId && env.razorpay.keySecret);
 export const isPlatformKeyConfigured = Boolean(env.openai.platformKey);
+
+/** Whether Lumen can hold a customer's domain on its own deployment. */
+export const isDomainHostingConfigured = Boolean(
+  env.platformVercel.token && env.platformVercel.projectId,
+);
 
 /**
  * The free tier, in full: ten credits, once, for the life of the account.

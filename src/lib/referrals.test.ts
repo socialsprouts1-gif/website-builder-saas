@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { sqlSection } from './sql-section';
 import { CREDIT_COST, FREE_CREDITS } from '@/lib/env';
 import { REFERRAL_CREDITS } from './referrals.shared';
 import { normaliseCode } from './referral-code';
@@ -49,7 +50,7 @@ describe('what a referral is worth', () => {
 
 describe('the referrals table', () => {
   const sql = readFileSync(join(process.cwd(), 'supabase/setup.sql'), 'utf8');
-  const referrals = sql.slice(sql.indexOf('create table if not exists public.referrals'));
+  const referrals = sqlSection(sql, 'referrals');
 
   /**
    * The rows pay out in credits, so every way of getting a second one for the

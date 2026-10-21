@@ -17,23 +17,32 @@ interface DnsRecord {
 
 interface DomainStatus {
   domain: string;
-  verified: boolean;
+  /** Every name attached: an apex and its www, or a single subdomain. */
+  hostnames?: string[];
+  /** Vercel is serving it, which means the records have landed. */
+  live: boolean;
   records: DnsRecord[];
+  /** What is still outstanding, in words the owner can act on. */
+  note?: string;
 }
 
 /**
  * Three steps, in the order a person actually does them: name the domain, copy
- * the records into the registrar, press check. The DNS values come back from
- * Vercel rather than being guessed here, so what is shown is what Vercel will
- * actually look for.
+ * the records into the registrar, press check.
+ *
+ * It used to need a fourth thing first — a Vercel account connected and the
+ * site deployed to it — which is where everybody stopped. Lumen holds the
+ * domain on its own deployment now, so what is needed is a published site and
+ * the login for wherever the domain was bought.
  */
 export function DomainPanel({
   projectId,
-  deployed,
+  published,
   initialDomain,
 }: {
   projectId: string;
-  deployed: boolean;
+  /** A domain needs something to answer with, and that is the published site. */
+  published: boolean;
   initialDomain: string | null;
 }) {
   const [domain, setDomain] = useState(initialDomain ?? '');
@@ -98,11 +107,12 @@ export function DomainPanel({
     }
   }
 
-  if (!deployed) {
+  if (!published) {
     return (
       <Card>
         <p className="text-[15px] leading-relaxed text-ink-secondary">
-          Deploy to Vercel first. A domain needs somewhere to point, and the deploy is what creates it.
+          Publish the site first — press Publish above. A domain needs something to point at, and that is
+          the published site. It takes a second and you can change it as often as you like afterwards.
         </p>
       </Card>
     );
@@ -184,12 +194,13 @@ export function DomainPanel({
       <Step
             number={2}
             title="Add these records at your registrar"
-            done={status.verified}
+            done={status.live}
             body={
               <div className="space-y-2">
                 <p className="text-[14.5px] leading-relaxed text-ink-muted">
-                  Wherever you bought the domain — GoDaddy, Namecheap, BigRock — find its DNS settings and
-                  add each row below. Delete any existing record with the same type and name.
+                  Wherever you bought the domain — GoDaddy, Namecheap, BigRock, Hostinger — open its DNS
+                  settings and add each row below. If a row of the same type and name is already there,
+                  delete it first: two answers for the same name is the usual reason a domain half works.
                 </p>
                 {status.records.map((record) => (
                   <div key={`${record.type}-${record.name}-${record.value}`} className="rounded-[10px] border border-hairline bg-[var(--bg-base-deep)] p-3">
@@ -216,7 +227,7 @@ export function DomainPanel({
           <Step
             number={3}
             title="Check it"
-            done={status.verified}
+            done={status.live}
             last
             body={
               <div className="space-y-3">
@@ -224,10 +235,10 @@ export function DomainPanel({
                   <Button onClick={() => send('verify', status.domain)} disabled={busy !== null}>
                     {busy === 'verify' ? 'Checking…' : 'Check now'}
                   </Button>
-                  <Badge tone={status.verified ? 'accent' : 'warning'}>
-                    {status.verified ? 'Live' : 'Waiting for DNS'}
+                  <Badge tone={status.live ? 'accent' : 'warning'}>
+                    {status.live ? 'Live' : 'Waiting for DNS'}
                   </Badge>
-                  {status.verified ? (
+                  {status.live ? (
                     <a
                       href={`https://${status.domain}`}
                       target="_blank"
@@ -238,11 +249,14 @@ export function DomainPanel({
                     </a>
                   ) : null}
                 </div>
-                {!status.verified ? (
+                {status.note ? (
+                  <p className="text-[14px] leading-relaxed text-ink-muted">{status.note}</p>
+                ) : null}
+                {!status.live ? (
                   <p className="text-[14px] leading-relaxed text-ink-muted">
-                    DNS usually takes a few minutes and can take up to an hour. Nothing is broken while this
-                    says waiting — press Check now again in a bit. Your site stays live on its Vercel URL
-                    throughout.
+                    Nothing is broken while this says waiting — DNS takes a few minutes and occasionally a
+                    few hours. Press Check now again in a bit. Your site stays reachable on its Lumen link
+                    the whole time.
                   </p>
                 ) : null}
               </div>
@@ -324,8 +338,8 @@ function ConnectForm({
         </Button>
       </div>
       <p className="text-[14px] text-ink-muted">
-        Enter it exactly as you bought it. Lumen will show you the two DNS records to paste at your
-        registrar.
+        Enter it as you bought it — yourbusiness.in, not www or https. Lumen connects the www for you and
+        shows the rows to paste at your registrar.
       </p>
     </div>
   );
