@@ -45,6 +45,17 @@ export default async function SetupPage() {
       vars: [{ name: 'OPENAI_API_KEY', set: isPlatformKeyConfigured }],
     },
     {
+      title: 'Customer domains',
+      required: false,
+      unlocks:
+        'Lets site owners point their own domain at Lumen. The token is a Vercel API token with access to the team this project is in; the project and team ids are on the project’s Settings → General page.',
+      vars: [
+        { name: 'VERCEL_TOKEN', set: Boolean(process.env.VERCEL_TOKEN) },
+        { name: 'VERCEL_PROJECT_ID', set: Boolean(process.env.VERCEL_PROJECT_ID) },
+        { name: 'VERCEL_TEAM_ID', set: Boolean(process.env.VERCEL_TEAM_ID) },
+      ],
+    },
+    {
       title: 'Razorpay',
       required: false,
       unlocks: 'Subscriptions. Optional — billing shows a “not connected” state until these exist.',
