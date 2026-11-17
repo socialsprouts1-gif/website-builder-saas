@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { ideaBySlug } from '@/lib/ideas';
+import { luminance } from '@/lib/generation/variety/colour';
 import { CONNECTORS } from '@/lib/connectors/providers';
 import {
   CREDIT_COST,
@@ -141,5 +145,47 @@ describe('the shape of the page', () => {
   it('says something different on every card', () => {
     const bodies = [...BUILDS, ...CAPABILITIES, ...PUBLISH_FEATURES].map((entry) => entry.body);
     expect(new Set(bodies).size).toBe(bodies.length);
+  });
+});
+
+describe('the miniatures on the build cards', () => {
+  /**
+   * The six cards that say what Lumen builds each show a real layout from the
+   * ideas catalogue. A slug that no longer matches an idea loses its picture
+   * silently and the card falls back to being a paragraph — which is exactly
+   * what the mocks were put there to replace.
+   */
+  it('every card names an idea that exists', () => {
+    for (const build of BUILDS) {
+      expect(ideaBySlug(build.idea), `${build.title} → ${build.idea}`).toBeDefined();
+    }
+  });
+
+  it('shows six different businesses, not the same one six times', () => {
+    const slugs = BUILDS.map((build) => build.idea);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  /** The card's picture is drawn, not described, so the component is mounted. */
+  it('is actually rendered on the home page', () => {
+    const page = readFileSync(join(process.cwd(), 'src/app/page.tsx'), 'utf8');
+    expect(page).toContain('<BuildMock slug={build.idea} />');
+  });
+
+  /**
+   * A near-black placeholder on a near-black palette is what the wedding
+   * photographer's four galleries rendered as — on the one card whose whole
+   * subject is photographs. The mock mixes a stronger lift when the surface
+   * it sits on is dark.
+   */
+  it('lifts the picture frames on a dark palette', () => {
+    const dark = BUILDS.map((build) => ideaBySlug(build.idea)!).filter(
+      (idea) => luminance(idea.direction.palette.surface) < 0.18,
+    );
+    expect(dark.length, 'no dark palette among the cards to check').toBeGreaterThan(0);
+
+    const mock = readFileSync(join(process.cwd(), 'src/components/ideas/SiteMock.tsx'), 'utf8');
+    expect(mock).toContain("luminance(p.surface) < 0.18");
+    expect(mock).toMatch(/\['6b', '2e', '4d'\]/);
   });
 });

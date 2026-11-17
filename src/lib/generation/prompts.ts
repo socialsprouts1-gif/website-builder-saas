@@ -327,6 +327,11 @@ Pictures:
 - If there are more pictures than empty frames, put the rest in the gallery or grid they fit best, following the markup already used there.
 - Only the classes already in the stylesheet render. A new class name renders as nothing.
 
+Video:
+- A video address goes in as <div class="media video__frame"><video src="THE URL" controls preload="metadata" playsinline></video></div>. Always controls, always playsinline — a video that plays by itself with sound is why people close the page, and without playsinline an iPhone takes over the whole screen.
+- <div class="media media--empty video__frame"></div> is a frame waiting for a video. Replace that whole div with the filled version above. If the page has no video section, put the video where the request asks for it, inside a section that already exists.
+- Never put a video address in an <img>, and never put a picture in a <video>. Neither shows anything.
+
 ${CODE_RULES.replace('Output rules — follow exactly:', 'Output envelope — follow exactly:')}`;
 
 export function buildEditPrompt(input: {

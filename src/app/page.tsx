@@ -3,6 +3,7 @@ import { TopNav } from '@/components/marketing/TopNav';
 import { Footer } from '@/components/marketing/Footer';
 import { HeroPrompt } from '@/components/marketing/HeroPrompt';
 import { MockFrame } from '@/components/marketing/MockFrame';
+import { BuildMock } from '@/components/marketing/BuildMock';
 import { ProductDemo } from '@/components/marketing/ProductDemo';
 import { Reveal } from '@/components/marketing/Reveal';
 import { ScrollProgress } from '@/components/marketing/ScrollProgress';
@@ -120,11 +121,18 @@ export default async function HomePage() {
             <Reveal key={build.title} delay={(index % 3) * 80}>
               <Link
                 href={build.href}
-                className="lumen-raise flex h-full flex-col gap-3 rounded-card border border-hairline bg-raised p-6 transition hover:border-white/25"
+                className="lumen-raise group flex h-full flex-col overflow-hidden rounded-card border border-hairline bg-raised transition hover:border-white/25"
               >
-                <h3 className="font-display text-[21px] text-ink-primary">{build.title}</h3>
-                <p className="text-[15.5px] leading-relaxed text-ink-secondary">{build.body}</p>
-                <span className="mt-auto pt-2 text-[14.5px] text-accent">See what it looks like →</span>
+                {/* The picture before the prose. A website builder asking
+                    people to imagine six kinds of website, in six paragraphs,
+                    is the one thing it should never do — and the mock is a
+                    real layout in a real palette, not a stock laptop. */}
+                <BuildMock slug={build.idea} />
+                <div className="flex flex-1 flex-col gap-3 p-6">
+                  <h3 className="font-display text-[21px] text-ink-primary">{build.title}</h3>
+                  <p className="text-[15.5px] leading-relaxed text-ink-secondary">{build.body}</p>
+                  <span className="mt-auto pt-2 text-[14.5px] text-accent">See what it looks like →</span>
+                </div>
               </Link>
             </Reveal>
           ))}

@@ -49,6 +49,15 @@ export interface BuildKind {
   body: string;
   /** The per-trade page this card belongs to, so the cards are real links. */
   href: string;
+  /**
+   * The idea whose miniature this card shows, by slug.
+   *
+   * Six cards of prose asking people to imagine six kinds of website is the
+   * one thing a website builder should never do. The mock is drawn from the
+   * same catalogue the Ideas gallery uses, so the picture on the card is a
+   * real layout in a real palette rather than a stock photograph of a laptop.
+   */
+  idea: string;
 }
 
 export const BUILDS: BuildKind[] = [
@@ -56,31 +65,37 @@ export const BUILDS: BuildKind[] = [
     title: 'Business websites',
     body: 'The site a shop, clinic or agency is judged by. Services, team, hours, and a form that reaches your phone.',
     href: '/for/dental-clinic-website',
+    idea: 'dental',
   },
   {
     title: 'Online stores',
     body: 'Products, a basket, a checkout priced on the server, and orders that arrive on WhatsApp. Photography generated for every product.',
     href: '/for/online-store',
+    idea: 'roaster',
   },
   {
     title: 'Landing pages',
     body: 'One page, one action. Built around the thing you want somebody to do, with the call to action kept in view.',
     href: '/for/saas-landing-page',
+    idea: 'yoga',
   },
   {
     title: 'Portfolios',
     body: 'Work first, chrome last. A design direction chosen up front so it reads as considered rather than templated.',
     href: '/for/portfolio-website',
+    idea: 'photographer',
   },
   {
     title: 'SaaS websites',
     body: 'The problem, the features, the pricing tiers and the signup — written from what the product actually does.',
     href: '/for/saas-landing-page',
+    idea: 'saas',
   },
   {
     title: 'Local services',
     body: 'A tappable number at the top, the areas you cover by name, and a quote request that does not wait for Monday.',
     href: '/for/plumber-website',
+    idea: 'plumber',
   },
 ];
 

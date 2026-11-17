@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { Idea, Palette, ShowcaseItem } from '@/lib/ideas';
+import { luminance } from '@/lib/generation/variety/colour';
 
 /**
  * A miniature of the site an idea would produce.
@@ -73,14 +74,25 @@ function Chrome({ idea }: { idea: Idea }) {
 }
 
 /** A stand-in for photography: a tinted field, never a grey box. */
+/**
+ * The frame a photograph would be in.
+ *
+ * The gradient is mixed from the palette's own accent, and how much of it is
+ * needed depends on what it is sitting on. A fixed 22% of a pale accent over a
+ * near-black surface is a black rectangle — which is what the wedding
+ * photographer's four galleries rendered as, on the one card whose whole
+ * subject is photographs. So a dark palette gets a stronger lift.
+ */
 function Media({ p, height, className = '' }: { p: Palette; height: number; className?: string }) {
+  const dark = luminance(p.surface) < 0.18;
+  const [strong, weak, edge] = dark ? ['6b', '2e', '4d'] : ['38', '14', '26'];
   return (
     <div
       className={className}
       style={{
         height,
-        background: `linear-gradient(140deg, ${p.accent}38, ${p.surface} 55%, ${p.accent}14)`,
-        border: `1px solid ${p.accent}26`,
+        background: `linear-gradient(140deg, ${p.accent}${strong}, ${p.surface} 55%, ${p.accent}${weak})`,
+        border: `1px solid ${p.accent}${edge}`,
       }}
     />
   );

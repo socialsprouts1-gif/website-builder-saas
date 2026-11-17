@@ -43,6 +43,27 @@ describe('what the editor is told about pictures', () => {
   });
 
   /**
+   * The kit grew a video section and an empty video frame to go with it. An
+   * editor that has never been told what one is will keep doing what it did
+   * before, which was improvising markup with no styling behind it.
+   */
+  it('knows what a video frame is and what fills one', () => {
+    expect(EDIT_SYSTEM).toContain('video__frame');
+    expect(EDIT_SYSTEM).toContain('<video src=');
+    expect(EDIT_SYSTEM).toMatch(/controls/);
+    expect(EDIT_SYSTEM).toMatch(/playsinline/);
+  });
+
+  it('does not let a video end up in an img, or a picture in a video', () => {
+    expect(EDIT_SYSTEM).toMatch(/Never put a video address in an <img>/);
+  });
+
+  /** The composer's wording for a video has to describe the same convention. */
+  it('matches the line the composer appends for a video', () => {
+    expect(workspace).toContain('embed it in a <video> tag');
+  });
+
+  /**
    * The composer's wording and the editor's instructions have to describe the
    * same convention, or the lines it appends are noise to the model.
    */
