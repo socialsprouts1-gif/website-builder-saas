@@ -19,7 +19,7 @@ export const HOSPITALITY_BLUEPRINTS: Blueprint[] = [
     pages: [
       home('announcement', 'hero', 'about', 'menu', 'split', 'gallery', 'team', 'testimonials', 'stats', 'hours', 'cta'),
       page('menu.html', 'Menu', 'hero', 'menu', 'pricing', 'split', 'faq', 'cta'),
-      page('story.html', 'Our story', 'hero', 'about', 'team', 'stats', 'gallery', 'cta'),
+      page('story.html', 'Our story', 'hero', 'about', 'story', 'team', 'stats', 'gallery', 'cta'),
       page('private.html', 'Private dining', 'hero', 'split', 'services', 'pricing', 'faq', 'contact'),
       VISIT,
     ],
@@ -38,7 +38,7 @@ export const HOSPITALITY_BLUEPRINTS: Blueprint[] = [
     layouts: { hero: 'split', menu: 'cards', gallery: 'feed', features: 'checks', hours: 'location' },
     seoDescription: 'What we bake, when we open, and where to find us.',
     pages: [
-      home('announcement', 'hero', 'menu', 'about', 'features', 'gallery', 'testimonials', 'hours', 'cta'),
+      home('announcement', 'hero', 'menu', 'offers', 'about', 'features', 'gallery', 'testimonials', 'hours', 'cta'),
       page('menu.html', 'What we make', 'hero', 'menu', 'split', 'faq', 'cta'),
       page('orders.html', 'Pre-orders', 'hero', 'services', 'steps', 'pricing', 'faq', 'contact'),
       VISIT,
@@ -125,7 +125,7 @@ export const HOSPITALITY_BLUEPRINTS: Blueprint[] = [
     seoDescription: 'Weddings and events we have planned, what we do, and what it costs.',
     pages: [
       home('hero', 'gallery', 'about', 'services', 'steps', 'split', 'testimonials', 'stats', 'faq', 'cta'),
-      page('work.html', 'Real events', 'hero', 'gallery', 'testimonials', 'cta'),
+      page('work.html', 'Real events', 'hero', 'gallery', 'video', 'testimonials', 'cta'),
       page('services.html', 'What we do', 'hero', 'services', 'pricing', 'steps', 'faq', 'cta'),
       CONTACT,
     ],

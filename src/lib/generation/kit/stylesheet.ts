@@ -285,6 +285,69 @@ details.faq p { margin-top: .75rem; color: var(--ink-muted); }
 .pair__tag--after { background: var(--accent); color: var(--accent-ink); }
 .pair figcaption { margin-top: .9rem; }
 
+/* ------------------------------------------------------------------ video - */
+.video { display: grid; gap: var(--gap); }
+.video--split { align-items: center; }
+@media (min-width: 56rem) { .video--split { grid-template-columns: 1fr 1.2fr; } }
+.video--feature { grid-template-columns: 1fr; }
+.video--band { justify-items: center; text-align: center; }
+/* The one that plays by itself. It is muted and looping, so it reads as a
+   moving picture rather than something to sit through: wider than it is tall
+   and with no controls to invite a click. */
+.video--showreel { justify-items: center; text-align: center; }
+.video--showreel .video__frame, .video--showreel .video__frame video { aspect-ratio: 21 / 9; }
+.video__frame { margin: 0; overflow: hidden; border-radius: var(--radius); background: var(--surface-alt); }
+/* The frame keeps its proportions before the file has said what shape it is.
+   Without this the band is one height while the video loads and another once
+   it has, which on a slow connection is the page moving under a thumb. */
+.video__frame, .video__frame video { aspect-ratio: 16 / 9; }
+.video__frame video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.video__copy { display: grid; gap: .9rem; align-content: start; }
+
+/* -------------------------------------------------------------- where we are - */
+.where { display: grid; gap: var(--gap); }
+@media (min-width: 52rem) { .where--split { grid-template-columns: 1.1fr 1fr; } }
+.where--band { text-align: center; justify-items: center; }
+.where__panel {
+  display: grid; gap: 1rem; align-content: start; align-self: start;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: calc(var(--gap) * .8); background: var(--surface);
+}
+.where__address { margin: 0; font-size: 1.05rem; line-height: 1.6; }
+.where__notes { display: grid; gap: .9rem; align-content: start; }
+@media (min-width: 40rem) { .where--card .where__notes, .where--band .where__notes { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); } }
+.where__note { border-top: 1px solid var(--line); padding-top: .7rem; }
+
+/* ------------------------------------------------------------------ story - */
+.story { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--gap); counter-reset: none; }
+@media (min-width: 60rem) { .story--rail { grid-auto-flow: column; grid-auto-columns: 1fr; } }
+.story--stack { grid-template-columns: 1fr; }
+.story__point { position: relative; padding-top: 1.4rem; border-top: 2px solid var(--line); }
+.story__point::before {
+  content: ""; position: absolute; top: -5px; left: 0;
+  width: 8px; height: 8px; border-radius: 999px; background: var(--accent);
+}
+.story__when { display: block; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: .35rem; }
+
+/* ----------------------------------------------------------------- offers - */
+.offers { display: grid; gap: var(--gap); }
+@media (min-width: 46rem) { .offers--cards { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); } }
+.offers--strip { justify-items: center; text-align: center; }
+.offer {
+  border: 1px dashed var(--accent); border-radius: var(--radius);
+  padding: calc(var(--gap) * .7); background: var(--surface);
+  display: grid; gap: .5rem; align-content: start;
+}
+.offer__title { margin: 0; font-size: 1.15rem; }
+/* The part people photograph. Monospaced so a 0 is not an O at the till. */
+.offer__code {
+  margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .9rem; letter-spacing: .06em;
+  color: var(--accent-ink); background: var(--accent);
+  padding: .3rem .65rem; border-radius: calc(var(--radius) / 2); justify-self: start;
+}
+.offers--strip .offer__code { justify-self: center; }
+
 /* --------------------------------------------- extra layouts on old kinds - */
 .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
 @media (min-width: 46rem) { .checks { grid-template-columns: 1fr 1fr; column-gap: var(--gap); } }

@@ -40,6 +40,14 @@ export const LAYOUTS = {
   scene3d: ['float', 'product', 'carousel', 'showroom', 'world', 'device'],
   // One arrangement: a sticky stage with the frames stacked on it.
   turntable: ['stage'],
+  // feature is the video under its own heading; band runs it full width with
+  // the words centred over it; split puts it beside them. showreel is the
+  // only one that plays by itself, and it is muted, because a video that
+  // starts shouting is why people leave.
+  video: ['feature', 'band', 'split', 'showreel'],
+  map: ['card', 'split', 'band'],
+  story: ['rail', 'stack'],
+  offers: ['strip', 'cards'],
 } as const satisfies Record<SectionKind, readonly string[]>;
 
 export type LayoutFor<K extends SectionKind> = (typeof LAYOUTS)[K][number];

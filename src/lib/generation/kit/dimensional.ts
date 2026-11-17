@@ -278,7 +278,10 @@ export const DIMENSIONAL_SCRIPT = `(function () {
  * because they do their own motion and two systems moving the same element
  * fight each other.
  */
-const STILL = new Set(['hero', 'announcement', 'scene3d', 'turntable']);
+// Bands that must not move against the page. The 3D ones because they are
+// already moving, and video because a frame that drifts while you are trying
+// to watch it is the sort of thing that makes people close the tab.
+const STILL = new Set(['hero', 'announcement', 'scene3d', 'turntable', 'video']);
 
 export function depthFor(kind: string, index: number): number | null {
   if (STILL.has(kind)) return null;

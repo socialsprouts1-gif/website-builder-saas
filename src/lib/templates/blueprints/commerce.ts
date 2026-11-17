@@ -22,7 +22,7 @@ export const COMMERCE_BLUEPRINTS: Blueprint[] = [
         shopBands: SHOP_HOME_SLOTS,
       },
       ...SHOP_PAGES,
-      page('about.html', 'Our story', 'hero', 'about', 'steps', 'stats', 'gallery', 'cta'),
+      page('about.html', 'Our story', 'hero', 'about', 'story', 'stats', 'gallery', 'cta'),
       page('delivery.html', 'Delivery & returns', 'hero', 'split', 'steps', 'faq', 'cta'),
       CONTACT,
     ],
@@ -68,7 +68,7 @@ export const COMMERCE_BLUEPRINTS: Blueprint[] = [
     seoDescription: 'What we stock, delivery areas and slots, and how to order.',
     pages: [
       {
-        ...home('announcement', 'hero', 'features', 'split', 'steps', 'stats', 'testimonials', 'faq', 'hours', 'cta'),
+        ...home('announcement', 'hero', 'features', 'offers', 'split', 'steps', 'stats', 'testimonials', 'faq', 'hours', 'cta'),
         shopBands: SHOP_HOME_SLOTS,
       },
       ...SHOP_PAGES,
@@ -92,7 +92,7 @@ export const COMMERCE_BLUEPRINTS: Blueprint[] = [
     seoDescription: 'Galleries, packages, availability and how to book.',
     pages: [
       home('hero', 'gallery', 'about', 'services', 'steps', 'testimonials', 'stats', 'faq', 'cta'),
-      page('galleries.html', 'Galleries', 'hero', 'gallery', 'testimonials', 'cta'),
+      page('galleries.html', 'Galleries', 'hero', 'gallery', 'video', 'testimonials', 'cta'),
       page('packages.html', 'Packages', 'hero', 'pricing', 'services', 'steps', 'faq', 'cta'),
       page('about.html', 'About', 'hero', 'about', 'split', 'logos', 'cta'),
       CONTACT,
@@ -113,7 +113,7 @@ export const COMMERCE_BLUEPRINTS: Blueprint[] = [
     seoDescription: 'Selected work, services, and how to get in touch.',
     pages: [
       home('hero', 'gallery', 'services', 'about', 'split', 'logos', 'testimonials', 'cta'),
-      page('work.html', 'Work', 'hero', 'gallery', 'testimonials', 'cta'),
+      page('work.html', 'Work', 'hero', 'gallery', 'video', 'testimonials', 'cta'),
       page('about.html', 'About', 'hero', 'about', 'services', 'stats', 'logos', 'cta'),
       CONTACT,
     ],

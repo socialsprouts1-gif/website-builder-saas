@@ -166,11 +166,11 @@ export const DIMENSION_BLUEPRINTS: Blueprint[] = [
     seoDescription: 'Browse the collection, turn each piece in 3D, and buy it.',
     pages: [
       {
-        ...home('announcement', 'hero', 'scene3d', 'split', 'turntable', 'features', 'gallery', 'testimonials', 'faq', 'cta'),
+        ...home('announcement', 'hero', 'scene3d', 'split', 'turntable', 'video', 'features', 'gallery', 'testimonials', 'faq', 'cta'),
         shopBands: SHOP_HOME_SLOTS,
       },
       ...SHOP_PAGES,
-      page('about.html', 'Our story', 'hero', 'about', 'steps', 'stats', 'gallery', 'cta'),
+      page('about.html', 'Our story', 'hero', 'about', 'story', 'stats', 'gallery', 'cta'),
       page('delivery.html', 'Delivery & returns', 'hero', 'split', 'steps', 'faq', 'cta'),
       CONTACT,
     ],

@@ -20,8 +20,15 @@ export const home = (...sections: SectionKind[]): BlueprintPage => page('index.h
 /** Contact is the same everywhere, because the question is the same everywhere. */
 export const CONTACT = page('contact.html', 'Contact', 'hero', 'contact', 'hours', 'faq');
 
-/** Contact for a place people physically go to. */
-export const VISIT = page('contact.html', 'Visit', 'hero', 'contact', 'hours', 'faq');
+/**
+ * Contact for a place people physically go to.
+ *
+ * It carries the map, which CONTACT does not: a business customers visit is
+ * found by somebody standing on the pavement with a phone, and "Get
+ * directions" is the only button on the page some of them will ever press. A
+ * business people only ring has an address that is nobody's destination.
+ */
+export const VISIT = page('contact.html', 'Visit', 'hero', 'contact', 'map', 'hours', 'faq');
 
 /**
  * The three pages a shop adds, and where the catalogue renders into them.

@@ -63,7 +63,7 @@ The palette you write must belong to it: ${params.template.paletteBrief}${shop}`
 }
 
 /** What each kind of section needs, in the shape the renderer expects. */
-const SECTION_BRIEF: Record<SectionKind, string> = {
+export const SECTION_BRIEF: Record<SectionKind, string> = {
   announcement:
     'One line above everything else — an offer, a notice, or the thing worth interrupting for ("Open Sundays from 1 November", "Free first consultation this month"). Put it in body, at most twelve words. primaryCta is optional and is a single short link. No items, no heading.',
   hero: 'The opening screen. heading is the single strongest sentence on the site — what this business is, not a slogan about excellence. subheading is one plain sentence. primaryCta is the main action; secondaryCta is optional and quieter. No items.',
@@ -87,6 +87,14 @@ const SECTION_BRIEF: Record<SectionKind, string> = {
   beforeafter:
     'items: 3 real results. title is what the customer came in for, body one sentence on what changed, meta how long it took or what it cost. Leave image and href empty — the photographs are attached later. Claim no result the brief does not support.',
   cta: 'A closing band. heading is a direct invitation, subheading one line, primaryCta the action. No items.',
+  video:
+    'One video, which the owner uploads — you do not have a file and must not invent a link. heading says what it shows ("Inside the workshop", "How the fitting works"). body is one or two sentences on what is worth watching for, written so it still reads before the video has loaded. items: leave empty; the file and its poster frame are attached later. primaryCta is optional.',
+  map:
+    'Where the business actually is. body is the full postal address on one line, exactly as the brief gives it — it becomes the directions link, so a guessed address sends customers somewhere real and wrong. heading is short ("Find us", "The Pune store"). items: 2 to 4 short notes that help somebody arrive — the landmark to look for, parking, the nearest station or bus stop, which floor. title is two or three words, body one line. Write no note the brief does not support.',
+  story:
+    'The years, oldest first. items: 3 to 5 moments that actually happened — opening, moving, a second branch, a change of hands. meta is the year on its own. title is what happened in four or five words. body is one sentence. Invent nothing: a business with no history given gets no story section, so if the brief has no dates, return items as an empty list.',
+  offers:
+    'A live offer, and only one the brief states. items: 1 to 3. title is the offer in plain terms ("20% off all stitching"), body is the condition in one line ("on orders above ₹2,000"), meta is the code or the date it ends ("Code DIWALI20" or "Until 15 November"). Never invent a discount, a code or a date — an offer the owner did not agree to is one they have to honour.',
   turntable:
     'One product, which the reader turns by scrolling. The photographs are taken for you — do not describe angles, lighting or how it rotates. heading names the object. subheading is one line. body is two sentences on what is worth seeing as it turns: the join, the finish, the back of it. primaryCta is the action. items: leave empty — they are filled with the frames.',
   scene3d:

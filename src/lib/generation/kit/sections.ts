@@ -42,6 +42,23 @@ export const SECTION_KINDS = [
   // The product you turn by scrolling. Its content is one object photographed
   // at a dozen angles, which is not something any other kind can hold.
   'turntable',
+  // A video with somewhere to live. Owners could already upload one — the
+  // composer accepts 50MB of it and the editor is told to embed it — and
+  // there was no section that held one, no styling for it and no poster
+  // frame, so it landed as whatever markup the model improvised that day.
+  'video',
+  // Where the shop actually is. A local business is found by people standing
+  // outside looking at their phone, and "Get directions" is the only button
+  // on the page some of them will ever press.
+  'map',
+  // The years. Not the same thing as `steps`, which is what happens when you
+  // book: this is 1978, the second shop, the move to Pune — the thing a
+  // family business has that a competitor cannot copy.
+  'story',
+  // The festival offer. Half the small businesses this is built for run one,
+  // and it was being written into a heading because there was nowhere else
+  // to put a code and a date.
+  'offers',
 ] as const;
 
 export type SectionKind = (typeof SECTION_KINDS)[number];
@@ -813,6 +830,117 @@ function renderBeforeAfter(section: Section): string {
   return wrap(section, `${heading(section)}<div class="pairs pairs--${escapeHtml(layout)}">${pairs}</div>`);
 }
 
+/**
+ * A video the owner uploaded, in a frame that was built for it.
+ *
+ * `controls` and nothing else by default: a shop's video is something a
+ * customer chooses to watch, and one that starts shouting on arrival is the
+ * reason people leave. The showreel layout is the exception and it is muted,
+ * which is the only autoplay a browser allows anyway.
+ */
+function renderVideo(section: Section): string {
+  const layout = layoutFor('video', section.layout);
+  const first = items(section)[0];
+  const src = safeSrc(first?.href ?? section.image);
+  const poster = safeSrc(first?.image);
+  const reel = layout === 'showreel';
+
+  const frame = src
+    ? `<div class="media video__frame"><video
+        data-lumen-id="${id(section, 'video')}"
+        src="${src}"${poster ? ` poster="${poster}"` : ''}
+        ${reel ? 'autoplay muted loop' : 'controls preload="metadata"'}
+        playsinline
+      ></video></div>`
+    : // Nothing uploaded yet. The frame holds its shape so the section reads
+      // as waiting rather than broken, and an edit can drop a file into it.
+      emptyMedia(' video__frame');
+
+  const copy = `${heading(section, layout === 'band')}${
+    section.body ? `<p class="muted" data-lumen-id="${id(section, 'body')}">${escapeHtml(section.body)}</p>` : ''
+  }${button(section.primaryCta)}`;
+
+  if (layout === 'split') {
+    return wrap(section, `<div class="video video--split"><div class="video__copy">${copy}</div>${frame}</div>`);
+  }
+  return wrap(section, `<div class="video video--${escapeHtml(layout)}">${copy}${frame}</div>`);
+}
+
+/**
+ * Where to find them, and the one button that matters.
+ *
+ * No embedded map: a published site runs without frames, and an iframe would
+ * be blocked and leave a white rectangle. A directions link does the same job
+ * better — on a phone it opens the maps app the person already uses.
+ */
+function renderMap(section: Section): string {
+  const layout = layoutFor('map', section.layout);
+  const address = (section.body ?? '').trim();
+  const directions = address
+    ? `<a class="btn" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(address)}" target="_blank" rel="noopener">Get directions</a>`
+    : '';
+
+  const notes = items(section)
+    .map(
+      (item, index) => `<div class="where__note" data-lumen-id="${id(section, `note-${index}`)}">
+        <span class="row__label">${escapeHtml(item.title ?? '')}</span>
+        ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+      </div>`,
+    )
+    .join('');
+
+  const panel = `<div class="where__panel">
+      ${address ? `<p class="where__address" data-lumen-id="${id(section, 'address')}">${escapeHtml(address)}</p>` : ''}
+      <div class="cluster">${directions}${button(section.secondaryCta, true)}</div>
+    </div>`;
+
+  return wrap(
+    section,
+    `${heading(section)}<div class="where where--${escapeHtml(layout)}">${panel}${notes ? `<div class="where__notes">${notes}</div>` : ''}</div>`,
+  );
+}
+
+/** The years, in order. A rail on a wide screen, a stack on a phone. */
+function renderStory(section: Section): string {
+  const layout = layoutFor('story', section.layout);
+  const entries = items(section)
+    .map(
+      (item, index) => `<li class="story__point" data-lumen-id="${id(section, `point-${index}`)}">
+        ${item.meta ? `<span class="story__when">${escapeHtml(item.meta)}</span>` : ''}
+        <h3 class="card__title">${escapeHtml(item.title ?? '')}</h3>
+        ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+      </li>`,
+    )
+    .join('');
+  if (!entries) return '';
+  return wrap(section, `${heading(section)}<ol class="story story--${escapeHtml(layout)}">${entries}</ol>`);
+}
+
+/**
+ * The offer, with its code and the date it stops.
+ *
+ * Both of those are the parts people photograph and the parts that were
+ * getting lost: an offer with no end date is one the owner cannot get out of,
+ * and a code nobody can read is a discount nobody claims.
+ */
+function renderOffers(section: Section): string {
+  const layout = layoutFor('offers', section.layout);
+  const cards = items(section)
+    .map(
+      (item, index) => `<div class="offer" data-lumen-id="${id(section, `offer-${index}`)}">
+        <h3 class="offer__title">${escapeHtml(item.title ?? '')}</h3>
+        ${item.body ? `<p class="muted">${escapeHtml(item.body)}</p>` : ''}
+        ${item.meta ? `<p class="offer__code">${escapeHtml(item.meta)}</p>` : ''}
+      </div>`,
+    )
+    .join('');
+  if (!cards) return '';
+  return wrap(
+    section,
+    `${heading(section, layout === 'strip')}<div class="offers offers--${escapeHtml(layout)}">${cards}</div>${button(section.primaryCta)}`,
+  );
+}
+
 const RENDERERS: Record<SectionKind, (section: Section) => string> = {
   announcement: renderAnnouncement,
   logos: renderLogos,
@@ -835,6 +963,10 @@ const RENDERERS: Record<SectionKind, (section: Section) => string> = {
   cta: renderCta,
   scene3d: renderScene3d,
   turntable: renderTurntableSection,
+  video: renderVideo,
+  map: renderMap,
+  story: renderStory,
+  offers: renderOffers,
 };
 
 export function renderSection(section: Section): string {
